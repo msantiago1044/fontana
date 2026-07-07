@@ -1,0 +1,144 @@
+{
+  "name": "Fontana - A. Correo Paso 1 (al confirmar pago)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "stripe-pago-confirmado",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook Stripe",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-600, 0],
+      "notes": "Configura esta URL en Stripe Dashboard > Webhooks. Evento: checkout.session.completed"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verifica la firma de Stripe para confirmar que el webhook es legítimo.\n// Requiere la librería 'stripe' instalada en tu instancia n8n, o usa\n// el nodo HTTP Request hacia una pequeña función serverless que haga\n// esta verificación si tu n8n no permite instalar paquetes npm.\n\nconst body = $input.first().json;\nconst wishId = body.data.object.metadata.wish_id;\nconst paymentIntentId = body.data.object.payment_intent;\nconst customerEmail = body.data.object.customer_details?.email;\n\nreturn [{ json: { wishId, paymentIntentId, customerEmail } }];"
+      },
+      "name": "Extraer datos del pago",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-380, 0]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "wishes",
+        "updateKey": "id",
+        "columnToMatchOn": "id",
+        "valueToMatchOn": "={{$json.wishId}}",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "status", "fieldValue": "active" },
+            { "fieldId": "cycle_started_at", "fieldValue": "={{$now.toISO()}}" },
+            { "fieldId": "next_followup_at", "fieldValue": "={{$now.plus({days:7}).toISO()}}" },
+            { "fieldId": "stripe_payment_intent_id", "fieldValue": "={{$json.paymentIntentId}}" }
+          ]
+        }
+      },
+      "name": "Activar deseo en Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [-160, 0],
+      "notes": "Requiere credencial de Supabase con la service_role key (no la anon key)."
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "schema": "public",
+        "table": "wishes",
+        "filterType": "manual",
+        "matchingColumns": "id",
+        "filters": { "conditions": [{ "keyName": "id", "condition": "eq", "keyValue": "={{$json.wishId}}" }] }
+      },
+      "name": "Leer deseo completo",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [60, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"glm-4.6\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Eres el redactor de Fontana, una plataforma de acompañamiento personal con un tono cálido, cercano, esperanzador pero honesto. NUNCA prometes que el deseo se cumplirá ni usas lenguaje de magia literal o adivinación. SIEMPRE entregas un PASO 1 concreto, pequeño y accionable que la persona pueda hacer hoy mismo, relacionado con su deseo. Responde en español, en formato de correo electrónico completo (sin asunto, solo el cuerpo), máximo 200 palabras, firmado como 'La Fuente — Fontana'.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Categoría del deseo: \" + $json.category + \"\\nTexto del deseo: \" + $json.wish_text + \"\\n\\nEscribe el correo de bienvenida con el primer paso a seguir.\"\n    }\n  ],\n  \"temperature\": 0.8\n} }}"
+      },
+      "name": "GLM - Generar correo Paso 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [280, 0],
+      "notes": "Credencial: Header Auth con Authorization: Bearer TU_API_KEY_GLM"
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResponse = $input.first().json.choices[0].message.content;\nconst wish = $('Leer deseo completo').first().json;\nreturn [{ json: { ...wish, email_body: aiResponse } }];"
+      },
+      "name": "Preparar correo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 0]
+    },
+    {
+      "parameters": {
+        "fromEmail": "la-fuente@fontana.wish",
+        "fromName": "La Fuente — Fontana",
+        "toEmail": "={{$json.contact_email}}",
+        "subject": "Tu deseo ya está en marcha 🪙",
+        "emailType": "html",
+        "html": "={{ \"<div style='font-family:Georgia,serif;background:#0c1016;color:#f4f1ea;padding:40px;border-radius:12px;max-width:560px;margin:0 auto;'><h2 style='color:#e8c873;'>Tu deseo ya está en marcha</h2><p style='line-height:1.7;white-space:pre-line;'>\" + $json.email_body + \"</p><p style='font-size:12px;color:#8a8a82;margin-top:32px;'>Recibirás tu próximo paso en 7 días. — Fontana</p></div>\" }}"
+      },
+      "name": "Enviar correo (Resend)",
+      "type": "n8n-nodes-base.resend",
+      "typeVersion": 1,
+      "position": [720, 0],
+      "notes": "Si no usas el nodo nativo de Resend, usa un HTTP Request a https://api.resend.com/emails"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "schema": "public",
+        "table": "email_log",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "wish_id", "fieldValue": "={{$json.id}}" },
+            { "fieldId": "type", "fieldValue": "step_one" },
+            { "fieldId": "subject", "fieldValue": "Tu deseo ya está en marcha" },
+            { "fieldId": "body_preview", "fieldValue": "={{$json.email_body.substring(0,200)}}" }
+          ]
+        }
+      },
+      "name": "Registrar en email_log",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [940, 0]
+    },
+    {
+      "parameters": { "respondWith": "json", "responseBody": "={{ {\"received\": true} }}" },
+      "name": "Responder 200 a Stripe",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1160, 0]
+    }
+  ],
+  "connections": {
+    "Webhook Stripe": { "main": [[{ "node": "Extraer datos del pago", "type": "main", "index": 0 }]] },
+    "Extraer datos del pago": { "main": [[{ "node": "Activar deseo en Supabase", "type": "main", "index": 0 }]] },
+    "Activar deseo en Supabase": { "main": [[{ "node": "Leer deseo completo", "type": "main", "index": 0 }]] },
+    "Leer deseo completo": { "main": [[{ "node": "GLM - Generar correo Paso 1", "type": "main", "index": 0 }]] },
+    "GLM - Generar correo Paso 1": { "main": [[{ "node": "Preparar correo", "type": "main", "index": 0 }]] },
+    "Preparar correo": { "main": [[{ "node": "Enviar correo (Resend)", "type": "main", "index": 0 }]] },
+    "Enviar correo (Resend)": { "main": [[{ "node": "Registrar en email_log", "type": "main", "index": 0 }]] },
+    "Registrar en email_log": { "main": [[{ "node": "Responder 200 a Stripe", "type": "main", "index": 0 }]] }
+  }
+}

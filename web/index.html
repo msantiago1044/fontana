@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fontana — Pide tu deseo. La IA trabaja por él, 24 horas al día.</title>
+<meta name="description" content="Entrega tu moneda con fe. Fontana activa un sistema de inteligencia artificial que trabaja sin descanso, durante 30 días, para acompañarte hacia tu deseo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --gold: #c9a14a;
+    --gold-bright: #b8853a;
+    --serif: 'Cormorant Garamond', serif;
+    --sans: 'Inter', sans-serif;
+  }
+  /* ---------- TEMA: blanco (predeterminado) ---------- */
+  html[data-theme="light"]{
+    --night: #fbfaf7;
+    --night-2: #ffffff;
+    --stone: #f1eee6;
+    --gold: #b8853a;
+    --gold-bright: #9c6d28;
+    --water-bright: #2e6f8e;
+    --ivory: #1f2430;
+    --ivory-dim: #51564f;
+    --ivory-faint: #84807a;
+    --border-soft: rgba(20,20,10,.1);
+  }
+  /* ---------- TEMA: azul ---------- */
+  html[data-theme="blue"]{
+    --night: #1c4f73;
+    --night-2: #235f88;
+    --stone: #2a719d;
+    --gold: #f2cd80;
+    --gold-bright: #ffe3a3;
+    --water-bright: #aee2f5;
+    --ivory: #f5fbff;
+    --ivory-dim: #cfe8f5;
+    --ivory-faint: #9bc9e0;
+    --border-soft: rgba(244,241,234,.16);
+  }
+  /* ---------- TEMA: negro (original) ---------- */
+  html[data-theme="dark"]{
+    --night: #0c1016;
+    --night-2: #11161f;
+    --stone: #1a2029;
+    --gold: #c9a14a;
+    --gold-bright: #e8c873;
+    --water-bright: #6fa8b8;
+    --ivory: #f4f1ea;
+    --ivory-dim: #c9c6bc;
+    --ivory-faint: #8a8a82;
+    --border-soft: rgba(244,241,234,.1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--night);
+    color:var(--ivory);
+    font-family:var(--sans);
+    line-height:1.6;
+    overflow-x:hidden;
+    transition:background .35s ease, color .35s ease;
+  }
+  a{color:inherit;text-decoration:none;}
+  img{max-width:100%;display:block;}
+
+  /* ---------- texture ---------- */
+  .grain{
+    position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.04;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  html[data-theme="light"] .grain{opacity:.02;}
+
+  /* ---------- controles de tema / idioma (viven dentro del header) ---------- */
+  .header-right{display:flex;align-items:center;gap:16px;}
+  .prefs-bar{
+    display:flex;align-items:center;gap:8px;
+  }
+  .prefs-item{position:relative;flex-shrink:0;}
+  .prefs-btn{
+    background:var(--night-2);border:1px solid var(--border-soft);
+    color:var(--ivory-dim);font-size:12.5px;font-weight:600;
+    padding:7px 11px;border-radius:999px;cursor:pointer;
+    display:flex;align-items:center;gap:5px;transition:.2s;
+    font-family:var(--sans);white-space:nowrap;
+  }
+  .prefs-btn:hover{border-color:var(--gold);color:var(--ivory);}
+  .theme-dot{width:13px;height:13px;border-radius:50%;border:1px solid var(--border-soft);flex-shrink:0;}
+  .theme-menu, .lang-menu{
+    position:absolute;top:calc(100% + 8px);right:0;
+    background:var(--night-2);border:1px solid var(--border-soft);
+    border-radius:12px;padding:6px;min-width:140px;
+    box-shadow:0 12px 28px rgba(0,0,0,.25);
+    display:none;flex-direction:column;gap:2px;
+    z-index:70;
+  }
+  .theme-menu.show, .lang-menu.show{display:flex;}
+  .theme-menu button, .lang-menu button{
+    background:none;border:none;color:var(--ivory-dim);font-size:13px;
+    padding:8px 10px;border-radius:8px;text-align:left;cursor:pointer;
+    display:flex;align-items:center;gap:9px;font-family:var(--sans);
+    white-space:nowrap;width:100%;
+  }
+  .theme-menu button:hover, .lang-menu button:hover{background:var(--stone);color:var(--ivory);}
+  .theme-menu button.active, .lang-menu button.active{color:var(--gold-bright);font-weight:600;}
+  @media(max-width:720px){
+    .header-right{gap:10px;}
+    .prefs-bar{gap:6px;}
+    .prefs-btn span.label{display:none;}
+    .prefs-btn{padding:7px 9px;}
+  }
+  @media(max-width:520px){
+    .nav-cta{padding:9px 14px;font-size:12px;}
+  }
+
+  /* ---------- nav ---------- */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:40;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:22px 6vw;
+    background:linear-gradient(to bottom, rgba(12,16,22,.92), transparent);
+  }
+  .logo{font-family:var(--serif);font-size:24px;color:var(--ivory);font-weight:500;display:flex;align-items:center;gap:10px;}
+  .logo-text{letter-spacing:.04em;display:inline-block;}
+  .logo em{color:var(--gold-bright);font-style:normal;margin:0;padding:0;display:inline;}
+  .logo svg{flex-shrink:0;}
+  nav.links{display:flex;gap:32px;font-size:14px;color:var(--ivory-dim);}
+  nav.links a:hover{color:var(--gold-bright);}
+  .nav-cta{
+    border:1px solid var(--gold);color:var(--gold-bright);
+    padding:9px 20px;border-radius:999px;font-size:13px;letter-spacing:.02em;
+    transition:.25s;white-space:nowrap;flex-shrink:0;
+  }
+  .nav-cta:hover{background:var(--gold);color:var(--night);}
+  @media(max-width:720px){nav.links{display:none;}}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;min-height:100vh;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;
+    padding:140px 6vw 80px;overflow:hidden;
+  }
+  .ripple-field{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:900px;height:900px;pointer-events:none;z-index:0;
+  }
+  .ripple{
+    position:absolute;top:50%;left:50%;
+    width:60px;height:60px;border-radius:50%;
+    border:1px solid rgba(201,161,74,.35);
+    transform:translate(-50%,-50%);
+    animation:rippleOut 6s ease-out infinite;
+  }
+  .ripple.r2{animation-delay:2s;}
+  .ripple.r3{animation-delay:4s;}
+  @keyframes rippleOut{
+    0%{width:20px;height:20px;opacity:.9;border-color:rgba(232,200,115,.7);}
+    100%{width:880px;height:880px;opacity:0;border-color:rgba(201,161,74,0);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .ripple{animation:none;opacity:.15;width:300px;height:300px;}
+  }
+  .coin{
+    width:46px;height:46px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold) 60%, #8a6a26 100%);
+    margin:0 auto 28px;position:relative;z-index:2;
+    box-shadow:0 0 24px rgba(201,161,74,.35);
+    animation:coinFloat 4s ease-in-out infinite;
+  }
+  @keyframes coinFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+  .eyebrow{
+    position:relative;z-index:2;
+    font-size:13px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--gold-bright);margin-bottom:18px;font-weight:500;
+  }
+  h1{
+    position:relative;z-index:2;
+    font-family:var(--serif);font-weight:500;
+    font-size:clamp(40px,7vw,84px);line-height:1.05;
+    max-width:900px;color:var(--ivory);
+    margin-bottom:24px;
+  }
+  h1 em{font-style:italic;color:var(--gold-bright);}
+  .hero p.lede{
+    position:relative;z-index:2;
+    font-size:clamp(16px,2vw,20px);color:var(--ivory-dim);
+    max-width:560px;margin-bottom:40px;
+  }
+  .cta-row{position:relative;z-index:2;display:flex;gap:16px;flex-wrap:wrap;justify-content:center;}
+  .btn-primary{
+    background:linear-gradient(135deg,var(--gold-bright),var(--gold));
+    color:var(--night);font-weight:600;font-size:16px;
+    padding:16px 36px;border-radius:999px;border:none;cursor:pointer;
+    transition:.25s;box-shadow:0 8px 24px rgba(201,161,74,.25);
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(201,161,74,.4);}
+  .btn-ghost{
+    background:transparent;border:1px solid rgba(244,241,234,.25);color:var(--ivory);
+    font-size:16px;padding:16px 32px;border-radius:999px;cursor:pointer;transition:.25s;
+  }
+  .btn-ghost:hover{border-color:var(--ivory);}
+  .hero-foot{
+    position:relative;z-index:2;margin-top:28px;font-size:13px;color:var(--ivory-faint);
+  }
+
+  /* ---------- section shell ---------- */
+  section{padding:110px 6vw;position:relative;z-index:2;}
+  .section-inner{max-width:1080px;margin:0 auto;}
+  .kicker{
+    font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--water-bright);
+    margin-bottom:14px;font-weight:600;
+  }
+  h2{font-family:var(--serif);font-size:clamp(30px,4vw,46px);font-weight:500;margin-bottom:20px;max-width:680px;}
+  .lead-text{color:var(--ivory-dim);font-size:18px;max-width:620px;margin-bottom:56px;}
+
+  /* ---------- how it works ---------- */
+  .how-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(244,241,234,.08);border-radius:18px;overflow:hidden;}
+  .how-step{background:var(--night-2);padding:36px 28px;position:relative;}
+  .how-num{font-family:var(--serif);font-size:15px;color:var(--gold-bright);margin-bottom:18px;letter-spacing:.05em;}
+  .how-step h3{font-size:18px;font-weight:600;margin-bottom:10px;color:var(--ivory);}
+  .how-step p{font-size:14.5px;color:var(--ivory-dim);}
+  @media(max-width:900px){.how-grid{grid-template-columns:1fr;}}
+
+  /* ---------- the cycle (signature element) ---------- */
+  .cycle-wrap{
+    background:var(--stone);border-radius:24px;padding:64px 5vw;
+    position:relative;overflow:hidden;
+  }
+  .cycle-diagram{
+    display:flex;align-items:center;justify-content:center;gap:0;
+    flex-wrap:wrap;margin:48px 0;position:relative;
+  }
+  .cycle-node{
+    width:150px;height:150px;border-radius:50%;
+    border:1px solid rgba(201,161,74,.3);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:16px;background:rgba(201,161,74,.04);
+    transition:.3s;
+  }
+  .cycle-node.active{
+    border-color:var(--gold-bright);background:rgba(201,161,74,.12);
+    box-shadow:0 0 30px rgba(201,161,74,.2);
+  }
+  .cycle-node .ti{font-size:13px;color:var(--ivory-faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+  .cycle-node .tt{font-size:15px;font-weight:600;color:var(--ivory);}
+  .cycle-arrow{font-family:var(--serif);font-size:28px;color:var(--gold);padding:0 18px;}
+  @media(max-width:760px){
+    .cycle-diagram{flex-direction:column;gap:20px;}
+    .cycle-arrow{transform:rotate(90deg);padding:4px;}
+  }
+  .cycle-loop-label{
+    text-align:center;color:var(--gold-bright);font-size:14px;font-style:italic;font-family:var(--serif);
+    margin-top:8px;
+  }
+
+  /* ---------- pricing / wish form preview ---------- */
+  .offer{
+    display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;
+  }
+  @media(max-width:900px){.offer{grid-template-columns:1fr;}}
+  .offer-card{
+    background:var(--night-2);border:1px solid rgba(244,241,234,.1);
+    border-radius:20px;padding:40px;
+  }
+  .offer-card .amount{font-family:var(--serif);font-size:56px;color:var(--gold-bright);margin-bottom:6px;}
+  .offer-card .amount span{font-size:20px;color:var(--ivory-faint);}
+  .offer-list{margin:28px 0;}
+  .offer-list li{
+    list-style:none;display:flex;gap:12px;margin-bottom:14px;font-size:15px;color:var(--ivory-dim);
+  }
+  .offer-list li::before{content:"✓";color:var(--gold-bright);font-weight:700;}
+
+  /* ---------- ranking de donadores ---------- */
+  .ranking-wrap{
+    margin-top:64px;background:var(--stone);border-radius:20px;
+    padding:44px 5vw;
+  }
+  .ranking-head{margin-bottom:28px;}
+  .ranking-head h3{font-family:var(--serif);font-size:24px;color:var(--ivory);margin-bottom:6px;font-weight:500;}
+  .ranking-head p{color:var(--ivory-faint);font-size:14px;}
+  .ranking-list{display:flex;flex-direction:column;gap:10px;max-width:520px;}
+  .rank-row{
+    display:flex;align-items:center;gap:16px;
+    background:var(--night-2);border:1px solid rgba(244,241,234,.07);
+    border-radius:12px;padding:14px 20px;
+  }
+  .rank-row.first{
+    border-color:rgba(201,161,74,.5);
+    background:linear-gradient(90deg, rgba(201,161,74,.1), rgba(201,161,74,.02));
+  }
+  .rank-pos{
+    font-family:var(--serif);font-size:18px;color:var(--gold-bright);
+    width:28px;text-align:center;flex-shrink:0;
+  }
+  .rank-row.first .rank-pos{font-size:22px;}
+  .rank-name{flex:1;font-size:15px;color:var(--ivory);font-weight:500;}
+  .rank-amount{font-size:14px;color:var(--gold-bright);font-weight:600;}
+  .ranking-note{font-size:12px;color:var(--ivory-faint);margin-top:18px;}
+
+  /* ---------- testimony / honesty block ---------- */
+  .honesty{
+    border-left:2px solid var(--gold);padding-left:28px;max-width:680px;
+  }
+  .honesty p{color:var(--ivory-dim);font-size:16px;margin-bottom:14px;}
+  .honesty p strong{color:var(--ivory);}
+
+  /* ---------- faq ---------- */
+  .faq-item{
+    border-bottom:1px solid rgba(244,241,234,.1);padding:24px 0;cursor:pointer;
+  }
+  .faq-q{display:flex;justify-content:space-between;align-items:center;font-size:17px;font-weight:500;color:var(--ivory);}
+  .faq-q .plus{font-size:22px;color:var(--gold-bright);transition:.25s;}
+  .faq-item.open .plus{transform:rotate(45deg);}
+  .faq-a{max-height:0;overflow:hidden;transition:.3s;color:var(--ivory-dim);font-size:15px;}
+  .faq-item.open .faq-a{max-height:200px;margin-top:14px;}
+
+  /* ---------- footer ---------- */
+  footer{
+    padding:60px 6vw 40px;border-top:1px solid rgba(244,241,234,.08);
+    display:flex;flex-direction:column;gap:24px;
+  }
+  .footer-top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:24px;}
+  .footer-links{display:flex;gap:28px;flex-wrap:wrap;font-size:14px;color:var(--ivory-faint);}
+  .footer-links a:hover{color:var(--gold-bright);}
+  .footer-fine{font-size:12.5px;color:var(--ivory-faint);max-width:760px;line-height:1.7;}
+
+  /* ---------- modal (wish form) ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(4px);
+    display:none;align-items:center;justify-content:center;z-index:100;padding:24px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal{
+    background:var(--night-2);border:1px solid rgba(201,161,74,.25);
+    border-radius:20px;max-width:480px;width:100%;padding:40px;
+    max-height:90vh;overflow-y:auto;
+  }
+  .modal h3{font-family:var(--serif);font-size:26px;margin-bottom:8px;}
+  .modal p.sub{color:var(--ivory-dim);font-size:14px;margin-bottom:24px;}
+  .field{margin-bottom:20px;}
+  .field label{display:block;font-size:13px;color:var(--ivory-dim);margin-bottom:8px;}
+  .field textarea, .field input, .field select{
+    width:100%;background:var(--night);border:1px solid rgba(244,241,234,.15);
+    border-radius:10px;padding:12px 14px;color:var(--ivory);font-family:var(--sans);font-size:14.5px;
+    resize:vertical;
+  }
+  .field textarea:focus, .field input:focus{outline:none;border-color:var(--gold);}
+  .char-count{font-size:12px;color:var(--ivory-faint);text-align:right;margin-top:4px;}
+  .modal-close{
+    background:none;border:none;color:var(--ivory-faint);font-size:24px;cursor:pointer;
+    float:right;line-height:1;
+  }
+  .google-btn{
+    width:100%;background:#fff;color:#1a1a1a;border:1px solid rgba(0,0,0,.15);border-radius:10px;
+    padding:13px;font-weight:600;font-size:14.5px;display:flex;align-items:center;justify-content:center;
+    gap:10px;cursor:pointer;margin-bottom:14px;
+  }
+  .auth-note{font-size:12.5px;color:var(--ivory-faint);text-align:center;margin-top:10px;}
+
+  .test-badge{
+    position:fixed;bottom:20px;left:20px;z-index:50;
+    background:rgba(201,161,74,.12);border:1px solid rgba(201,161,74,.4);
+    color:var(--gold-bright);font-size:12px;padding:8px 16px;border-radius:999px;
+    backdrop-filter:blur(6px);
+  }
+
+  :focus-visible{outline:2px solid var(--gold-bright);outline-offset:2px;}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<div class="grain"></div>
+<div class="test-badge" data-i18n="testBadge">🧪 Modo de prueba — sin pagos ni correos reales</div>
+
+<header>
+  <div class="logo">
+    <svg width="28" height="28" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <radialGradient id="coinGradHeader" cx="38%" cy="32%" r="75%">
+          <stop offset="0%" stop-color="#f2dca0"/>
+          <stop offset="55%" stop-color="#c9a14a"/>
+          <stop offset="100%" stop-color="#93732e"/>
+        </radialGradient>
+      </defs>
+      <circle cx="16" cy="16" r="14" fill="none" stroke="#c9a14a" stroke-width="1.1" opacity="0.45"/>
+      <circle cx="16" cy="16" r="10.5" fill="url(#coinGradHeader)" stroke="#f2dca0" stroke-width="0.6" stroke-opacity="0.5"/>
+    </svg>
+    <span class="logo-text">font<em>a</em>na</span>
+  </div>
+  <nav class="links">
+    <a href="#como-funciona" data-i18n="nav.how">Cómo funciona</a>
+    <a href="#ciclo" data-i18n="nav.system">El sistema</a>
+    <a href="#contribucion" data-i18n="nav.contribution">Contribución</a>
+    <a href="#preguntas" data-i18n="nav.faq">Preguntas</a>
+  </nav>
+  <div class="header-right">
+    <div class="prefs-bar">
+      <div class="prefs-item">
+        <button class="prefs-btn" id="themeToggleBtn" onclick="toggleMenu('themeMenu')" aria-label="Cambiar tema">
+          <span class="theme-dot" id="themeDot"></span>
+          <span class="label" id="themeLabel">Blanco</span>
+        </button>
+        <div class="theme-menu" id="themeMenu">
+          <button onclick="setTheme('light')" data-theme-option="light"><span class="theme-dot" style="background:#fbfaf7;border-color:#b8853a;"></span> <span data-i18n="theme.light">Blanco</span></button>
+          <button onclick="setTheme('blue')" data-theme-option="blue"><span class="theme-dot" style="background:#235f88;"></span> <span data-i18n="theme.blue">Azul</span></button>
+          <button onclick="setTheme('dark')" data-theme-option="dark"><span class="theme-dot" style="background:#0c1016;"></span> <span data-i18n="theme.dark">Negro</span></button>
+        </div>
+      </div>
+      <div class="prefs-item">
+        <button class="prefs-btn" onclick="toggleMenu('langMenu')" aria-label="Cambiar idioma">
+          <span id="langFlagLabel">🌐 ES</span>
+        </button>
+        <div class="lang-menu" id="langMenu">
+          <button onclick="setLang('es')" data-lang-option="es">🇪🇸 Español</button>
+          <button onclick="setLang('en')" data-lang-option="en">🇬🇧 English</button>
+        </div>
+      </div>
+    </div>
+    <a href="#contribucion" class="nav-cta" data-i18n="nav.cta">Pedir mi deseo</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="ripple-field" aria-hidden="true">
+    <div class="ripple r1"></div>
+    <div class="ripple r2"></div>
+    <div class="ripple r3"></div>
+  </div>
+  <div class="coin" aria-hidden="true"></div>
+  <div class="eyebrow" data-i18n="hero.eyebrow">Fe y trabajo</div>
+  <h1 data-i18n="hero.title">Entrega tu moneda. <br><em>Algo se queda trabajando</em> en tu deseo.</h1>
+  <p class="lede" data-i18n="hero.lede">Fontana es el ritual de siempre — una moneda, un deseo, una intención — acompañado de un sistema de inteligencia artificial que no descansa: trabaja tu deseo prompt sobre prompt, 24 horas al día, durante 30 días, y te mantiene informado de cada avance.</p>
+  <div class="cta-row">
+    <button class="btn-primary" onclick="openModal()" data-i18n="hero.ctaPrimary">Pedir mi deseo desde 1 USD</button>
+    <a href="#como-funciona" class="btn-ghost" data-i18n="hero.ctaGhost">Ver cómo funciona</a>
+  </div>
+  <p class="hero-foot" data-i18n="hero.foot">Un deseo activo por persona · Tu correo es solo tuyo · Cancela las notificaciones cuando quieras</p>
+</section>
+
+<section id="como-funciona">
+  <div class="section-inner">
+    <div class="kicker" data-i18n="how.kicker">El ritual</div>
+    <h2 data-i18n="how.title">Cuatro pasos, un solo deseo.</h2>
+    <p class="lead-text" data-i18n="how.lead">No es magia. Es un compromiso: tú entregas algo con intención, y a cambio algo trabaja por ti sin pausa.</p>
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-num">I.</div>
+        <h3 data-i18n="how.step1.title">Te identificas</h3>
+        <p data-i18n="how.step1.body">Inicias sesión con tu cuenta de Google. Así nos asegura que tu deseo es realmente tuyo, y solo tienes uno.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">II.</div>
+        <h3 data-i18n="how.step2.title">Entregas tu moneda</h3>
+        <p data-i18n="how.step2.body">Desde 1 dólar, el gesto simbólico que activa tu deseo. Pago seguro, una sola vez.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">III.</div>
+        <h3 data-i18n="how.step3.title">Formulas tu deseo</h3>
+        <p data-i18n="how.step3.body">Escribes lo que quieres lograr, en tus palabras. Sin fórmulas mágicas, solo lo que de verdad sientes.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">IV.</div>
+        <h3 data-i18n="how.step4.title">El sistema se enciende</h3>
+        <p data-i18n="how.step4.body">Recibes tu primer paso en minutos. Luego, un acompañamiento continuo durante 30 días.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="ciclo">
+  <div class="section-inner">
+    <div class="kicker" data-i18n="cycle.kicker">Lo que pasa después</div>
+    <h2 data-i18n="cycle.title">Una IA que no se detiene hasta que algo se mueve.</h2>
+    <p class="lead-text" data-i18n="cycle.lead">Tu deseo entra a un ciclo de trabajo continuo durante las 720 horas de tu mes. La inteligencia artificial vuelve sobre él una y otra vez — prompt sobre prompt — refinando un plan de acción real, y te escribe en el momento que detecta oportuno para avanzar, hasta que ese plan está completo o tu ciclo termina.</p>
+    <div class="cycle-wrap">
+      <div class="cycle-diagram">
+        <div class="cycle-node active"><div class="ti" data-i18n="cycle.n1.top">Paso 1</div><div class="tt" data-i18n="cycle.n1.bottom">Primer correo</div></div>
+        <div class="cycle-arrow">→</div>
+        <div class="cycle-node"><div class="ti" data-i18n="cycle.n2.top">Ciclo IA</div><div class="tt" data-i18n="cycle.n2.bottom">Indaga y planea</div></div>
+        <div class="cycle-arrow">→</div>
+        <div class="cycle-node"><div class="ti" data-i18n="cycle.n3.top">720 horas</div><div class="tt" data-i18n="cycle.n3.bottom">Correos en el momento justo</div></div>
+        <div class="cycle-arrow">→</div>
+        <div class="cycle-node"><div class="ti" data-i18n="cycle.n4.top">Cierre del mes</div><div class="tt" data-i18n="cycle.n4.bottom">Correo final</div></div>
+      </div>
+      <p class="cycle-loop-label" data-i18n="cycle.loopLabel">↻ El ciclo IA se repite internamente, ajustando el plan según el avance real de tu deseo</p>
+    </div>
+  </div>
+</section>
+
+<section id="honestidad">
+  <div class="section-inner">
+    <div class="kicker" data-i18n="honesty.kicker">Lo que sí, lo que no</div>
+    <h2 style="max-width:600px" data-i18n="honesty.title">Te lo decimos claro, como se merece un deseo de verdad.</h2>
+    <div class="honesty">
+      <p><strong data-i18n="honesty.p1.strong">Fontana no te promete que tu deseo se va a cumplir.</strong> <span data-i18n="honesty.p1.rest">Ninguna fuente lo hizo nunca, y nadie puede prometerte eso con honestidad.</span></p>
+      <p><strong data-i18n="honesty.p2.strong">Lo que sí te prometemos:</strong> <span data-i18n="honesty.p2.rest">un sistema que indaga en tu deseo todos los días durante un mes, que te mantiene informado de cómo va, y que en algunos casos puede incluso actuar directamente por ti — por ejemplo, conectándote con la persona indicada. La fe pone la intención. El trabajo —el tuyo, y el de la IA que trabaja contigo— pone el camino.</span></p>
+    </div>
+  </div>
+</section>
+
+<section id="contribucion">
+  <div class="section-inner">
+    <div class="kicker" data-i18n="offer.kicker">La contribución</div>
+    <h2 data-i18n="offer.title">Desde 1 dólar. Sin letra pequeña escondida.</h2>
+    <div class="offer">
+      <div class="offer-card">
+        <div class="amount">$1<span data-i18n="offer.amountSuffix">USD en adelante</span></div>
+        <p style="color:var(--ivory-faint);font-size:14px;" data-i18n="offer.amountSub">Contribución única · Un deseo por persona</p>
+        <ul class="offer-list">
+          <li data-i18n="offer.li1">Tu deseo entra al sistema de inteligencia artificial</li>
+          <li data-i18n="offer.li2">Correo inmediato con tu primer paso a seguir</li>
+          <li data-i18n="offer.li3">Correos de avance durante las 720 horas de tu mes, en el momento que el sistema detecta oportuno</li>
+          <li data-i18n="offer.li4">En algunos casos, la IA puede actuar directamente en favor de tu deseo</li>
+        </ul>
+        <button class="btn-primary" style="width:100%" onclick="openModal()" data-i18n="offer.cta">Pedir mi deseo</button>
+      </div>
+      <div>
+        <p style="color:var(--ivory-dim);font-size:16px;margin-bottom:16px;" data-i18n="offer.why">¿Por qué empieza en 1 dólar? Porque el monto no es el punto — el gesto sí. Algunas personas eligen dar más, como ofrenda más grande a su propio compromiso. Tú decides cuánta fe le pones.</p>
+        <p style="color:var(--ivory-faint);font-size:13.5px;" data-i18n="offer.stripe">Pago procesado de forma segura por Stripe. No almacenamos los datos de tu tarjeta.</p>
+      </div>
+    </div>
+
+    <div class="ranking-wrap">
+      <div class="ranking-head">
+        <h3 data-i18n="ranking.title">La fuente recuerda a quienes más han dado</h3>
+        <p data-i18n="ranking.sub">Un ranking público de fe — elige tu apodo al contribuir y aparece aquí.</p>
+      </div>
+      <div class="ranking-list" id="rankingList"><!-- se llena por JS --></div>
+      <p class="ranking-note" data-i18n="ranking.note">📝 Datos de ejemplo en este modo de prueba. El ranking real se actualiza con cada contribución.</p>
+    </div>
+  </div>
+</section>
+
+<section id="preguntas">
+  <div class="section-inner">
+    <div class="kicker" data-i18n="faq.kicker">Preguntas frecuentes</div>
+    <h2 data-i18n="faq.title">Antes de pedir tu deseo</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q"><span data-i18n="faq.q1">¿Por qué solo puedo pedir un deseo?</span><span class="plus">+</span></div>
+        <div class="faq-a" data-i18n="faq.a1">Porque un deseo concentrado tiene más fuerza que uno disperso. Fontana está diseñado para que toda tu fe y todo el trabajo del sistema se enfoquen en una sola intención a la vez — la tuya.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span data-i18n="faq.q2">¿Qué tanto puede avanzar mi deseo en 30 días?</span><span class="plus">+</span></div>
+        <div class="faq-a" data-i18n="faq.a2">Más de lo que muchas personas logran solas en ese tiempo. Durante las 720 horas de tu mes, el sistema trabaja activamente en tu deseo, te mantiene informado de cómo va, y en algunos casos puede incluso actuar directamente en tu favor. Lo que avances después, sigue siendo tuyo.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span data-i18n="faq.q3">¿Qué hace la inteligencia artificial exactamente?</span><span class="plus">+</span></div>
+        <div class="faq-a" data-i18n="faq.a3">Primero indaga: estudia tu deseo con calma para conocerte a ti y entender todos los aspectos de lo que pides. Luego analiza y genera un plan de acción personalizado. A partir de ahí, te escribe en el momento que detecta el avance adecuado — y cuando el deseo lo permite, puede actuar directamente para acercarte a él.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span data-i18n="faq.q4">¿Es esto un servicio de adivinación o esoterismo?</span><span class="plus">+</span></div>
+        <div class="faq-a" data-i18n="faq.a4">No. Es un ritual de intención real, combinado con un sistema de IA que trabaja activamente por ti. No leemos el futuro — construimos el camino hacia él, contigo.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span data-i18n="faq.q5">¿Qué es el ranking de donadores?</span><span class="plus">+</span></div>
+        <div class="faq-a" data-i18n="faq.a5">Un reconocimiento público a quienes más fe (y contribución) han puesto en la Fuente. Eliges un apodo al donar — nunca tu nombre real si no quieres — y tu posición se actualiza según el total que hayas contribuido.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-top">
+    <div class="logo">
+      <svg width="24" height="24" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <radialGradient id="coinGradFooter" cx="38%" cy="32%" r="75%">
+            <stop offset="0%" stop-color="#f2dca0"/>
+            <stop offset="55%" stop-color="#c9a14a"/>
+            <stop offset="100%" stop-color="#93732e"/>
+          </radialGradient>
+        </defs>
+        <circle cx="16" cy="16" r="14" fill="none" stroke="#c9a14a" stroke-width="1.1" opacity="0.45"/>
+        <circle cx="16" cy="16" r="10.5" fill="url(#coinGradFooter)" stroke="#f2dca0" stroke-width="0.6" stroke-opacity="0.5"/>
+      </svg>
+      <span class="logo-text">font<em>a</em>na</span>
+    </div>
+    <div class="footer-links">
+      <a href="/terminos.html" data-i18n="footer.terms">Términos y condiciones</a>
+      <a href="/privacidad.html" data-i18n="footer.privacy">Privacidad</a>
+      <a href="/reembolsos.html" data-i18n="footer.refunds">Reembolsos</a>
+      <a href="mailto:fontanadigital.ai@gmail.com" data-i18n="footer.contact">Contacto</a>
+    </div>
+  </div>
+  <p class="footer-fine" data-i18n="footer.fine">Fontana es un servicio de inspiración y acompañamiento personal apoyado en inteligencia artificial. No constituye asesoría financiera, médica, legal ni psicológica, y no garantiza el cumplimiento de ningún deseo o resultado. Debes tener 18 años o más para usar este servicio. © {year} Fontana.</p>
+</footer>
+
+<!-- ===================== MODAL: WISH FORM ===================== -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()" aria-label="Cerrar">×</button>
+    <div id="step-auth">
+      <h3 data-i18n="modal.auth.title">Identifícate</h3>
+      <p class="sub" data-i18n="modal.auth.sub">Para que tu deseo sea único y solo tuyo.</p>
+      <button class="google-btn" onclick="signInWithGoogle()" id="googleLoginBtn">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.12-.85 2.07-1.8 2.7v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.6z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.2l-2.92-2.26c-.81.54-1.84.87-3.04.87-2.34 0-4.32-1.58-5.03-3.71H.96v2.33A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.7A5.41 5.41 0 0 1 3.68 9c0-.59.1-1.16.29-1.7V4.97H.96A8.997 8.997 0 0 0 0 9c0 1.45.35 2.83.96 4.03l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59C13.46.89 11.43 0 9 0A8.997 8.997 0 0 0 .96 4.97l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+        <span data-i18n="modal.auth.google">Continuar con Google</span>
+      </button>
+      <p class="auth-note"><span data-i18n="modal.auth.note">Al continuar, aceptas nuestros</span> <a href="/terminos.html" style="text-decoration:underline" data-i18n="modal.auth.terms">Términos</a> <span data-i18n="modal.auth.and">y</span> <a href="/privacidad.html" style="text-decoration:underline" data-i18n="modal.auth.privacy">Política de Privacidad</a>.</p>
+    </div>
+
+    <div id="step-wish" style="display:none">
+      <h3 data-i18n="modal.wish.title">Tu deseo</h3>
+      <p class="sub" data-i18n="modal.wish.sub">Escríbelo como lo sientes. La IA lo va a leer con cuidado.</p>
+      <div class="field">
+        <label for="wishCategory" data-i18n="modal.wish.catLabel">¿Con qué se relaciona tu deseo?</label>
+        <select id="wishCategory">
+          <option value="love" data-i18n="cat.love">Amor y relaciones</option>
+          <option value="money" data-i18n="cat.money">Dinero y trabajo</option>
+          <option value="health" data-i18n="cat.health">Salud y bienestar</option>
+          <option value="family" data-i18n="cat.family">Familia</option>
+          <option value="growth" data-i18n="cat.growth">Crecimiento personal</option>
+          <option value="other" data-i18n="cat.other">Otro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="wishText" data-i18n="modal.wish.textLabel">Describe tu deseo</label>
+        <textarea id="wishText" rows="5" maxlength="600" oninput="updateCount()" data-i18n-placeholder="modal.wish.textPlaceholder" placeholder="Quiero..."></textarea>
+        <div class="char-count"><span id="count">0</span>/600</div>
+      </div>
+      <div class="field">
+        <label for="wishEmail" data-i18n="modal.wish.emailLabel">Tu correo (a donde llegará tu acompañamiento)</label>
+        <input type="email" id="wishEmail" data-i18n-placeholder="modal.wish.emailPlaceholder" placeholder="tucorreo@ejemplo.com">
+      </div>
+      <button class="btn-primary" style="width:100%" onclick="goToPayment()" data-i18n="modal.wish.cta">Continuar a la contribución →</button>
+    </div>
+
+    <div id="step-payment" style="display:none">
+      <h3 data-i18n="modal.payment.title">Tu contribución</h3>
+      <p class="sub" data-i18n="modal.payment.sub">El gesto que activa tu deseo en el sistema.</p>
+      <div class="field">
+        <label for="amount" data-i18n="modal.payment.amountLabel">Monto (USD, mínimo 1)</label>
+        <input type="number" id="amount" min="1" value="3" step="1">
+      </div>
+      <div class="field">
+        <label for="donorAlias" data-i18n="modal.payment.aliasLabel">Elige tu apodo para el ranking de donadores</label>
+        <input type="text" id="donorAlias" maxlength="24" data-i18n-placeholder="modal.payment.aliasPlaceholder" placeholder="Ej. Viajero777">
+        <p style="font-size:12px;color:var(--ivory-faint);margin-top:6px;" data-i18n="modal.payment.aliasNote">Este apodo es público y aparece en el ranking. No uses tu nombre real si prefieres mantenerlo privado.</p>
+      </div>
+      <p style="font-size:13px;color:var(--ivory-faint);margin-bottom:18px;"><span data-i18n="modal.payment.stripeNote">Serás redirigido a Stripe Checkout para completar el pago de forma segura.</span> <em data-i18n="modal.payment.testNote">(Modo de prueba: este botón simula el pago, no se conecta a Stripe todavía.)</em></p>
+      <button class="btn-primary" style="width:100%" onclick="simulatePayment()" data-i18n="modal.payment.cta">Ir a pagar →</button>
+    </div>
+
+    <div id="step-processing" style="display:none;text-align:center;padding:40px 0;">
+      <div class="coin" style="margin-bottom:24px;"></div>
+      <h3 style="margin-bottom:8px;" data-i18n="modal.processing.title">Tu moneda cae en la fuente...</h3>
+      <p class="sub" data-i18n="modal.processing.sub">Procesando tu contribución</p>
+    </div>
+
+    <div id="step-confirmed" style="display:none">
+      <h3 data-i18n="modal.confirmed.title">Tu deseo ya está en marcha 🪙</h3>
+      <p class="sub" data-i18n="modal.confirmed.sub">Esto es lo que recibirás en tu correo en los próximos minutos:</p>
+      <div style="background:var(--night);border:1px solid rgba(201,161,74,.25);border-radius:14px;padding:24px;margin-bottom:20px;">
+        <p style="font-size:12px;color:var(--ivory-faint);margin-bottom:4px;" data-i18n="modal.confirmed.from">De: La Fuente — Fontana</p>
+        <p style="font-size:13px;color:var(--ivory-faint);margin-bottom:14px;" data-i18n="modal.confirmed.subject">Asunto: Tu deseo ya está en marcha 🪙</p>
+        <p id="previewEmailBody" style="font-size:14.5px;color:var(--ivory-dim);line-height:1.7;"></p>
+        <p style="font-size:12px;color:var(--ivory-faint);margin-top:16px;" data-i18n="modal.confirmed.footer">La Fuente seguirá trabajando en tu deseo durante las próximas 720 horas. — Fontana</p>
+      </div>
+      <p style="font-size:12.5px;color:var(--ivory-faint);margin-bottom:20px;" data-i18n="modal.confirmed.testNote">📝 Nota de prueba: este texto es un ejemplo de plantilla. El correo real lo redactará la IA (GLM) de forma personalizada según tu deseo, una vez conectemos las automatizaciones.</p>
+      <button class="btn-primary" style="width:100%" onclick="goToIdentityForm()" data-i18n="modal.confirmed.cta">Continuar →</button>
+    </div>
+
+    <div id="step-identity" style="display:none">
+      <h3 data-i18n="modal.identity.title">Ayúdanos a conocerte mejor</h3>
+      <p class="sub" data-i18n="modal.identity.sub">Este segundo correo (opcional) nos ayuda a personalizar mejor el trabajo de la IA sobre tu deseo. Puedes omitirlo y tu ciclo de 30 días arranca igual.</p>
+      <div class="field">
+        <label for="identityName" data-i18n="modal.identity.nameLabel">¿Cómo te llamas?</label>
+        <input type="text" id="identityName" data-i18n-placeholder="modal.identity.namePlaceholder" placeholder="Tu nombre">
+      </div>
+      <div class="field">
+        <label for="identityAge" data-i18n="modal.identity.ageLabel">¿Cuántos años tienes?</label>
+        <input type="number" id="identityAge" min="18" max="110" data-i18n-placeholder="modal.identity.agePlaceholder" placeholder="Ej. 29">
+      </div>
+      <div class="field">
+        <label for="identityContext" data-i18n="modal.identity.contextLabel">Cuéntanos un poco más de contexto sobre tu deseo</label>
+        <textarea id="identityContext" rows="3" maxlength="400" data-i18n-placeholder="modal.identity.contextPlaceholder" placeholder="Lo que creas que ayuda a entender mejor tu situación..."></textarea>
+      </div>
+      <button class="btn-primary" style="width:100%" onclick="submitIdentityForm()" data-i18n="modal.identity.cta">Enviar datos</button>
+      <button class="btn-ghost" style="width:100%;margin-top:10px;" onclick="closeModal()" data-i18n="modal.identity.skip">Omitir por ahora</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   SISTEMA DE TEMAS (blanco / azul / negro) e IDIOMAS (es / en)
+   ============================================================ */
+const THEME_LABELS = { light: { es: 'Blanco', en: 'White' }, blue: { es: 'Azul', en: 'Blue' }, dark: { es: 'Negro', en: 'Black' } };
+const THEME_DOTS = { light: '#fbfaf7', blue: '#235f88', dark: '#0c1016' };
+
+function setTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('fontana_theme', theme);
+  document.getElementById('themeDot').style.background = THEME_DOTS[theme];
+  document.getElementById('themeDot').style.borderColor = theme === 'light' ? '#b8853a' : 'transparent';
+  const lang = localStorage.getItem('fontana_lang') || 'es';
+  document.getElementById('themeLabel').textContent = THEME_LABELS[theme][lang];
+  document.querySelectorAll('[data-theme-option]').forEach(b => b.classList.toggle('active', b.dataset.themeOption === theme));
+  closeAllMenus();
+}
+
+function setLang(lang){
+  localStorage.setItem('fontana_lang', lang);
+  document.documentElement.setAttribute('lang', lang);
+  document.getElementById('langFlagLabel').textContent = lang === 'es' ? '🌐 ES' : '🌐 EN';
+  document.querySelectorAll('[data-lang-option]').forEach(b => b.classList.toggle('active', b.dataset.langOption === lang));
+  applyTranslations(lang);
+  const theme = localStorage.getItem('fontana_theme') || 'light';
+  document.getElementById('themeLabel').textContent = THEME_LABELS[theme][lang];
+  closeAllMenus();
+}
+
+function toggleMenu(id){
+  const menu = document.getElementById(id);
+  const isOpen = menu.classList.contains('show');
+  closeAllMenus();
+  if(!isOpen) menu.classList.add('show');
+}
+function closeAllMenus(){
+  document.getElementById('themeMenu').classList.remove('show');
+  document.getElementById('langMenu').classList.remove('show');
+}
+document.addEventListener('click', (e) => {
+  if(!e.target.closest('.prefs-item')) closeAllMenus();
+});
+
+function getNested(obj, path){
+  return path.split('.').reduce((o,k) => (o && o[k] !== undefined) ? o[k] : null, obj);
+}
+function applyTranslations(lang){
+  const dict = I18N[lang];
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const text = getNested(dict, el.dataset.i18n);
+    if(text !== null) el.innerHTML = text;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const text = getNested(dict, el.dataset.i18nPlaceholder);
+    if(text !== null) el.setAttribute('placeholder', text);
+  });
+  // re-pinta el año (footer.fine reemplaza el innerHTML, hay que reinsertar el span)
+  const fineEl = document.querySelector('[data-i18n="footer.fine"]');
+  if(fineEl) fineEl.innerHTML = fineEl.innerHTML.replace('{year}', new Date().getFullYear());
+  // re-pinta el ranking y las plantillas de correo, que dependen del idioma
+  renderRanking(lang);
+}
+
+const I18N = {
+  es: {
+    testBadge: "🧪 Modo de prueba — sin pagos ni correos reales",
+    theme: { light: "Blanco", blue: "Azul", dark: "Negro" },
+    nav: { how: "Cómo funciona", system: "El sistema", contribution: "Contribución", faq: "Preguntas", cta: "Pedir mi deseo" },
+    hero: {
+      eyebrow: "Fe y trabajo",
+      title: "Entrega tu moneda. <br><em>Algo se queda trabajando</em> en tu deseo.",
+      lede: "Fontana es el ritual de siempre — una moneda, un deseo, una intención — acompañado de un sistema de inteligencia artificial que no descansa: trabaja tu deseo prompt sobre prompt, 24 horas al día, durante 30 días, y te mantiene informado de cada avance.",
+      ctaPrimary: "Pedir mi deseo desde 1 USD",
+      ctaGhost: "Ver cómo funciona",
+      foot: "Un deseo activo por persona · Tu correo es solo tuyo · Cancela las notificaciones cuando quieras"
+    },
+    how: {
+      kicker: "El ritual", title: "Cuatro pasos, un solo deseo.",
+      lead: "No es magia. Es un compromiso: tú entregas algo con intención, y a cambio algo trabaja por ti sin pausa.",
+      step1: { title: "Te identificas", body: "Inicias sesión con tu cuenta de Google. Así nos asegura que tu deseo es realmente tuyo, y solo tienes uno." },
+      step2: { title: "Entregas tu moneda", body: "Desde 1 dólar, el gesto simbólico que activa tu deseo. Pago seguro, una sola vez." },
+      step3: { title: "Formulas tu deseo", body: "Escribes lo que quieres lograr, en tus palabras. Sin fórmulas mágicas, solo lo que de verdad sientes." },
+      step4: { title: "El sistema se enciende", body: "Recibes tu primer paso en minutos. Luego, un acompañamiento continuo durante 30 días." }
+    },
+    cycle: {
+      kicker: "Lo que pasa después", title: "Una IA que no se detiene hasta que algo se mueve.",
+      lead: "Tu deseo entra a un ciclo de trabajo continuo durante las 720 horas de tu mes. La inteligencia artificial vuelve sobre él una y otra vez — prompt sobre prompt — refinando un plan de acción real, y te escribe en el momento que detecta oportuno para avanzar, hasta que ese plan está completo o tu ciclo termina.",
+      n1: { top: "Paso 1", bottom: "Primer correo" },
+      n2: { top: "Ciclo IA", bottom: "Indaga y planea" },
+      n3: { top: "720 horas", bottom: "Correos en el momento justo" },
+      n4: { top: "Cierre del mes", bottom: "Correo final" },
+      loopLabel: "↻ El ciclo IA se repite internamente, ajustando el plan según el avance real de tu deseo"
+    },
+    honesty: {
+      kicker: "Lo que sí, lo que no",
+      title: "Te lo decimos claro, como se merece un deseo de verdad.",
+      p1: { strong: "Fontana no te promete que tu deseo se va a cumplir.", rest: "Ninguna fuente lo hizo nunca, y nadie puede prometerte eso con honestidad." },
+      p2: { strong: "Lo que sí te prometemos:", rest: "un sistema que indaga en tu deseo todos los días durante un mes, que te mantiene informado de cómo va, y que en algunos casos puede incluso actuar directamente por ti — por ejemplo, conectándote con la persona indicada. La fe pone la intención. El trabajo —el tuyo, y el de la IA que trabaja contigo— pone el camino." }
+    },
+    offer: {
+      kicker: "La contribución", title: "Desde 1 dólar. Sin letra pequeña escondida.",
+      amountSuffix: "USD en adelante", amountSub: "Contribución única · Un deseo por persona",
+      li1: "Tu deseo entra al sistema de inteligencia artificial",
+      li2: "Correo inmediato con tu primer paso a seguir",
+      li3: "Correos de avance durante las 720 horas de tu mes, en el momento que el sistema detecta oportuno",
+      li4: "En algunos casos, la IA puede actuar directamente en favor de tu deseo",
+      cta: "Pedir mi deseo",
+      why: "¿Por qué empieza en 1 dólar? Porque el monto no es el punto — el gesto sí. Algunas personas eligen dar más, como ofrenda más grande a su propio compromiso. Tú decides cuánta fe le pones.",
+      stripe: "Pago procesado de forma segura por Stripe. No almacenamos los datos de tu tarjeta."
+    },
+    ranking: {
+      title: "La fuente recuerda a quienes más han dado",
+      sub: "Un ranking público de fe — elige tu apodo al contribuir y aparece aquí.",
+      note: "📝 Datos de ejemplo en este modo de prueba. El ranking real se actualiza con cada contribución."
+    },
+    faq: {
+      kicker: "Preguntas frecuentes", title: "Antes de pedir tu deseo",
+      q1: "¿Por qué solo puedo pedir un deseo?",
+      a1: "Porque un deseo concentrado tiene más fuerza que uno disperso. Fontana está diseñado para que toda tu fe y todo el trabajo del sistema se enfoquen en una sola intención a la vez — la tuya.",
+      q2: "¿Qué tanto puede avanzar mi deseo en 30 días?",
+      a2: "Más de lo que muchas personas logran solas en ese tiempo. Durante las 720 horas de tu mes, el sistema trabaja activamente en tu deseo, te mantiene informado de cómo va, y en algunos casos puede incluso actuar directamente en tu favor. Lo que avances después, sigue siendo tuyo.",
+      q3: "¿Qué hace la inteligencia artificial exactamente?",
+      a3: "Primero indaga: estudia tu deseo con calma para conocerte a ti y entender todos los aspectos de lo que pides. Luego analiza y genera un plan de acción personalizado. A partir de ahí, te escribe en el momento que detecta el avance adecuado — y cuando el deseo lo permite, puede actuar directamente para acercarte a él.",
+      q4: "¿Es esto un servicio de adivinación o esoterismo?",
+      a4: "No. Es un ritual de intención real, combinado con un sistema de IA que trabaja activamente por ti. No leemos el futuro — construimos el camino hacia él, contigo.",
+      q5: "¿Qué es el ranking de donadores?",
+      a5: "Un reconocimiento público a quienes más fe (y contribución) han puesto en la Fuente. Eliges un apodo al donar — nunca tu nombre real si no quieres — y tu posición se actualiza según el total que hayas contribuido."
+    },
+    footer: {
+      terms: "Términos y condiciones", privacy: "Privacidad", refunds: "Reembolsos", contact: "Contacto",
+      fine: "Fontana es un servicio de inspiración y acompañamiento personal apoyado en inteligencia artificial. No constituye asesoría financiera, médica, legal ni psicológica, y no garantiza el cumplimiento de ningún deseo o resultado. Debes tener 18 años o más para usar este servicio. © {year} Fontana."
+    },
+    cat: { love: "Amor y relaciones", money: "Dinero y trabajo", health: "Salud y bienestar", family: "Familia", growth: "Crecimiento personal", other: "Otro" },
+    modal: {
+      auth: { title: "Identifícate", sub: "Para que tu deseo sea único y solo tuyo.", google: "Continuar con Google", note: "Al continuar, aceptas nuestros", terms: "Términos", and: "y", privacy: "Política de Privacidad" },
+      wish: {
+        title: "Tu deseo", sub: "Escríbelo como lo sientes. La IA lo va a leer con cuidado.",
+        catLabel: "¿Con qué se relaciona tu deseo?", textLabel: "Describe tu deseo", textPlaceholder: "Quiero...",
+        emailLabel: "Tu correo (a donde llegará tu acompañamiento)", emailPlaceholder: "tucorreo@ejemplo.com",
+        cta: "Continuar a la contribución →"
+      },
+      payment: {
+        title: "Tu contribución", sub: "El gesto que activa tu deseo en el sistema.",
+        amountLabel: "Monto (USD, mínimo 1)",
+        aliasLabel: "Elige tu apodo para el ranking de donadores", aliasPlaceholder: "Ej. Viajero777",
+        aliasNote: "Este apodo es público y aparece en el ranking. No uses tu nombre real si prefieres mantenerlo privado.",
+        stripeNote: "Serás redirigido a Stripe Checkout para completar el pago de forma segura.",
+        testNote: "(Modo de prueba: este botón simula el pago, no se conecta a Stripe todavía.)",
+        cta: "Ir a pagar →"
+      },
+      processing: { title: "Tu moneda cae en la fuente...", sub: "Procesando tu contribución" },
+      confirmed: {
+        title: "Tu deseo ya está en marcha 🪙", sub: "Esto es lo que recibirás en tu correo en los próximos minutos:",
+        from: "De: La Fuente — Fontana", subject: "Asunto: Tu deseo ya está en marcha 🪙",
+        footer: "La Fuente seguirá trabajando en tu deseo durante las próximas 720 horas. — Fontana",
+        testNote: "📝 Nota de prueba: este texto es un ejemplo de plantilla. El correo real lo redactará la IA (GLM) de forma personalizada según tu deseo, una vez conectemos las automatizaciones.",
+        cta: "Continuar →"
+      },
+      identity: {
+        title: "Ayúdanos a conocerte mejor",
+        sub: "Este segundo correo (opcional) nos ayuda a personalizar mejor el trabajo de la IA sobre tu deseo. Puedes omitirlo y tu ciclo de 30 días arranca igual.",
+        nameLabel: "¿Cómo te llamas?", namePlaceholder: "Tu nombre",
+        ageLabel: "¿Cuántos años tienes?", agePlaceholder: "Ej. 29",
+        contextLabel: "Cuéntanos un poco más de contexto sobre tu deseo", contextPlaceholder: "Lo que creas que ayuda a entender mejor tu situación...",
+        cta: "Enviar datos", skip: "Omitir por ahora"
+      }
+    }
+  },
+  en: {
+    testBadge: "🧪 Test mode — no real payments or emails",
+    theme: { light: "White", blue: "Blue", dark: "Black" },
+    nav: { how: "How it works", system: "The system", contribution: "Contribution", faq: "FAQ", cta: "Make my wish" },
+    hero: {
+      eyebrow: "Faith and work",
+      title: "Give your coin. <br><em>Something keeps working</em> on your wish.",
+      lede: "Fontana is the ritual you already know — a coin, a wish, an intention — paired with an AI system that never rests: it works on your wish prompt after prompt, 24 hours a day, for 30 days, and keeps you informed of every step forward.",
+      ctaPrimary: "Make my wish from $1 USD",
+      ctaGhost: "See how it works",
+      foot: "One active wish per person · Your email stays yours · Cancel notifications anytime"
+    },
+    how: {
+      kicker: "The ritual", title: "Four steps, one wish.",
+      lead: "It's not magic. It's a commitment: you give something with intention, and in return something works for you without pause.",
+      step1: { title: "You verify who you are", body: "You sign in with your Google account. That's how we make sure your wish is truly yours, and that you only have one." },
+      step2: { title: "You give your coin", body: "From $1, the symbolic gesture that activates your wish. Secure payment, one time only." },
+      step3: { title: "You make your wish", body: "You write down what you want to achieve, in your own words. No magic formulas, just what you truly feel." },
+      step4: { title: "The system switches on", body: "You receive your first step within minutes. Then, continuous support for 30 days." }
+    },
+    cycle: {
+      kicker: "What happens next", title: "An AI that won't stop until something moves.",
+      lead: "Your wish enters a continuous work cycle across the 720 hours of your month. The AI returns to it again and again — prompt after prompt — refining a real action plan, and writes to you whenever it considers it the right moment for you to take action, until that plan is complete or your cycle ends.",
+      n1: { top: "Step 1", bottom: "First email" },
+      n2: { top: "AI cycle", bottom: "Investigates and plans" },
+      n3: { top: "720 hours", bottom: "Emails at the right time" },
+      n4: { top: "Month closes", bottom: "Final email" },
+      loopLabel: "↻ The AI cycle repeats internally, adjusting the plan based on the real progress of your wish"
+    },
+    honesty: {
+      kicker: "What we promise, what we don't",
+      title: "We'll tell you straight, the way a real wish deserves.",
+      p1: { strong: "Fontana doesn't promise your wish will come true.", rest: "No fountain ever did, and no one can honestly promise you that." },
+      p2: { strong: "What we do promise:", rest: "a system that looks into your wish every day for a month, that keeps you informed of how it's going, and that in some cases can even act directly on your behalf — for example, connecting you with the right person. Faith provides the intention. The work — yours, and the AI's working alongside you — provides the path." }
+    },
+    offer: {
+      kicker: "The contribution", title: "From $1. No hidden fine print.",
+      amountSuffix: "USD and up", amountSub: "One-time contribution · One wish per person",
+      li1: "Your wish enters the AI system",
+      li2: "Immediate email with your first step to take",
+      li3: "Progress emails across the 720 hours of your month, whenever the system considers it the right moment",
+      li4: "In some cases, the AI can act directly in favor of your wish",
+      cta: "Make my wish",
+      why: "Why start at $1? Because the amount isn't the point — the gesture is. Some people choose to give more, as a bigger offering to their own commitment. You decide how much faith you put into it.",
+      stripe: "Payment securely processed by Stripe. We don't store your card details."
+    },
+    ranking: {
+      title: "The fountain remembers those who've given the most",
+      sub: "A public ranking of faith — choose your alias when contributing and you'll appear here.",
+      note: "📝 Example data in this test mode. The real ranking updates with every contribution."
+    },
+    faq: {
+      kicker: "Frequently asked questions", title: "Before you make your wish",
+      q1: "Why can I only make one wish?",
+      a1: "Because a focused wish carries more strength than a scattered one. Fontana is designed so that all your faith and all the system's work focus on a single intention at a time — yours.",
+      q2: "How much can my wish move forward in 30 days?",
+      a2: "More than many people achieve alone in that time. Across the 720 hours of your month, the system actively works on your wish, keeps you informed of how it's going, and in some cases can even act directly in your favor. Whatever you build after that stays yours.",
+      q3: "What exactly does the AI do?",
+      a3: "First, it investigates: it studies your wish carefully to understand you and every aspect of what you're asking for. Then it analyzes and builds a personalized action plan. From there, it writes to you whenever it considers the moment right for progress — and when the wish allows it, it can act directly to bring you closer to it.",
+      q4: "Is this a fortune-telling or esoteric service?",
+      a4: "No. It's a real ritual of intention, paired with an AI system that actively works for you. We don't read the future — we build the path toward it, together with you.",
+      q5: "What is the donor ranking?",
+      a5: "A public recognition of those who've put the most faith (and contribution) into the Fountain. You choose an alias when donating — never your real name if you'd rather not — and your position updates based on your total contribution."
+    },
+    footer: {
+      terms: "Terms and Conditions", privacy: "Privacy", refunds: "Refunds", contact: "Contact",
+      fine: "Fontana is an inspiration and personal support service powered by artificial intelligence. It does not constitute financial, medical, legal, or psychological advice, and does not guarantee that any wish or outcome will be fulfilled. You must be 18 or older to use this service. © {year} Fontana."
+    },
+    cat: { love: "Love and relationships", money: "Money and career", health: "Health and wellbeing", family: "Family", growth: "Personal growth", other: "Other" },
+    modal: {
+      auth: { title: "Verify who you are", sub: "So your wish is unique and truly yours.", google: "Continue with Google", note: "By continuing, you accept our", terms: "Terms", and: "and", privacy: "Privacy Policy" },
+      wish: {
+        title: "Your wish", sub: "Write it the way you feel it. The AI will read it carefully.",
+        catLabel: "What's your wish related to?", textLabel: "Describe your wish", textPlaceholder: "I want...",
+        emailLabel: "Your email (where your follow-up will arrive)", emailPlaceholder: "youremail@example.com",
+        cta: "Continue to contribution →"
+      },
+      payment: {
+        title: "Your contribution", sub: "The gesture that activates your wish in the system.",
+        amountLabel: "Amount (USD, minimum 1)",
+        aliasLabel: "Choose your alias for the donor ranking", aliasPlaceholder: "E.g. Traveler777",
+        aliasNote: "This alias is public and appears in the ranking. Don't use your real name if you'd rather keep it private.",
+        stripeNote: "You'll be redirected to Stripe Checkout to complete payment securely.",
+        testNote: "(Test mode: this button simulates payment, it isn't connected to Stripe yet.)",
+        cta: "Go to payment →"
+      },
+      processing: { title: "Your coin is falling into the fountain...", sub: "Processing your contribution" },
+      confirmed: {
+        title: "Your wish is already in motion 🪙", sub: "Here's what you'll receive in your email in the next few minutes:",
+        from: "From: The Fountain — Fontana", subject: "Subject: Your wish is already in motion 🪙",
+        footer: "The Fountain will keep working on your wish over the next 720 hours. — Fontana",
+        testNote: "📝 Test note: this text is a template example. The real email will be written by the AI (GLM), personalized to your wish, once we connect the automations.",
+        cta: "Continue →"
+      },
+      identity: {
+        title: "Help us get to know you better",
+        sub: "This second, optional step helps the AI personalize its work on your wish. You can skip it and your 30-day cycle starts the same.",
+        nameLabel: "What's your name?", namePlaceholder: "Your name",
+        ageLabel: "How old are you?", agePlaceholder: "E.g. 29",
+        contextLabel: "Tell us a bit more context about your wish", contextPlaceholder: "Whatever you think helps us understand your situation better...",
+        cta: "Submit details", skip: "Skip for now"
+      }
+    }
+  }
+};
+</script>
+
+<script>
+
+// Ranking de ejemplo SOLO para esta fase de pruebas — en producción
+// se calcula sumando las contribuciones reales por apodo desde Supabase.
+// Los apodos se mantienen iguales en ambos idiomas (son nombres de usuario).
+const RANKING_DEMO = [
+  { name: "Viajero777", amount: 85 },
+  { name: "LunaDorada", amount: 42 },
+  { name: "RaícesDeFe", amount: 30 },
+  { name: "SegundaOportunidad", amount: 21 },
+  { name: "AnonimoConFe", amount: 14 },
+];
+function renderRanking(lang){
+  const list = document.getElementById('rankingList');
+  if(!list) return;
+  list.innerHTML = RANKING_DEMO.map((d, i) => `
+    <div class="rank-row ${i===0 ? 'first' : ''}">
+      <div class="rank-pos">${i===0 ? '🥇' : '#'+(i+1)}</div>
+      <div class="rank-name">${d.name}</div>
+      <div class="rank-amount">$${d.amount} USD</div>
+    </div>
+  `).join('');
+}
+
+function openModal(){ document.getElementById('modalOverlay').classList.add('show'); }
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('show');
+  setTimeout(resetModalState, 300);
+}
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if(e.target.id === 'modalOverlay') closeModal();
+});
+
+/* ============================================================
+   SUPABASE — conexión real (auth + lectura de perfil)
+   ============================================================ */
+const SUPABASE_URL = 'https://cbvqwdrbwogsmcglsvzg.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_CAqF53kRDfzET56lLdKZIQ_UlnG-r5A';
+let supabaseClient = null;
+try {
+  if (window.supabase) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  } else {
+    console.error('El SDK de Supabase no cargó (CDN no disponible). El login con Google no funcionará hasta recargar con conexión.');
+  }
+} catch (e) {
+  console.error('No se pudo inicializar Supabase:', e);
+}
+
+async function signInWithGoogle(){
+  const en = (localStorage.getItem('fontana_lang') || 'es') === 'en';
+  if (!supabaseClient) {
+    alert(en ? 'Login service is unavailable right now. Please reload the page.' : 'El servicio de inicio de sesión no está disponible ahora. Recarga la página.');
+    return;
+  }
+  // Recuerda que el usuario estaba en medio del flujo del modal,
+  // para retomarlo automáticamente cuando vuelva de Google.
+  sessionStorage.setItem('fontana_pending_wish_flow', '1');
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + window.location.pathname }
+  });
+  if (error) {
+    alert(en ? 'We could not sign you in: ' + error.message : 'No pudimos iniciar sesión: ' + error.message);
+    sessionStorage.removeItem('fontana_pending_wish_flow');
+  }
+  // Si no hay error, el navegador redirige a Google — el código de
+  // abajo (checkSessionOnLoad) se encarga de retomar el flujo al volver.
+}
+
+async function checkSessionOnLoad(){
+  if (!supabaseClient) return;
+  const { data } = await supabaseClient.auth.getSession();
+  const session = data?.session;
+  const wasInWishFlow = sessionStorage.getItem('fontana_pending_wish_flow') === '1';
+
+  if (session && wasInWishFlow) {
+    sessionStorage.removeItem('fontana_pending_wish_flow');
+
+    // Revisa si ya tiene un deseo activo antes de dejarlo avanzar
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('has_active_wish')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    openModal();
+    if (profile && profile.has_active_wish) {
+      showAlreadyHasWish();
+    } else {
+      // Pre-rellena el correo con el de la cuenta de Google y avanza al paso del deseo
+      document.getElementById('wishEmail').value = session.user.email || '';
+      document.getElementById('step-auth').style.display = 'none';
+      document.getElementById('step-wish').style.display = 'block';
+    }
+  }
+}
+
+function showAlreadyHasWish(){
+  const en = (localStorage.getItem('fontana_lang') || 'es') === 'en';
+  document.getElementById('step-auth').innerHTML = en
+    ? '<h3>You already have an active wish</h3><p class="sub">Check your email to see how it\'s going — only one wish per person.</p>'
+    : '<h3>Ya tienes un deseo activo</h3><p class="sub">Revisa tu correo para ver cómo va — solo se permite un deseo por persona.</p>';
+}
+
+function updateCount(){
+  document.getElementById('count').textContent = document.getElementById('wishText').value.length;
+}
+function goToPayment(){
+  const text = document.getElementById('wishText').value.trim();
+  const email = document.getElementById('wishEmail').value.trim();
+  const en = (localStorage.getItem('fontana_lang') || 'es') === 'en';
+  if(text.length < 10){ alert(en ? 'Tell us a bit more about your wish.' : 'Cuéntanos un poco más sobre tu deseo.'); return; }
+  if(!email.includes('@')){ alert(en ? 'We need a valid email.' : 'Necesitamos un correo válido.'); return; }
+  document.getElementById('step-wish').style.display = 'none';
+  document.getElementById('step-payment').style.display = 'block';
+}
+
+// Plantillas de ejemplo SOLO para esta fase de pruebas de experiencia.
+// En producción, este texto lo genera GLM de forma real y personalizada.
+const PREVIEW_TEMPLATES = {
+  es: {
+    love: "Tu deseo llegó a la Fuente. Ya empezamos a indagar en tu situación para entender bien tu contexto. Mientras seguimos trabajando, un primer paso para ti: hoy, escribe en una nota tres cosas que te gustaría que la otra persona encuentre en ti cuando llegue. La Fuente sigue activa en esto, y te escribirá de nuevo en cuanto tenga algo útil que decirte.",
+    money: "Tu deseo llegó a la Fuente. Ya empezamos a estudiar tu situación para conocer todos los aspectos relevantes. Un primer paso mientras avanzamos: escribe el número exacto que necesitas o el puesto exacto que buscas. La claridad ayuda incluso a un sistema que trabaja por ti. Te escribiremos de nuevo en cuanto haya un avance que contarte.",
+    health: "Tu deseo llegó a la Fuente. Estamos indagando en tu situación para entenderla con cuidado. Un primer paso pequeño a propósito: anota una sola cosa que tu cuerpo te ha estado pidiendo y que llevas posponiendo. La Fuente sigue trabajando en lo que sigue, y te avisará en cuanto sea momento.",
+    family: "Tu deseo llegó a la Fuente. Ya estamos conociendo el contexto de tu situación. Un primer paso: piensa en una persona específica de tu familia y una frase concreta que te gustaría decirle. La Fuente sigue activa en esto y volverá a escribirte con el siguiente avance.",
+    growth: "Tu deseo llegó a la Fuente. Estamos indagando en tu contexto para entender bien qué necesitas. Un primer paso: elige una sola hora de esta semana y bloquéala, sin excusas, para algo que te acerque a quien quieres ser. La Fuente te escribirá de nuevo con el siguiente avance.",
+    other: "Tu deseo llegó a la Fuente. Ya empezamos a indagar en tu situación para entender todos sus aspectos. Mientras tanto, un primer paso: escribe en una frase qué se vería diferente en tu vida si esto avanzara. La Fuente sigue trabajando, y te escribirá de nuevo en cuanto tenga novedades."
+  },
+  en: {
+    love: "Your wish reached the Fountain. We've already started looking into your situation to understand your context well. While we keep working, a first step for you: today, write down three things you'd like the other person to find in you when they arrive. The Fountain stays active on this, and will write to you again once it has something useful to say.",
+    money: "Your wish reached the Fountain. We've already started studying your situation to understand every relevant aspect. A first step while we move forward: write down the exact number you need or the exact role you're looking for. Clarity helps even a system that's working for you. We'll write again once there's progress to share.",
+    health: "Your wish reached the Fountain. We're looking into your situation carefully. A first step, small on purpose: write down one thing your body has been asking for that you keep postponing. The Fountain keeps working on what comes next, and will let you know when the moment is right.",
+    family: "Your wish reached the Fountain. We're already getting to know the context of your situation. A first step: think of a specific person in your family and one concrete thing you'd like to tell them. The Fountain stays active on this and will write again with the next step forward.",
+    growth: "Your wish reached the Fountain. We're looking into your context to understand what you need. A first step: pick a single hour this week and block it off, no excuses, for something that moves you closer to who you want to be. The Fountain will write again with the next step.",
+    other: "Your wish reached the Fountain. We've already started looking into your situation to understand every angle of it. Meanwhile, a first step: write in one sentence what would look different in your life if this moved forward. The Fountain keeps working, and will write again once there's news."
+  }
+};
+
+function simulatePayment(){
+  const amount = parseFloat(document.getElementById('amount').value);
+  if(!amount || amount < 1){ alert(localStorage.getItem('fontana_lang') === 'en' ? 'Minimum amount is $1 USD.' : 'El monto mínimo es 1 USD.'); return; }
+
+  document.getElementById('step-payment').style.display = 'none';
+  document.getElementById('step-processing').style.display = 'block';
+
+  // Simula el tiempo de procesamiento real de una pasarela de pago
+  setTimeout(() => {
+    document.getElementById('step-processing').style.display = 'none';
+    document.getElementById('step-confirmed').style.display = 'block';
+    const category = document.getElementById('wishCategory').value;
+    const lang = localStorage.getItem('fontana_lang') || 'es';
+    document.getElementById('previewEmailBody').textContent = PREVIEW_TEMPLATES[lang][category] || PREVIEW_TEMPLATES[lang].other;
+  }, 1800);
+}
+
+function goToIdentityForm(){
+  document.getElementById('step-confirmed').style.display = 'none';
+  document.getElementById('step-identity').style.display = 'block';
+}
+
+function submitIdentityForm(){
+  // En producción: este formulario llega por un enlace en el segundo
+  // correo automático, y los datos se guardan en Supabase asociados
+  // al wish_id. Aquí, en modo de prueba, solo simulamos el envío.
+  const en = (localStorage.getItem('fontana_lang') || 'es') === 'en';
+  alert(en ? 'Thank you — in the connected version, this saves your data so the AI understands your situation better.' : 'Gracias — en la versión conectada, esto guarda tus datos para que la IA conozca mejor tu situación.');
+  closeModal();
+}
+
+function resetModalState(){
+  // Restaura el contenido original del paso de login, por si
+  // showAlreadyHasWish() lo había sobrescrito en una sesión anterior.
+  const authStep = document.getElementById('step-auth');
+  if (authStep.dataset.originalHtml) {
+    authStep.innerHTML = authStep.dataset.originalHtml;
+  }
+  document.getElementById('step-auth').style.display = 'block';
+  document.getElementById('step-wish').style.display = 'none';
+  document.getElementById('step-payment').style.display = 'none';
+  document.getElementById('step-processing').style.display = 'none';
+  document.getElementById('step-confirmed').style.display = 'none';
+  document.getElementById('step-identity').style.display = 'none';
+  document.getElementById('wishText').value = '';
+  document.getElementById('wishEmail').value = '';
+  document.getElementById('donorAlias').value = '';
+  document.getElementById('identityName').value = '';
+  document.getElementById('identityAge').value = '';
+  document.getElementById('identityContext').value = '';
+  document.getElementById('count').textContent = '0';
+}
+
+// FAQ accordion
+document.querySelectorAll('.faq-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    if(!wasOpen) item.classList.add('open');
+  });
+});
+
+/* Inicialización: lee preferencia guardada o usa predeterminados (blanco / es).
+   Va al final porque depende de funciones definidas en ambos bloques <script>. */
+(function initPrefs(){
+  const savedTheme = localStorage.getItem('fontana_theme') || 'light';
+  const savedLang = localStorage.getItem('fontana_lang') || 'es';
+  setTheme(savedTheme);
+  setLang(savedLang);
+})();
+
+// Guarda el HTML original del paso de login ANTES de que nada lo
+// pueda sobrescribir (showAlreadyHasWish lo modifica condicionalmente).
+document.getElementById('step-auth').dataset.originalHtml = document.getElementById('step-auth').innerHTML;
+
+// Revisa si volvemos de un login de Google a mitad del flujo del modal
+checkSessionOnLoad();
+</script>
+</body>
+</html>

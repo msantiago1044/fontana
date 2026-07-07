@@ -1,0 +1,204 @@
+{
+  "name": "Fontana - B. Ciclo IA de seguimiento (cada 7 dias, 30 dias)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] }
+      },
+      "name": "Reloj (cada hora)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-900, 0],
+      "notes": "Corre cada hora y solo actúa sobre los deseos cuya next_followup_at ya llegó. Así no necesitas un cron exacto de 7 días por deseo."
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "schema": "public",
+        "table": "wishes_due_for_followup",
+        "returnAll": true
+      },
+      "name": "Buscar deseos pendientes de seguimiento",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [-680, 0],
+      "notes": "Usa la VIEW wishes_due_for_followup creada en schema.sql: status=active, followups_sent<4, next_followup_at<=ahora"
+    },
+    {
+      "parameters": { "batchSize": 1, "options": {} },
+      "name": "Procesar uno por uno",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [-460, 0]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "schema": "public",
+        "table": "ai_cycle_log",
+        "returnAll": false,
+        "limit": 5,
+        "filterType": "manual",
+        "matchingColumns": "wish_id",
+        "filters": { "conditions": [{ "keyName": "wish_id", "condition": "eq", "keyValue": "={{$json.id}}" }] },
+        "sort": { "sortFields": [{ "fieldName": "cycle_number", "direction": "DESC" }] }
+      },
+      "name": "Leer historial de ciclos previos",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [-240, 0],
+      "notes": "Esto es lo que hace que sea 'prompt sobre prompt': la IA ve qué se le sugirió antes de decidir el siguiente paso."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Construye el contexto acumulado: deseo original + todo lo que la IA\n// ya le sugirió en ciclos anteriores, para que el siguiente prompt\n// SEA una continuación real, no un correo genérico repetido.\n\nconst wish = $('Procesar uno por uno').first().json;\nconst history = $input.all().map(item => item.json);\n\nconst historyText = history.length\n  ? history.reverse().map(h => `Ciclo ${h.cycle_number}: ${h.action_taken}`).join('\\n')\n  : 'Este es el primer ciclo de seguimiento (correo de los 7 días).';\n\nconst cycleNumber = (wish.followups_sent || 0) + 1;\n\nreturn [{ json: { ...wish, historyText, cycleNumber } }];"
+      },
+      "name": "Construir contexto acumulado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-20, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"glm-4.6\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Eres el planificador interno de Fontana. NO escribes el correo todavía. Tu trabajo es analizar el deseo de la persona y el historial de pasos ya sugeridos, y decidir CUÁL ES EL SIGUIENTE PASO LÓGICO de su plan -- uno que construya sobre lo anterior, no lo repita. Responde en JSON estricto con esta forma exacta: {\\\"siguiente_paso\\\": \\\"descripcion corta del paso\\\", \\\"razonamiento\\\": \\\"por que este paso sigue al anterior\\\", \\\"ciclo_completo\\\": false}. Marca ciclo_completo en true SOLO si el plan ya cubrió de forma razonable el camino hacia el deseo y no hay más pasos nuevos que aportar.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Categoria: \" + $json.category + \"\\nDeseo original: \" + $json.wish_text + \"\\n\\nHistorial de pasos ya sugeridos:\\n\" + $json.historyText + \"\\n\\nEste sera el ciclo numero \" + $json.cycleNumber + \" de 4. Decide el siguiente paso.\"\n    }\n  ],\n  \"temperature\": 0.6\n} }}"
+      },
+      "name": "GLM - Planificar siguiente paso (prompt 1/2)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 0],
+      "notes": "PRIMER prompt del ciclo: la IA piensa y decide, no redacta todavia."
+    },
+    {
+      "parameters": {
+        "jsCode": "const planRaw = $input.first().json.choices[0].message.content;\nlet plan;\ntry {\n  plan = JSON.parse(planRaw.replace(/```json|```/g, '').trim());\n} catch(e) {\n  plan = { siguiente_paso: 'Revisa tu progreso de esta semana', razonamiento: 'fallback', ciclo_completo: false };\n}\nconst prev = $('Construir contexto acumulado').first().json;\nreturn [{ json: { ...prev, plan } }];"
+      },
+      "name": "Parsear plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"glm-4.6\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Eres el redactor de Fontana. Tono calido, cercano, esperanzador y honesto -- nunca prometes resultados magicos ni garantizados. Escribe el CUERPO de un correo de seguimiento (sin asunto) de maximo 180 palabras, en espanol, que entregue el paso que se te indica como una accion concreta para esta semana. Firma como 'La Fuente -- Fontana'.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Deseo original de la persona: \" + $json.wish_text + \"\\nEste es el correo de seguimiento numero \" + $json.cycleNumber + \" de 4.\\nPaso a comunicar: \" + $json.plan.siguiente_paso + \"\\nPor que este paso tiene sentido ahora: \" + $json.plan.razonamiento + \"\\n\\nEscribe el correo.\"\n    }\n  ],\n  \"temperature\": 0.8\n} }}"
+      },
+      "name": "GLM - Redactar correo (prompt 2/2)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 0],
+      "notes": "SEGUNDO prompt: ahora si redacta el correo, ya con el paso decidido. Esto es el 'prompt sobre prompt' pedido."
+    },
+    {
+      "parameters": {
+        "jsCode": "const emailBody = $input.first().json.choices[0].message.content;\nconst prev = $('Parsear plan').first().json;\nreturn [{ json: { ...prev, email_body: emailBody } }];"
+      },
+      "name": "Preparar correo de seguimiento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 0]
+    },
+    {
+      "parameters": {
+        "fromEmail": "la-fuente@fontana.wish",
+        "fromName": "La Fuente — Fontana",
+        "toEmail": "={{$json.contact_email}}",
+        "subject": "={{ \"Tu deseo, semana \" + $json.cycleNumber + \" 🌊\" }}",
+        "emailType": "html",
+        "html": "={{ \"<div style='font-family:Georgia,serif;background:#0c1016;color:#f4f1ea;padding:40px;border-radius:12px;max-width:560px;margin:0 auto;'><h2 style='color:#e8c873;'>Semana \" + $json.cycleNumber + \" de tu deseo</h2><p style='line-height:1.7;white-space:pre-line;'>\" + $json.email_body + \"</p></div>\" }}"
+      },
+      "name": "Enviar correo seguimiento (Resend)",
+      "type": "n8n-nodes-base.resend",
+      "typeVersion": 1,
+      "position": [1080, 0]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "schema": "public",
+        "table": "ai_cycle_log",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "wish_id", "fieldValue": "={{$json.id}}" },
+            { "fieldId": "cycle_number", "fieldValue": "={{$json.cycleNumber}}" },
+            { "fieldId": "ai_response", "fieldValue": "={{$json.email_body}}" },
+            { "fieldId": "action_taken", "fieldValue": "={{$json.plan.siguiente_paso}}" }
+          ]
+        }
+      },
+      "name": "Registrar ciclo en ai_cycle_log",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1300, 0]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "schema": "public",
+        "table": "email_log",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "wish_id", "fieldValue": "={{$json.id}}" },
+            { "fieldId": "type", "fieldValue": "followup_7d" },
+            { "fieldId": "sequence_number", "fieldValue": "={{$json.cycleNumber}}" },
+            { "fieldId": "body_preview", "fieldValue": "={{$json.email_body.substring(0,200)}}" }
+          ]
+        }
+      },
+      "name": "Registrar en email_log",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1300, 160]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "wishes",
+        "updateKey": "id",
+        "columnToMatchOn": "id",
+        "valueToMatchOn": "={{$json.id}}",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "followups_sent", "fieldValue": "={{$json.cycleNumber}}" },
+            { "fieldId": "next_followup_at", "fieldValue": "={{$now.plus({days:7}).toISO()}}" },
+            { "fieldId": "ai_last_action_summary", "fieldValue": "={{$json.plan.siguiente_paso}}" }
+          ]
+        }
+      },
+      "name": "Actualizar deseo (avanzar ciclo)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1520, 0],
+      "notes": "Avanza followups_sent y programa next_followup_at a 7 dias mas. Cuando followups_sent llegue a 4, la vista wishes_due_for_final_email lo recoge en el otro workflow (C)."
+    }
+  ],
+  "connections": {
+    "Reloj (cada hora)": { "main": [[{ "node": "Buscar deseos pendientes de seguimiento", "type": "main", "index": 0 }]] },
+    "Buscar deseos pendientes de seguimiento": { "main": [[{ "node": "Procesar uno por uno", "type": "main", "index": 0 }]] },
+    "Procesar uno por uno": { "main": [[{ "node": "Leer historial de ciclos previos", "type": "main", "index": 0 }]] },
+    "Leer historial de ciclos previos": { "main": [[{ "node": "Construir contexto acumulado", "type": "main", "index": 0 }]] },
+    "Construir contexto acumulado": { "main": [[{ "node": "GLM - Planificar siguiente paso (prompt 1/2)", "type": "main", "index": 0 }]] },
+    "GLM - Planificar siguiente paso (prompt 1/2)": { "main": [[{ "node": "Parsear plan", "type": "main", "index": 0 }]] },
+    "Parsear plan": { "main": [[{ "node": "GLM - Redactar correo (prompt 2/2)", "type": "main", "index": 0 }]] },
+    "GLM - Redactar correo (prompt 2/2)": { "main": [[{ "node": "Preparar correo de seguimiento", "type": "main", "index": 0 }]] },
+    "Preparar correo de seguimiento": { "main": [[{ "node": "Enviar correo seguimiento (Resend)", "type": "main", "index": 0 }]] },
+    "Enviar correo seguimiento (Resend)": { "main": [[{ "node": "Registrar ciclo en ai_cycle_log", "type": "main", "index": 0 }, { "node": "Registrar en email_log", "type": "main", "index": 0 }]] },
+    "Registrar ciclo en ai_cycle_log": { "main": [[{ "node": "Actualizar deseo (avanzar ciclo)", "type": "main", "index": 0 }]] },
+    "Registrar en email_log": { "main": [[{ "node": "Actualizar deseo (avanzar ciclo)", "type": "main", "index": 0 }]] }
+  }
+}

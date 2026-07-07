@@ -1,0 +1,135 @@
+{
+  "name": "Fontana - C. Correo final (cierre del ciclo de 30 dias)",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "hours", "hoursInterval": 6 }] } },
+      "name": "Reloj (cada 6 horas)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-700, 0]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "schema": "public",
+        "table": "wishes_due_for_final_email",
+        "returnAll": true
+      },
+      "name": "Buscar deseos listos para cierre",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [-480, 0],
+      "notes": "Usa la VIEW wishes_due_for_final_email: followups_sent>=4, final_email_sent=false, y ya pasaron 30 dias desde cycle_started_at"
+    },
+    { "parameters": { "batchSize": 1 }, "name": "Procesar uno por uno", "type": "n8n-nodes-base.splitInBatches", "typeVersion": 3, "position": [-260, 0] },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "schema": "public",
+        "table": "ai_cycle_log",
+        "returnAll": true,
+        "filterType": "manual",
+        "matchingColumns": "wish_id",
+        "filters": { "conditions": [{ "keyName": "wish_id", "condition": "eq", "keyValue": "={{$json.id}}" }] },
+        "sort": { "sortFields": [{ "fieldName": "cycle_number", "direction": "ASC" }] }
+      },
+      "name": "Leer todo el historial del ciclo",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [-40, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const wish = $('Procesar uno por uno').first().json;\nconst history = $input.all().map(i => i.json);\nconst summary = history.map(h => `Semana ${h.cycle_number}: ${h.action_taken}`).join('\\n');\nreturn [{ json: { ...wish, fullHistory: summary } }];"
+      },
+      "name": "Resumir todo el viaje",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [180, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"glm-4.6\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Eres el redactor de Fontana. Escribe el correo FINAL de cierre del ciclo de 30 dias, en espanol, tono cercano y honesto, maximo 220 palabras. Estructura: 1) reconoce el camino recorrido en las 4 semanas, 2) recuerda brevemente los pasos clave que se sugirieron, 3) es honesto: el ciclo de acompanamiento de Fontana termina aqui, pero el camino hacia su deseo sigue siendo suyo, 4) cierra con una invitacion calida, sin presionar a pagar de nuevo. Firma como 'La Fuente -- Fontana'.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Deseo original: \" + $json.wish_text + \"\\n\\nResumen de las 4 semanas de acompanamiento:\\n\" + $json.fullHistory + \"\\n\\nEscribe el correo final.\"\n    }\n  ],\n  \"temperature\": 0.75\n} }}"
+      },
+      "name": "GLM - Redactar correo final",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const emailBody = $input.first().json.choices[0].message.content;\nconst prev = $('Resumir todo el viaje').first().json;\nreturn [{ json: { ...prev, email_body: emailBody } }];"
+      },
+      "name": "Preparar correo final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [620, 0]
+    },
+    {
+      "parameters": {
+        "fromEmail": "la-fuente@fontana.wish",
+        "fromName": "La Fuente — Fontana",
+        "toEmail": "={{$json.contact_email}}",
+        "subject": "30 días después de tu deseo 🕊️",
+        "emailType": "html",
+        "html": "={{ \"<div style='font-family:Georgia,serif;background:#0c1016;color:#f4f1ea;padding:40px;border-radius:12px;max-width:560px;margin:0 auto;'><h2 style='color:#e8c873;'>Un mes despues</h2><p style='line-height:1.7;white-space:pre-line;'>\" + $json.email_body + \"</p></div>\" }}"
+      },
+      "name": "Enviar correo final (Resend)",
+      "type": "n8n-nodes-base.resend",
+      "typeVersion": 1,
+      "position": [840, 0]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "wishes",
+        "updateKey": "id",
+        "columnToMatchOn": "id",
+        "valueToMatchOn": "={{$json.id}}",
+        "fieldsUi": { "fieldValues": [
+          { "fieldId": "final_email_sent", "fieldValue": true },
+          { "fieldId": "status", "fieldValue": "completed" }
+        ] }
+      },
+      "name": "Marcar deseo como completado",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1060, 0]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "schema": "public",
+        "table": "email_log",
+        "fieldsUi": { "fieldValues": [
+          { "fieldId": "wish_id", "fieldValue": "={{$json.id}}" },
+          { "fieldId": "type", "fieldValue": "final" },
+          { "fieldId": "body_preview", "fieldValue": "={{$json.email_body.substring(0,200)}}" }
+        ] }
+      },
+      "name": "Registrar en email_log",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1060, 160]
+    }
+  ],
+  "connections": {
+    "Reloj (cada 6 horas)": { "main": [[{ "node": "Buscar deseos listos para cierre", "type": "main", "index": 0 }]] },
+    "Buscar deseos listos para cierre": { "main": [[{ "node": "Procesar uno por uno", "type": "main", "index": 0 }]] },
+    "Procesar uno por uno": { "main": [[{ "node": "Leer todo el historial del ciclo", "type": "main", "index": 0 }]] },
+    "Leer todo el historial del ciclo": { "main": [[{ "node": "Resumir todo el viaje", "type": "main", "index": 0 }]] },
+    "Resumir todo el viaje": { "main": [[{ "node": "GLM - Redactar correo final", "type": "main", "index": 0 }]] },
+    "GLM - Redactar correo final": { "main": [[{ "node": "Preparar correo final", "type": "main", "index": 0 }]] },
+    "Preparar correo final": { "main": [[{ "node": "Enviar correo final (Resend)", "type": "main", "index": 0 }]] },
+    "Enviar correo final (Resend)": { "main": [[{ "node": "Marcar deseo como completado", "type": "main", "index": 0 }, { "node": "Registrar en email_log", "type": "main", "index": 0 }]] }
+  }
+}
