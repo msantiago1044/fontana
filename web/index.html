@@ -1891,18 +1891,21 @@
           amountInCents: amountInCents,
           reference: reference,
           publicKey: 'pub_test_0IxGzreyyHchWskYuckz5fWSptihxzuc',
-          'signature:integrity': signature
+          signature: { integrity: signature }
         });
 
         checkout.open(function (result) {
+          console.log("Wompi result:", result);
           const transaction = result.transaction;
           if (transaction && transaction.status === 'APPROVED') {
+            console.log("Pago aprobado, intentando registrar...");
             // Pago aprobado — guardar deseo en Supabase y mostrar confirmación
             registrarDeseo(transaction.id);
           } else {
             // Pago cancelado o fallido
             document.getElementById('step-processing').style.display = 'none';
             document.getElementById('step-payment').style.display = 'block';
+            console.warn("Pago fallido o no completado", transaction);
             alert(en ? 'Payment was not completed. You can try again.' : 'El pago no se completó. Puedes intentarlo de nuevo.');
           }
         });
@@ -1910,6 +1913,7 @@
       } catch (e) {
         document.getElementById('step-processing').style.display = 'none';
         document.getElementById('step-payment').style.display = 'block';
+        console.error("Error al iniciar Wompi:", e);
         alert(en ? 'Connection error. Please try again.' : 'Error de conexión. Intenta de nuevo.');
       }
     }
@@ -1945,7 +1949,10 @@
         const result = await resp.json();
         sessionStorage.removeItem('fontana_wish_pending');
 
-        if (!resp.ok) throw new Error(result.error || 'Error desconocido');
+        if (!resp.ok) {
+          console.error("Respuesta del servidor guardar-deseo:", result);
+          throw new Error(result.error || 'Error desconocido');
+        }
 
         // Mostrar pantalla de confirmación
         document.getElementById('step-confirmed').style.display = 'block';
@@ -1956,8 +1963,8 @@
       } catch (e) {
         console.error('Error guardando deseo:', e);
         alert(en
-          ? 'Payment received but there was an error saving your wish. Contact us at fontanadigital.ai@gmail.com with reference: ' + pending.reference
-          : 'Pago recibido pero hubo un error guardando tu deseo. Escríbenos a fontanadigital.ai@gmail.com con la referencia: ' + pending.reference
+          ? 'Payment received but there was an error saving your wish: ' + e.message
+          : 'Pago recibido pero hubo un error guardando tu deseo: ' + e.message
         );
       }
     }
