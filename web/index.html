@@ -1919,35 +1919,46 @@
       const en = (localStorage.getItem('fontana_lang') || 'es') === 'en';
       const pending = JSON.parse(sessionStorage.getItem('fontana_wish_pending') || '{}');
 
-      if (!pending.userId) return;
+      if (!pending.userId) {
+        console.error('No hay datos de deseo pendiente en sessionStorage');
+        return;
+      }
 
       try {
-        const { error } = await supabaseClient.from('wishes').insert({
-          user_id: pending.userId,
-          category: pending.category,
-          wish_text: pending.wishText,
-          contact_email: pending.contactEmail,
-          donor_alias: pending.donorAlias || null,
-          amount_usd: pending.amountUsd,
-          status: 'pending_payment',
-          stripe_payment_intent_id: transactionId
-        });
+        const resp = await fetch(
+          'https://cbvqwdrbwogsmcglsvzg.supabase.co/functions/v1/guardar-deseo',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: pending.userId,
+              category: pending.category,
+              wishText: pending.wishText,
+              contactEmail: pending.contactEmail,
+              donorAlias: pending.donorAlias || null,
+              amountUsd: pending.amountUsd,
+              transactionId: transactionId,
+              reference: pending.reference
+            })
+          }
+        );
 
+        const result = await resp.json();
         sessionStorage.removeItem('fontana_wish_pending');
 
-        if (error) throw error;
+        if (!resp.ok) throw new Error(result.error || 'Error desconocido');
 
         // Mostrar pantalla de confirmación
         document.getElementById('step-confirmed').style.display = 'block';
-        const category = pending.category;
         const lang = localStorage.getItem('fontana_lang') || 'es';
         document.getElementById('previewEmailBody').textContent =
-          PREVIEW_TEMPLATES[lang][category] || PREVIEW_TEMPLATES[lang].other;
+          PREVIEW_TEMPLATES[lang][pending.category] || PREVIEW_TEMPLATES[lang].other;
 
       } catch (e) {
+        console.error('Error guardando deseo:', e);
         alert(en
-          ? 'Payment received but there was an error saving your wish. Contact us at fontanadigital.ai@gmail.com'
-          : 'Pago recibido pero hubo un error guardando tu deseo. Escríbenos a fontanadigital.ai@gmail.com'
+          ? 'Payment received but there was an error saving your wish. Contact us at fontanadigital.ai@gmail.com with reference: ' + pending.reference
+          : 'Pago recibido pero hubo un error guardando tu deseo. Escríbenos a fontanadigital.ai@gmail.com con la referencia: ' + pending.reference
         );
       }
     }
