@@ -70,7 +70,27 @@
           </div>
         </div>
       </div>
-      <a href="#contribucion" class="nav-cta" data-i18n="nav.cta">Pedir mi deseo</a>
+      <!-- Se muestra cuando NO hay sesión -->
+      <a href="#contribucion" class="nav-cta" id="navCta" onclick="openModal(); return false;" data-i18n="nav.cta">Pedir mi deseo</a>
+
+      <!-- Se muestra cuando HAY sesión — inyectado por JS -->
+      <div class="user-chip" id="userChip" style="display:none">
+        <button class="user-chip-btn" onclick="toggleMenu('userMenu')" aria-label="Cuenta">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <span class="user-chip-name" id="userChipName">…</span>
+          <span class="user-chip-dot"></span>
+        </button>
+        <div class="user-menu" id="userMenu">
+          <div class="user-menu-email" id="userMenuEmail"></div>
+          <button class="wish-btn" onclick="closeAllMenus(); openModal();">
+            🪙 <span data-i18n="nav.cta">Pedir mi deseo</span>
+          </button>
+          <div class="user-menu-divider"></div>
+          <button class="logout-btn" onclick="signOut()">
+            ↩ <span data-i18n="userChip.logout">Cerrar sesión</span>
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 

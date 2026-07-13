@@ -35,9 +35,11 @@
     function closeAllMenus() {
       document.getElementById('themeMenu').classList.remove('show');
       document.getElementById('langMenu').classList.remove('show');
+      const um = document.getElementById('userMenu');
+      if (um) um.classList.remove('show');
     }
     document.addEventListener('click', (e) => {
-      if (!e.target.closest('.prefs-item')) closeAllMenus();
+      if (!e.target.closest('.prefs-item') && !e.target.closest('.user-chip')) closeAllMenus();
     });
 
     function getNested(obj, path) {
@@ -65,6 +67,7 @@
         testBadge: "🧪 Modo de prueba — sin pagos ni correos reales",
         theme: { light: "Blanco", blue: "Azul", dark: "Negro" },
         nav: { how: "Cómo funciona", system: "El sistema", contribution: "Contribución", faq: "Preguntas", cta: "Pedir mi deseo" },
+        userChip: { logout: "Cerrar sesión" },
         hero: {
           eyebrow: "Fe y trabajo",
           title: "Entrega tu moneda. <br><em>Algo se queda trabajando</em> en tu deseo.",
@@ -169,6 +172,7 @@
         testBadge: "🧪 Test mode — no real payments or emails",
         theme: { light: "White", blue: "Blue", dark: "Black" },
         nav: { how: "How it works", system: "The system", contribution: "Contribution", faq: "FAQ", cta: "Make my wish" },
+        userChip: { logout: "Sign out" },
         hero: {
           eyebrow: "Faith and work",
           title: "Give your coin. <br><em>Something keeps working</em> on your wish.",
@@ -364,6 +368,58 @@
     }
 
     /* ----------------------------------------------------------------
+       3b. USER CHIP — refleja el estado de sesión en el header
+    ---------------------------------------------------------------- */
+
+    /** Actualiza el chip de usuario en el header según la sesión activa */
+    function updateUserChip(session) {
+      const navCta   = document.getElementById('navCta');
+      const chip     = document.getElementById('userChip');
+      const avatar   = document.getElementById('userAvatar');
+      const chipName = document.getElementById('userChipName');
+      const menuEmail= document.getElementById('userMenuEmail');
+
+      if (!chip) return;
+
+      if (session && session.user) {
+        const user = session.user;
+        const name  = user.user_metadata?.full_name || user.user_metadata?.name || '';
+        const email = user.email || '';
+        const photo = user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
+        const initials = name ? name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
+                               : email.slice(0,2).toUpperCase();
+
+        // Avatar: foto de Google si existe, sino iniciales
+        if (photo) {
+          avatar.innerHTML = \`<img src="\${photo}" alt="" referrerpolicy="no-referrer">\`;
+        } else {
+          avatar.textContent = initials;
+        }
+
+        chipName.textContent = name.split(' ')[0] || email.split('@')[0];
+        menuEmail.textContent = email;
+
+        if (navCta) navCta.style.display = 'none';
+        chip.style.display = 'block';
+      } else {
+        // Sin sesión → mostrar el CTA original, ocultar chip
+        if (navCta) navCta.style.display = '';
+        chip.style.display = 'none';
+      }
+    }
+
+    /** Cierra la sesión de Supabase */
+    async function signOut() {
+      closeAllMenus();
+      if (supabaseClient) {
+        await supabaseClient.auth.signOut();
+      }
+      _auth.session = null;
+      _auth.hasActiveWish = false;
+      updateUserChip(null);
+    }
+
+    /* ----------------------------------------------------------------
        4. AUTH — CACHÉ DE SESIÓN Y ESTADO DEL USUARIO
        onAuthStateChange se dispara gratis en cada carga con INITIAL_SESSION.
        Lo usamos para cachear sesión + perfil en memoria, de modo que
@@ -509,6 +565,9 @@
           _auth.ready = true;
           _auth._resolve(); // desbloquear waitForAuth() si alguien esperaba
 
+          // Actualizar el chip de usuario en el header
+          updateUserChip(session);
+
           // CASO CLAVE: cuando Supabase v2 procesa el hash de OAuth en la carga
           // inicial, dispara INITIAL_SESSION (con sesión) en lugar de SIGNED_IN.
           // Detectamos esto chequeando el flag de flujo que guardamos antes del redirect.
@@ -542,6 +601,9 @@
           }
           _auth.ready = true;
 
+          // Actualizar el chip de usuario en el header
+          updateUserChip(session);
+
           // Abrir el modal directamente en el paso correcto
           document.getElementById('modalOverlay').classList.add('show');
           _resolveModalStep(session, _auth.hasActiveWish);
@@ -551,6 +613,7 @@
         if (event === 'SIGNED_OUT') {
           _auth.session = null;
           _auth.hasActiveWish = false;
+          updateUserChip(null);
         }
       });
     } else {
