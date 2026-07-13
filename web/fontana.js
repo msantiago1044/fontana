@@ -508,11 +508,22 @@
 
           _auth.ready = true;
           _auth._resolve(); // desbloquear waitForAuth() si alguien esperaba
+
+          // CASO CLAVE: cuando Supabase v2 procesa el hash de OAuth en la carga
+          // inicial, dispara INITIAL_SESSION (con sesión) en lugar de SIGNED_IN.
+          // Detectamos esto chequeando el flag de flujo que guardamos antes del redirect.
+          const wasInFlow = localStorage.getItem(SS_FLOW_KEY) === '1';
+          if (wasInFlow && session) {
+            localStorage.removeItem(SS_FLOW_KEY);
+            document.getElementById('modalOverlay').classList.add('show');
+            _resolveModalStep(session, _auth.hasActiveWish);
+          }
           return;
         }
 
         if (event === 'SIGNED_IN') {
-          // Retorno del redirect de Google OAuth
+          // Retorno del redirect de Google OAuth (algunas versiones de Supabase
+          // disparan SIGNED_IN en lugar de — o además de — INITIAL_SESSION)
           const wasInFlow = localStorage.getItem(SS_FLOW_KEY) === '1';
           if (!wasInFlow) return;
           localStorage.removeItem(SS_FLOW_KEY);
