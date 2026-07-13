@@ -268,20 +268,25 @@
     }
 
     .nav-cta {
+      background: var(--gold);
       border: 1px solid var(--gold);
-      color: var(--gold-bright);
-      padding: 9px 20px;
+      color: var(--night);
+      padding: 9px 22px;
       border-radius: 999px;
       font-size: 13px;
+      font-weight: 600;
       letter-spacing: .02em;
-      transition: .25s;
+      transition: .2s;
       white-space: nowrap;
       flex-shrink: 0;
+      box-shadow: 0 2px 12px rgba(201,161,74,.35);
     }
 
     .nav-cta:hover {
-      background: var(--gold);
-      color: var(--night);
+      background: var(--gold-bright);
+      border-color: var(--gold-bright);
+      box-shadow: 0 4px 18px rgba(201,161,74,.5);
+      transform: translateY(-1px);
     }
 
     @media(max-width:720px) {
