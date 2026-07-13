@@ -302,6 +302,9 @@
 
     // Key que usamos para persistir el intento de pago entre recargas
     const LS_PENDING_KEY = 'fontana_payment_pending';
+    // NOTA: usamos localStorage (no sessionStorage) para el flag de flujo porque
+    // algunos navegadores (Safari, móvil) limpian sessionStorage durante el
+    // redirect de OAuth, haciendo que el modal no se abra al volver.
     const SS_FLOW_KEY = 'fontana_wish_flow';
 
     // Plantillas de correo (preview de experiencia; la IA genera el real)
@@ -463,7 +466,7 @@
           : 'Servicio de login no disponible. Recarga la página.');
         return;
       }
-      sessionStorage.setItem(SS_FLOW_KEY, '1');
+      localStorage.setItem(SS_FLOW_KEY, '1');
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: window.location.origin + window.location.pathname }
@@ -473,7 +476,7 @@
         alert(isEn()
           ? 'Could not sign you in: ' + error.message
           : 'No pudimos iniciar sesión: ' + error.message);
-        sessionStorage.removeItem(SS_FLOW_KEY);
+        localStorage.removeItem(SS_FLOW_KEY);
       }
     }
 
@@ -510,9 +513,9 @@
 
         if (event === 'SIGNED_IN') {
           // Retorno del redirect de Google OAuth
-          const wasInFlow = sessionStorage.getItem(SS_FLOW_KEY) === '1';
+          const wasInFlow = localStorage.getItem(SS_FLOW_KEY) === '1';
           if (!wasInFlow) return;
-          sessionStorage.removeItem(SS_FLOW_KEY);
+          localStorage.removeItem(SS_FLOW_KEY);
 
           // Actualizar caché con la nueva sesión
           _auth.session = session;
