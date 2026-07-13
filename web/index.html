@@ -1714,7 +1714,23 @@
   `).join('');
     }
 
-    function openModal() { document.getElementById('modalOverlay').classList.add('show'); }
+    async function openModal() {
+      document.getElementById('modalOverlay').classList.add('show');
+      if (!supabaseClient) return;
+      const { data } = await supabaseClient.auth.getSession();
+      const session = data?.session;
+      if (!session) return;
+      const { data: profile } = await supabaseClient
+        .from('profiles').select('has_active_wish')
+        .eq('id', session.user.id).maybeSingle();
+      if (profile && profile.has_active_wish) {
+        showAlreadyHasWish();
+      } else {
+        document.getElementById('step-auth').style.display = 'none';
+        document.getElementById('step-wish').style.display = 'block';
+        document.getElementById('wishEmail').value = session.user.email || '';
+      }
+    }
     function closeModal() {
       document.getElementById('modalOverlay').classList.remove('show');
       setTimeout(resetModalState, 300);
@@ -1891,7 +1907,7 @@
           amountInCents: amountInCents,
           reference: reference,
           publicKey: 'pub_test_0IxGzreyyHchWskYuckz5fWSptihxzuc',
-          signature: { integrity: signature }
+          'signature:integrity': signature
         });
 
         checkout.open(function (result) {
