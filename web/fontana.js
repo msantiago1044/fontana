@@ -391,7 +391,7 @@
 
         // Avatar: foto de Google si existe, sino iniciales
         if (photo) {
-          avatar.innerHTML = \`<img src="\${photo}" alt="" referrerpolicy="no-referrer">\`;
+          avatar.innerHTML = '<img src="' + photo + '" alt="" referrerpolicy="no-referrer">';
         } else {
           avatar.textContent = initials;
         }
