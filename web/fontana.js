@@ -360,73 +360,68 @@
       });
     }
 
-    async function openModal() {
-      const overlay = document.getElementById('modalOverlay');
-      overlay.classList.add('show');
+    /* ----------------------------------------------------------------
+       4. AUTH — CACHÉ DE SESIÓN Y ESTADO DEL USUARIO
+       onAuthStateChange se dispara gratis en cada carga con INITIAL_SESSION.
+       Lo usamos para cachear sesión + perfil en memoria, de modo que
+       openModal() tenga la respuesta lista de forma instantánea (sin red).
+    ---------------------------------------------------------------- */
 
-      // Mientras verificamos la sesión, ocultar todos los pasos y mostrar
-      // un spinner mínimo para evitar el parpadeo del botón de Google.
-      STEPS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-      });
-      const modal = overlay.querySelector('.modal');
-      let loadingEl = modal.querySelector('#modal-loading');
-      if (!loadingEl) {
-        loadingEl = document.createElement('div');
-        loadingEl.id = 'modal-loading';
-        loadingEl.style.cssText = 'text-align:center;padding:48px 0;color:var(--ivory-faint);font-size:14px;font-family:var(--sans)';
-        loadingEl.innerHTML = '<div class="coin" style="margin:0 auto 16px;width:32px;height:32px;" aria-hidden="true"></div>';
-        modal.appendChild(loadingEl);
-      }
-      loadingEl.style.display = 'block';
+    // Caché en memoria — se llena antes de que el usuario haga clic en nada
+    const _auth = {
+      ready: false,          // true cuando INITIAL_SESSION ya resolvió
+      session: null,         // sesión activa o null
+      hasActiveWish: false,  // true si el perfil en BD tiene deseo activo
+      _resolve: null,        // promesa interna para quien llegue antes del INITIAL_SESSION
+    };
+    _auth._promise = new Promise(res => { _auth._resolve = res; });
 
-      const hideLoading = () => { if (loadingEl) loadingEl.style.display = 'none'; };
+    /** Espera a que el INITIAL_SESSION haya resuelto (máx. 3 s de seguridad) */
+    function waitForAuth() {
+      if (_auth.ready) return Promise.resolve();
+      return Promise.race([
+        _auth._promise,
+        new Promise(res => setTimeout(res, 3000))
+      ]);
+    }
 
-      // Sin Supabase → mostrar login directamente
-      if (!supabaseClient) {
-        hideLoading();
+    /** Abre el modal y decide el paso a mostrar usando el caché — sin red */
+    function openModal() {
+      document.getElementById('modalOverlay').classList.add('show');
+
+      if (!_auth.ready) {
+        // Caso raro: el usuario es MUY rápido y el INITIAL_SESSION aún no llegó.
+        // Mostramos el formulario de Google y dejamos que onAuthStateChange corrija.
         showStep('step-auth');
         return;
       }
 
-      try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
+      _resolveModalStep(_auth.session, _auth.hasActiveWish);
+    }
 
-        hideLoading();
-
-        if (!session) {
-          // Sin sesión → mostrar botón de Google
-          showStep('step-auth');
-          return;
-        }
-
-        // Sesión activa → verificar si ya tiene deseo activo
-        const { data: profile } = await supabaseClient
-          .from('profiles')
-          .select('has_active_wish')
-          .eq('id', session.user.id)
-          .maybeSingle();
-
-        if (profile?.has_active_wish) {
-          showAlreadyHasWish();
-          showStep('step-auth');
-        } else {
-          const pending = getPendingPayment(session.user.id);
-          if (pending) {
-            showPendingPaymentRecovery(pending);
-          } else {
-            // Ya logueado y sin deseo activo → ir directo al formulario
-            const emailEl = document.getElementById('wishEmail');
-            if (emailEl) emailEl.value = session.user.email || '';
-            showStep('step-wish');
-          }
-        }
-      } catch (e) {
-        console.warn('[Fontana] openModal: error verificando sesión', e);
-        hideLoading();
+    /** Decide qué paso mostrar dado el estado de sesión y perfil */
+    function _resolveModalStep(session, hasActiveWish) {
+      if (!session) {
         showStep('step-auth');
+        return;
       }
+
+      if (hasActiveWish) {
+        _showAlreadyHasWish();
+        showStep('step-auth');
+        return;
+      }
+
+      const pending = getPendingPayment(session.user.id);
+      if (pending) {
+        showPendingPaymentRecovery(pending);
+        return;
+      }
+
+      // Usuario logueado, sin deseo activo, sin pago pendiente → formulario directo
+      const emailEl = document.getElementById('wishEmail');
+      if (emailEl) emailEl.value = session.user.email || '';
+      showStep('step-wish');
     }
 
     function closeModal() {
@@ -439,11 +434,6 @@
     });
 
     function resetModalState() {
-      // Ocultar el spinner de carga si quedó visible
-      const loadingEl = document.getElementById('modal-loading');
-      if (loadingEl) loadingEl.style.display = 'none';
-
-      // Restaurar HTML original del step-auth (showAlreadyHasWish lo sobreescribe)
       const authStep = document.getElementById('step-auth');
       if (authStep && authStep.dataset.originalHtml) {
         authStep.innerHTML = authStep.dataset.originalHtml;
@@ -455,18 +445,17 @@
       if (countEl) countEl.textContent = '0';
     }
 
-    function showAlreadyHasWish() {
+    function _showAlreadyHasWish() {
       const authStep = document.getElementById('step-auth');
       authStep.innerHTML = isEn()
-        ? '<h3>You already have an active wish</h3><p class="sub">Check your email to see how it\'s going — only one wish per person.</p>'
-        : '<h3>Ya tienes un deseo activo</h3><p class="sub">Revisa tu correo para ver cómo va — solo se permite un deseo por persona.</p>';
+        ? `<h3>You already have an active wish</h3>
+           <p class="sub">Check your email — your wish is already being worked on. Only one wish per person.</p>
+           <button class="btn-ghost btn-full" style="margin-top:20px" onclick="closeModal()">Close</button>`
+        : `<h3>Ya tienes un deseo activo</h3>
+           <p class="sub">Revisa tu correo — ya estamos trabajando en tu deseo. Solo se permite uno por persona.</p>
+           <button class="btn-ghost btn-full" style="margin-top:20px" onclick="closeModal()">Cerrar</button>`;
     }
 
-    /* ----------------------------------------------------------------
-       4. AUTH — LOGIN CON GOOGLE
-       Usamos onAuthStateChange para detectar el retorno de Google OAuth
-       sin necesidad de que el usuario haga doble clic.
-    ---------------------------------------------------------------- */
     async function signInWithGoogle() {
       if (!supabaseClient) {
         alert(isEn()
@@ -474,14 +463,11 @@
           : 'Servicio de login no disponible. Recarga la página.');
         return;
       }
-      // Marcamos que el usuario inició el flujo del deseo
       sessionStorage.setItem(SS_FLOW_KEY, '1');
-
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: window.location.origin + window.location.pathname }
       });
-
       if (error) {
         console.error('[Fontana] OAuth error:', error);
         alert(isEn()
@@ -489,69 +475,74 @@
           : 'No pudimos iniciar sesión: ' + error.message);
         sessionStorage.removeItem(SS_FLOW_KEY);
       }
-      // Si no hay error el navegador redirige a Google; onAuthStateChange se
-      // encarga de retomar el flujo cuando el usuario regrese.
     }
 
     /**
-     * Se llama cuando Supabase detecta que una sesión fue creada o actualizada.
-     * Solo actúa cuando el evento es SIGNED_IN (retorno del redirect de Google OAuth).
-     * El caso "ya tenía sesión al abrir el modal" lo maneja openModal() directamente,
-     * así se evita el doble-login.
+     * onAuthStateChange se dispara dos veces relevantes:
+     *   1. INITIAL_SESSION al cargar → usamos para llenar el caché (_auth)
+     *   2. SIGNED_IN al regresar de Google OAuth → abrimos el modal directamente
      */
-    async function handleAuthSession(event, session) {
-      // Solo actuar en el evento real de login (redirect de OAuth)
-      // INITIAL_SESSION se dispara en cada carga — no debe abrir el modal.
-      if (event !== 'SIGNED_IN') return;
-      if (!session) return;
-
-      // Verificar que el usuario inició el flujo desde el modal
-      const wasInFlow = sessionStorage.getItem(SS_FLOW_KEY) === '1';
-      if (!wasInFlow) return;
-
-      sessionStorage.removeItem(SS_FLOW_KEY);
-
-      try {
-        const { data: profile, error } = await supabaseClient
-          .from('profiles')
-          .select('has_active_wish')
-          .eq('id', session.user.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error('[Fontana] Error leyendo profile:', error);
-        }
-
-        // El modal puede ya estar abierto (si openModal se llamó antes del redirect)
-        // o puede necesitar abrirse (retorno de Google)
-        openModal();
-
-        if (profile?.has_active_wish) {
-          showAlreadyHasWish();
-          showStep('step-auth');
-        } else {
-          const pendingPayment = getPendingPayment(session.user.id);
-          if (pendingPayment) {
-            showPendingPaymentRecovery(pendingPayment);
-          } else {
-            const emailEl = document.getElementById('wishEmail');
-            if (emailEl) emailEl.value = session.user.email || '';
-            showStep('step-wish');
-          }
-        }
-      } catch (e) {
-        console.error('[Fontana] Error en handleAuthSession:', e);
-        openModal();
-        showStep('step-wish');
-      }
-    }
-
-    /* Escuchar eventos de auth — pasamos el evento para distinguir
-       SIGNED_IN (retorno de Google) de INITIAL_SESSION (carga normal) */
     if (supabaseClient) {
-      supabaseClient.auth.onAuthStateChange((event, session) => {
-        handleAuthSession(event, session);
+      supabaseClient.auth.onAuthStateChange(async (event, session) => {
+
+        if (event === 'INITIAL_SESSION') {
+          // Llenar el caché con la sesión y el perfil del usuario
+          _auth.session = session;
+
+          if (session) {
+            try {
+              const { data: profile } = await supabaseClient
+                .from('profiles')
+                .select('has_active_wish')
+                .eq('id', session.user.id)
+                .maybeSingle();
+              _auth.hasActiveWish = profile?.has_active_wish ?? false;
+            } catch (e) {
+              console.warn('[Fontana] No se pudo leer el perfil en INITIAL_SESSION', e);
+              _auth.hasActiveWish = false;
+            }
+          }
+
+          _auth.ready = true;
+          _auth._resolve(); // desbloquear waitForAuth() si alguien esperaba
+          return;
+        }
+
+        if (event === 'SIGNED_IN') {
+          // Retorno del redirect de Google OAuth
+          const wasInFlow = sessionStorage.getItem(SS_FLOW_KEY) === '1';
+          if (!wasInFlow) return;
+          sessionStorage.removeItem(SS_FLOW_KEY);
+
+          // Actualizar caché con la nueva sesión
+          _auth.session = session;
+          try {
+            const { data: profile } = await supabaseClient
+              .from('profiles')
+              .select('has_active_wish')
+              .eq('id', session.user.id)
+              .maybeSingle();
+            _auth.hasActiveWish = profile?.has_active_wish ?? false;
+          } catch (e) {
+            _auth.hasActiveWish = false;
+          }
+          _auth.ready = true;
+
+          // Abrir el modal directamente en el paso correcto
+          document.getElementById('modalOverlay').classList.add('show');
+          _resolveModalStep(session, _auth.hasActiveWish);
+          return;
+        }
+
+        if (event === 'SIGNED_OUT') {
+          _auth.session = null;
+          _auth.hasActiveWish = false;
+        }
       });
+    } else {
+      // Sin Supabase — marcar como listo sin sesión
+      _auth.ready = true;
+      _auth._resolve();
     }
 
     /* ----------------------------------------------------------------
@@ -587,12 +578,21 @@
         return;
       }
 
-      // Verificar sesión activa ANTES de iniciar el pago
-      const { data: { session } } = await supabaseClient.auth.getSession();
+      // Usar caché — si el token caducó, refrescar una sola vez
+      let session = _auth.session;
+      if (!session?.user?.id) {
+        try {
+          const { data } = await supabaseClient.auth.getSession();
+          session = data?.session ?? null;
+          _auth.session = session;
+        } catch (_) { session = null; }
+      }
       if (!session?.user?.id) {
         alert(isEn()
           ? 'Your session expired. Please log in again.'
           : 'Tu sesión expiró. Por favor inicia sesión de nuevo.');
+        _auth.session = null;
+        _auth.hasActiveWish = false;
         resetModalState();
         openModal();
         return;
@@ -819,14 +819,12 @@
     function discardPendingPayment() {
       clearPendingPayment();
       resetModalState();
-      // Verificar sesión actual y avanzar directamente al formulario del deseo
-      supabaseClient.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          const emailEl = document.getElementById('wishEmail');
-          if (emailEl) emailEl.value = session.user.email || '';
-          showStep('step-wish');
-        }
-      });
+      // Usar caché: si hay sesión activa, ir directo al formulario
+      if (_auth.session) {
+        const emailEl = document.getElementById('wishEmail');
+        if (emailEl) emailEl.value = _auth.session.user.email || '';
+        showStep('step-wish');
+      }
     }
 
     /* ----------------------------------------------------------------
