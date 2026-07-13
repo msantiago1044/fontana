@@ -982,3 +982,106 @@
       outline: 2px solid var(--gold-bright);
       outline-offset: 2px;
     }
+
+/* =========================================================
+   Clases utilitarias extraídas de atributos style="" inline
+   ========================================================= */
+
+/* Botón ancho completo */
+.btn-full {
+  width: 100%;
+}
+
+/* Título honesty con ancho máximo */
+.honesty-h2 {
+  max-width: 600px;
+}
+
+/* Notas pequeñas en offer */
+.text-sm.text-faint {
+  color: var(--ivory-faint);
+  font-size: 14px;
+}
+.offer-why {
+  color: var(--ivory-dim);
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+.offer-stripe-note {
+  color: var(--ivory-faint);
+  font-size: 13.5px;
+}
+
+/* Campo - hint bajo input */
+.field-hint {
+  font-size: 12px;
+  color: var(--ivory-faint);
+  margin-top: 6px;
+}
+
+/* Nota de pago en modal */
+.modal-note {
+  font-size: 13px;
+  color: var(--ivory-faint);
+  margin-bottom: 18px;
+}
+
+/* Vista previa de email (step-confirmed) */
+.email-preview {
+  background: var(--night);
+  border: 1px solid rgba(201, 161, 74, .25);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.email-meta {
+  font-size: 12px;
+  color: var(--ivory-faint);
+  margin-bottom: 4px;
+}
+.email-subject {
+  font-size: 13px;
+  color: var(--ivory-faint);
+  margin-bottom: 14px;
+}
+.email-body {
+  font-size: 14.5px;
+  color: var(--ivory-dim);
+  line-height: 1.7;
+}
+.email-footer {
+  font-size: 12px;
+  color: var(--ivory-faint);
+  margin-top: 16px;
+}
+
+/* Nota de modo prueba en step-confirmed */
+.modal-test-note {
+  font-size: 12.5px;
+  color: var(--ivory-faint);
+  margin-bottom: 20px;
+}
+
+/* Moneda dentro del modal (step-processing) */
+.coin--modal {
+  margin-bottom: 24px;
+}
+
+/* Paso de procesamiento centrado */
+.step-processing {
+  text-align: center;
+  padding: 40px 0;
+}
+.step-processing h3 {
+  margin-bottom: 8px;
+}
+
+/* Links con subrayado (modal auth) */
+.link-underline {
+  text-decoration: underline;
+}
+
+/* Botón ghost con margen top (step-identity) */
+.btn-ghost.btn-full {
+  margin-top: 10px;
+}
