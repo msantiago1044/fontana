@@ -1717,18 +1717,31 @@
     async function openModal() {
       document.getElementById('modalOverlay').classList.add('show');
       if (!supabaseClient) return;
+
       const { data } = await supabaseClient.auth.getSession();
       const session = data?.session;
-      if (!session) return;
-      const { data: profile } = await supabaseClient
-        .from('profiles').select('has_active_wish')
-        .eq('id', session.user.id).maybeSingle();
-      if (profile && profile.has_active_wish) {
-        showAlreadyHasWish();
-      } else {
-        document.getElementById('step-auth').style.display = 'none';
-        document.getElementById('step-wish').style.display = 'block';
-        document.getElementById('wishEmail').value = session.user.email || '';
+      if (!session) return; // No hay sesión — mostrar paso de login normal
+
+      // Ya hay sesión activa — no pedir login de nuevo
+      try {
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('has_active_wish')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (profile?.has_active_wish) {
+          // Mostrar mensaje de deseo activo directamente al abrir el modal
+          showAlreadyHasWish();
+        } else {
+          // Saltar el paso de login, ir directo al formulario del deseo
+          const emailEl = document.getElementById('wishEmail');
+          if (emailEl) emailEl.value = session.user.email || '';
+          showStep('step-wish');
+        }
+      } catch (e) {
+        console.error('[Fontana] Error al abrir modal con sesión activa:', e);
+        // En caso de error, dejar el paso de login normal
       }
     }
     function closeModal() {
