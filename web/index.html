@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fontana — Pide tu deseo. La IA trabaja por él, 24 horas al día.</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="description"
     content="Entrega tu moneda con fe. Fontana activa un sistema de inteligencia artificial que trabaja sin descanso, durante 30 días, para acompañarte hacia tu deseo.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,7 +22,6 @@
 
 <body>
   <div class="grain"></div>
-  <div class="test-badge" data-i18n="testBadge">🧪 Modo de prueba — sin pagos ni correos reales</div>
 
   <header>
     <div class="logo">
@@ -71,7 +73,8 @@
         </div>
       </div>
       <!-- Se muestra cuando NO hay sesión -->
-      <a href="#contribucion" class="nav-cta" id="navCta" onclick="openModal(); return false;" data-i18n="nav.cta">Pedir mi deseo</a>
+      <a href="#contribucion" class="nav-cta" id="navCta" onclick="openModal(); return false;" data-i18n="nav.cta">Pedir
+        mi deseo</a>
 
       <!-- Se muestra cuando HAY sesión — inyectado por JS -->
       <div class="user-chip" id="userChip" style="display:none">
@@ -225,7 +228,7 @@
             1 dólar? Porque el monto no es el punto — el gesto sí. Algunas personas eligen dar más, como ofrenda más
             grande a su propio compromiso. Tú decides cuánta fe le pones.</p>
           <p class="offer-stripe-note" data-i18n="offer.stripe">Pago procesado de forma segura
-            por Stripe. No almacenamos los datos de tu tarjeta.</p>
+            por Wompi. No almacenamos los datos de tu tarjeta.</p>
         </div>
       </div>
 
@@ -235,8 +238,7 @@
           <p data-i18n="ranking.sub">Un ranking público de fe — elige tu apodo al contribuir y aparece aquí.</p>
         </div>
         <div class="ranking-list" id="rankingList"><!-- se llena por JS --></div>
-        <p class="ranking-note" data-i18n="ranking.note">📝 Datos de ejemplo en este modo de prueba. El ranking real se
-          actualiza con cada contribución.</p>
+        
       </div>
     </div>
   </section>
@@ -386,10 +388,9 @@
           <p class="field-hint" data-i18n="modal.payment.aliasNote">Este
             apodo es público y aparece en el ranking. No uses tu nombre real si prefieres mantenerlo privado.</p>
         </div>
-        <p class="modal-note"><span
-            data-i18n="modal.payment.stripeNote">Serás redirigido a Stripe Checkout para completar el pago de forma
-            segura.</span> <em data-i18n="modal.payment.testNote">(Modo de prueba: este botón simula el pago, no se
-            conecta a Stripe todavía.)</em></p>
+        <p class="modal-note"><span data-i18n="modal.payment.stripeNote">Serás redirigido a Wompi para
+            completar el pago de forma
+            segura.</span></p>
         <button class="btn-primary btn-full" onclick="simulatePayment()" data-i18n="modal.payment.cta">Ir a
           pagar →</button>
       </div>
@@ -404,8 +405,7 @@
         <h3 data-i18n="modal.confirmed.title">Tu deseo ya está en marcha 🪙</h3>
         <p class="sub" data-i18n="modal.confirmed.sub">Esto es lo que recibirás en tu correo en los próximos minutos:
         </p>
-        <div
-          class="email-preview">
+        <div class="email-preview">
           <p class="email-meta" data-i18n="modal.confirmed.from">De: La
             Fuente — Fontana</p>
           <p class="email-subject" data-i18n="modal.confirmed.subject">
@@ -414,11 +414,9 @@
           <p class="email-footer" data-i18n="modal.confirmed.footer">La
             Fuente seguirá trabajando en tu deseo durante las próximas 720 horas. — Fontana</p>
         </div>
-        <p class="modal-test-note" data-i18n="modal.confirmed.testNote">📝
-          Nota de prueba: este texto es un ejemplo de plantilla. El correo real lo redactará la IA (GLM) de forma
-          personalizada según tu deseo, una vez conectemos las automatizaciones.</p>
-        <button class="btn-primary btn-full" onclick="goToIdentityForm()"
-          data-i18n="modal.confirmed.cta">Continuar →</button>
+        
+        <button class="btn-primary btn-full" onclick="goToIdentityForm()" data-i18n="modal.confirmed.cta">Continuar
+          →</button>
       </div>
 
       <div id="step-identity" style="display:none">
@@ -442,8 +440,8 @@
             data-i18n-placeholder="modal.identity.contextPlaceholder"
             placeholder="Lo que creas que ayuda a entender mejor tu situación..."></textarea>
         </div>
-        <button class="btn-primary btn-full" onclick="submitIdentityForm()"
-          data-i18n="modal.identity.cta">Enviar datos</button>
+        <button class="btn-primary btn-full" onclick="submitIdentityForm()" data-i18n="modal.identity.cta">Enviar
+          datos</button>
         <button class="btn-ghost btn-full" style="margin-top:10px;" onclick="closeModal()"
           data-i18n="modal.identity.skip">Omitir por ahora</button>
       </div>

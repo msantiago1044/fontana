@@ -108,12 +108,12 @@ const I18N = {
       li4: "En algunos casos, la IA puede actuar directamente en favor de tu deseo",
       cta: "Pedir mi deseo",
       why: "¿Por qué empieza en 1 dólar? Porque el monto no es el punto — el gesto sí. Algunas personas eligen dar más, como ofrenda más grande a su propio compromiso. Tú decides cuánta fe le pones.",
-      stripe: "Pago procesado de forma segura por Stripe. No almacenamos los datos de tu tarjeta."
+      stripe: "Pago procesado de forma segura por Wompi. No almacenamos los datos de tu tarjeta."
     },
     ranking: {
       title: "La fuente recuerda a quienes más han dado",
       sub: "Un ranking público de fe — elige tu apodo al contribuir y aparece aquí.",
-      note: "📝 Datos de ejemplo en este modo de prueba. El ranking real se actualiza con cada contribución."
+      note: ""
     },
     faq: {
       kicker: "Preguntas frecuentes", title: "Antes de pedir tu deseo",
@@ -146,8 +146,8 @@ const I18N = {
         amountLabel: "Monto (USD, mínimo 1)",
         aliasLabel: "Elige tu apodo para el ranking de donadores", aliasPlaceholder: "Ej. Viajero777",
         aliasNote: "Este apodo es público y aparece en el ranking. No uses tu nombre real si prefieres mantenerlo privado.",
-        stripeNote: "Serás redirigido a Stripe Checkout para completar el pago de forma segura.",
-        testNote: "(Modo de prueba: este botón simula el pago, no se conecta a Stripe todavía.)",
+        stripeNote: "Serás redirigido a Wompi para completar el pago de forma segura.",
+        testNote: "",
         cta: "Ir a pagar →"
       },
       processing: { title: "Tu moneda cae en la fuente...", sub: "Procesando tu contribución" },
@@ -155,7 +155,7 @@ const I18N = {
         title: "Tu deseo ya está en marcha 🪙", sub: "Esto es lo que recibirás en tu correo en los próximos minutos:",
         from: "De: La Fuente — Fontana", subject: "Asunto: Tu deseo ya está en marcha 🪙",
         footer: "La Fuente seguirá trabajando en tu deseo durante las próximas 720 horas. — Fontana",
-        testNote: "📝 Nota de prueba: este texto es un ejemplo de plantilla. El correo real lo redactará la IA (GLM) de forma personalizada según tu deseo, una vez conectemos las automatizaciones.",
+        testNote: "",
         cta: "Continuar →"
       },
       identity: {
@@ -213,12 +213,12 @@ const I18N = {
       li4: "In some cases, the AI can act directly in favor of your wish",
       cta: "Make my wish",
       why: "Why start at $1? Because the amount isn't the point — the gesture is. Some people choose to give more, as a bigger offering to their own commitment. You decide how much faith you put into it.",
-      stripe: "Payment securely processed by Stripe. We don't store your card details."
+      stripe: "Payment securely processed by Wompi. We don't store your card details."
     },
     ranking: {
       title: "The fountain remembers those who've given the most",
       sub: "A public ranking of faith — choose your alias when contributing and you'll appear here.",
-      note: "📝 Example data in this test mode. The real ranking updates with every contribution."
+      note: ""
     },
     faq: {
       kicker: "Frequently asked questions", title: "Before you make your wish",
@@ -251,8 +251,8 @@ const I18N = {
         amountLabel: "Amount (USD, minimum 1)",
         aliasLabel: "Choose your alias for the donor ranking", aliasPlaceholder: "E.g. Traveler777",
         aliasNote: "This alias is public and appears in the ranking. Don't use your real name if you'd rather keep it private.",
-        stripeNote: "You'll be redirected to Stripe Checkout to complete payment securely.",
-        testNote: "(Test mode: this button simulates payment, it isn't connected to Stripe yet.)",
+        stripeNote: "You'll be redirected to Wompi to complete payment securely.",
+        testNote: "",
         cta: "Go to payment →"
       },
       processing: { title: "Your coin is falling into the fountain...", sub: "Processing your contribution" },
@@ -922,26 +922,52 @@ function submitIdentityForm() {
 }
 
 /* ----------------------------------------------------------------
-   10. RANKING (demo)
+   10. RANKING (real — lee de Supabase)
 ---------------------------------------------------------------- */
-const RANKING_DEMO = [
-  { name: 'Viajero777', amount: 85 },
-  { name: 'LunaDorada', amount: 42 },
-  { name: 'RaícesDeFe', amount: 30 },
-  { name: 'SegundaOportunidad', amount: 21 },
-  { name: 'AnonimoConFe', amount: 14 },
-];
-
-function renderRanking(lang) {
+async function renderRanking() {
   const list = document.getElementById('rankingList');
+  const note = document.querySelector('[data-i18n="ranking.note"]');
   if (!list) return;
-  list.innerHTML = RANKING_DEMO.map((d, i) => `
-        <div class="rank-row ${i === 0 ? 'first' : ''}">
-          <div class="rank-pos">${i === 0 ? '🥇' : '#' + (i + 1)}</div>
-          <div class="rank-name">${d.name}</div>
-          <div class="rank-amount">$${d.amount} USD</div>
-        </div>
-      `).join('');
+
+  // Mostrar skeleton mientras carga
+  list.innerHTML = [1,2,3,4,5].map(() => `
+    <div class="rank-row" style="opacity:.35">
+      <div class="rank-pos">—</div>
+      <div class="rank-name" style="background:var(--border-soft);height:14px;width:120px;border-radius:4px;"></div>
+      <div class="rank-amount" style="background:var(--border-soft);height:14px;width:60px;border-radius:4px;"></div>
+    </div>`).join('');
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('wishes')
+      .select('alias, amount_usd')
+      .eq('status', 'active')
+      .not('alias', 'is', null)
+      .order('amount_usd', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      list.innerHTML = '<p style="color:var(--ivory-faint);font-size:13px;padding:16px 0;">Sé el primero en aparecer aquí.</p>';
+      if (note) note.style.display = 'none';
+      return;
+    }
+
+    list.innerHTML = data.map((d, i) => `
+      <div class="rank-row ${i === 0 ? 'first' : ''}">
+        <div class="rank-pos">${i === 0 ? '🥇' : '#' + (i + 1)}</div>
+        <div class="rank-name">${d.alias}</div>
+        <div class="rank-amount">$${d.amount_usd} USD</div>
+      </div>`).join('');
+
+    // Ocultar la nota de "datos de ejemplo" — ya hay datos reales
+    if (note) note.style.display = 'none';
+
+  } catch (err) {
+    console.warn('[Fontana] Ranking no disponible:', err.message);
+    list.innerHTML = '<p style="color:var(--ivory-faint);font-size:13px;padding:16px 0;">El ranking se actualizará pronto.</p>';
+  }
 }
 
 /* ----------------------------------------------------------------
@@ -969,6 +995,6 @@ document.querySelectorAll('.faq-item').forEach(item => {
   setTheme(savedTheme);
   setLang(savedLang);
 
-  // Renderizar ranking demo
+  // Renderizar ranking real desde Supabase
   renderRanking();
 })();

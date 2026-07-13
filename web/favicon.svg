@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="coinGrad" cx="38%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#f0d080"/>
+      <stop offset="45%" stop-color="#c9a14a"/>
+      <stop offset="100%" stop-color="#8a6520"/>
+    </radialGradient>
+    <radialGradient id="innerGrad" cx="40%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#f5e098"/>
+      <stop offset="60%" stop-color="#c9a14a"/>
+      <stop offset="100%" stop-color="#7a5510"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Sombra suave -->
+  <ellipse cx="33" cy="57" rx="20" ry="4" fill="rgba(0,0,0,0.18)"/>
+
+  <!-- Moneda — borde exterior (profundidad) -->
+  <circle cx="32" cy="30" r="26" fill="#7a5510"/>
+
+  <!-- Moneda — cara principal -->
+  <circle cx="32" cy="28" r="26" fill="url(#coinGrad)"/>
+
+  <!-- Anillo interior grabado -->
+  <circle cx="32" cy="28" r="20" fill="none" stroke="#8a6520" stroke-width="1.2" opacity="0.5"/>
+
+  <!-- Letra "f" en el centro, tipografía serif elegante -->
+  <text
+    x="32" y="37"
+    text-anchor="middle"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="26"
+    font-weight="400"
+    font-style="italic"
+    fill="#4a3000"
+    opacity="0.85"
+  >f</text>
+
+  <!-- Destello superior izquierdo -->
+  <ellipse cx="22" cy="18" rx="5" ry="3" fill="white" opacity="0.22" transform="rotate(-30 22 18)"/>
+</svg>
