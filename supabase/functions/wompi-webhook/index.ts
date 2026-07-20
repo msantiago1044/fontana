@@ -111,6 +111,7 @@ Deno.serve(async (req) => {
         name: wish.profiles?.full_name ?? "",
         wishText: wish.wish_text,
         category: wish.category,
+        wishId: wish.id,
       }),
     });
 

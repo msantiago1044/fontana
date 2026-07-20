@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fontana — Completar Perfil</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="fontana.css">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            position: relative;
+        }
+
+        .identity-card {
+            background: var(--night-2);
+            border: 1px solid rgba(201, 161, 74, .25);
+            border-radius: 20px;
+            max-width: 480px;
+            width: 100%;
+            padding: 40px;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .identity-card h3 {
+            font-family: var(--serif);
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: var(--ivory);
+        }
+
+        .identity-card p.sub {
+            color: var(--ivory-dim);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .logo-text {
+            font-family: var(--serif);
+            font-size: 24px;
+            color: var(--ivory);
+            font-weight: 500;
+        }
+
+        .logo-text em {
+            color: var(--gold-bright);
+            font-style: normal;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="grain"></div>
+    <div class="ripple-field" aria-hidden="true" style="opacity: 0.5;">
+        <div class="ripple r1" style="animation-duration: 9s;"></div>
+        <div class="ripple r2" style="animation-duration: 9s; animation-delay: 3s;"></div>
+    </div>
+
+    <div class="identity-card">
+        <div class="header-logo">
+            <svg width="24" height="24" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <defs>
+                    <radialGradient id="coinGradInd" cx="38%" cy="32%" r="75%">
+                        <stop offset="0%" stop-color="#f2dca0" />
+                        <stop offset="55%" stop-color="#c9a14a" />
+                        <stop offset="100%" stop-color="#93732e" />
+                    </radialGradient>
+                </defs>
+                <circle cx="16" cy="16" r="14" fill="none" stroke="#c9a14a" stroke-width="1.1" opacity="0.45" />
+                <circle cx="16" cy="16" r="10.5" fill="url(#coinGradInd)" stroke="#f2dca0" stroke-width="0.6"
+                    stroke-opacity="0.5" />
+            </svg>
+            <span class="logo-text">font<em>a</em>na</span>
+        </div>
+
+        <!-- Contenedor del Formulario -->
+        <div id="form-container">
+            <h3 id="txt-title">Personaliza tu acompañamiento</h3>
+            <p class="sub" id="txt-sub">Este paso adicional nos ayuda a entender mejor a quién y qué situación está
+                guiando la fuente.</p>
+
+            <div class="field">
+                <label for="identityName" id="lbl-name">¿Cómo te llamas?</label>
+                <input type="text" id="identityName" placeholder="Tu nombre">
+            </div>
+            <div class="field">
+                <label for="identityAge" id="lbl-age">¿Cuántos años tienes?</label>
+                <input type="number" id="identityAge" min="18" max="110" placeholder="Ej. 29">
+            </div>
+            <div class="field">
+                <label for="identityContext" id="lbl-context">Cuéntanos un poco más de contexto sobre tu deseo</label>
+                <textarea id="identityContext" rows="5" maxlength="400"
+                    placeholder="Escribe aquí detalles o situaciones adicionales..."></textarea>
+            </div>
+
+            <button class="btn-primary btn-full" id="btn-submit" onclick="submitForm()">Registrar información</button>
+            <button class="btn-ghost btn-full" style="margin-top:12px;" id="btn-skip" onclick="goHome()">Volver al
+                inicio</button>
+        </div>
+
+        <!-- Contenedor de Éxito, oculto por defecto -->
+        <div id="success-container" style="display:none; text-align: center; padding: 20px 0;">
+            <div class="coin" style="animation: none; margin: 0 auto 20px;"></div>
+            <h3 id="success-title">Información Guardada</h3>
+            <p class="sub" id="success-sub" style="margin-bottom: 30px;">Tu perfil ha sido actualizado. La fuente y el
+                sistema continuarán procesando tu intención con este nuevo contexto.</p>
+            <button class="btn-primary" onclick="goHome()">Ir a Fontana</button>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://cbvqwdrbwogsmcglsvzg.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_CAqF53kRDfzET56lLdKZIQ_UlnG-r5A';
+
+        // Asegurar mismo tema e idioma
+        const savedTheme = localStorage.getItem('fontana_theme') || 'light';
+        const savedLang = localStorage.getItem('fontana_lang') || 'es';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.documentElement.setAttribute('lang', savedLang);
+
+        // Obtener wishId de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const wishId = urlParams.get('wishId') || urlParams.get('wishid');
+
+        // Textos I18N
+        const TRANSLATIONS = {
+            es: {
+                title: "Ayúdanos a conocerte mejor",
+                sub: "Este segundo paso nos permite afinar y personalizar el trabajo de la inteligencia artificial sobre tu deseo.",
+                lblName: "¿Cómo te llamas?",
+                placeholderName: "Tu nombre",
+                lblAge: "¿Cuántos años tienes?",
+                placeholderAge: "Ej. 29",
+                lblContext: "Cuéntanos un poco más de contexto sobre tu deseo",
+                placeholderContext: "Detalles que creas que ayudan a entender mejor tu situación actual...",
+                btnSubmit: "Enviar datos",
+                btnSkip: "Ir al inicio",
+                successTitle: "¡Datos guardados!",
+                successSub: "Gracias. La inteligencia artificial incorporará este contexto a partir de tu siguiente paso de acompañamiento.",
+                btnHome: "Regresar a Fontana",
+                noWish: "No se encontró un deseo válido para asociar. Regresa a Fontana e inicia el proceso.",
+                errorSave: "Hubo un error al guardar tu información, pero tu deseo sigue activo de todas formas."
+            },
+            en: {
+                title: "Help us get to know you better",
+                sub: "This optional step helps the AI customize and target its work on your behalf.",
+                lblName: "What is your name?",
+                placeholderName: "Your name",
+                lblAge: "How old are you?",
+                placeholderAge: "E.g. 29",
+                lblContext: "Tell us a bit more context about your wish",
+                placeholderContext: "Anything you feel helps us understand your situation better...",
+                btnSubmit: "Submit details",
+                btnSkip: "Go to home",
+                successTitle: "Details saved!",
+                successSub: "Thank you. The AI will incorporate this context starting with your next guidance step.",
+                btnHome: "Back to Fontana",
+                noWish: "No valid wish ID was found. Please return to Fontana and start the process.",
+                errorSave: "There was an error saving your details, but your wish is active anyway."
+            }
+        };
+
+        const t = TRANSLATIONS[savedLang] || TRANSLATIONS.es;
+
+        // Aplicar textos e internacionalización
+        document.getElementById('txt-title').textContent = t.title;
+        document.getElementById('txt-sub').textContent = t.sub;
+        document.getElementById('lbl-name').textContent = t.lblName;
+        document.getElementById('identityName').setAttribute('placeholder', t.placeholderName);
+        document.getElementById('lbl-age').textContent = t.lblAge;
+        document.getElementById('identityAge').setAttribute('placeholder', t.placeholderAge);
+        document.getElementById('lbl-context').textContent = t.lblContext;
+        document.getElementById('identityContext').setAttribute('placeholder', t.placeholderContext);
+        document.getElementById('btn-submit').textContent = t.btnSubmit;
+        document.getElementById('btn-skip').textContent = t.btnSkip;
+        document.getElementById('success-title').textContent = t.successTitle;
+        document.getElementById('success-sub').textContent = t.successSub;
+        document.querySelector('#success-container button').textContent = t.btnHome;
+
+        if (!wishId) {
+            alert(t.noWish);
+            document.getElementById('btn-submit').setAttribute('disabled', 'true');
+            document.getElementById('btn-submit').style.opacity = '0.5';
+        }
+
+        async function submitForm() {
+            if (!wishId) {
+                alert(t.noWish);
+                return;
+            }
+            const name = document.getElementById('identityName').value.trim();
+            const age = document.getElementById('identityAge').value.trim();
+            const context = document.getElementById('identityContext').value.trim();
+
+            const btn = document.getElementById('btn-submit');
+            btn.setAttribute('disabled', 'true');
+            btn.textContent = savedLang === 'es' ? 'Guardando...' : 'Saving...';
+
+            try {
+                const resp = await fetch(SUPABASE_URL + '/functions/v1/guardar-identidad', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                        'apikey': SUPABASE_ANON_KEY
+                    },
+                    body: JSON.stringify({ wishId, name, age, context })
+                });
+
+                if (!resp.ok) {
+                    throw new Error('Error al guardar datos');
+                }
+
+                document.getElementById('form-container').style.display = 'none';
+                document.getElementById('success-container').style.display = 'block';
+            } catch (err) {
+                console.error(err);
+                alert(t.errorSave);
+                goHome();
+            }
+        }
+
+        function goHome() {
+            // Redirigir a la landing page principal
+            window.location.href = '/';
+        }
+    </script>
+</body>
+
+</html>

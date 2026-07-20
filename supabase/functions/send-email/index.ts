@@ -166,8 +166,23 @@ Deno.serve(async (req) => {
 
     // 3. Confirmación de pago
     if (type === "payment_confirmed") {
-      const { to, name } = body;
+      const { to, name, wishId } = body;
       const firstName = (name || "").split(" ")[0] || "viajero";
+      const identityUrl = wishId 
+        ? `https://fontana-vert.vercel.app/identidad.html?wishId=${wishId}` 
+        : `https://fontana-vert.vercel.app`;
+      
+      const identityButtonHtml = wishId ? `
+        <div style="margin: 28px 0; padding: 20px; background: #faf8f5; border-radius: 8px; border: 1px solid #eadecc; text-align: center;">
+          <p style="margin: 0 0 12px; font-size: 14px; color: #5a5550; line-height: 1.5;">
+            Para ayudar a la inteligencia artificial a entender mejor tu situación y planificar pasos más precisos, te sugerimos completar tu perfil (Nombre, Edad y contexto adicional del deseo).
+          </p>
+          <a href="${identityUrl}" style="display: inline-block; padding: 12px 24px; background: #c9a14a; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: .05em;">
+            Completar mi perfil →
+          </a>
+        </div>
+      ` : "";
+
       await sendEmail(
         to,
         "Tu deseo ya está en marcha — próximas 24 horas",
@@ -176,6 +191,9 @@ Deno.serve(async (req) => {
           <p>Tu contribución llegó. La fuente ya está trabajando en tu deseo.</p>
           <p>En las próximas 24 horas recibirás tu primer correo de acompañamiento:
              un paso concreto que puedes dar esta misma semana.</p>
+          
+          ${identityButtonHtml}
+
           <p>Durante los próximos 30 días el sistema te irá enviando avances
              cada vez que detecte algo relevante para ti.</p>
           <p><em>Fe y trabajo.</em></p>

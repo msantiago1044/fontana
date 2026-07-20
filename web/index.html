@@ -415,36 +415,10 @@
             Fuente seguirá trabajando en tu deseo durante las próximas 720 horas. — Fontana</p>
         </div>
         
-        <button class="btn-primary btn-full" onclick="goToIdentityForm()" data-i18n="modal.confirmed.cta">Continuar
+        <button class="btn-primary btn-full" onclick="goToIdentityUrl()" data-i18n="modal.confirmed.cta">Continuar
           →</button>
       </div>
 
-      <div id="step-identity" style="display:none">
-        <h3 data-i18n="modal.identity.title">Ayúdanos a conocerte mejor</h3>
-        <p class="sub" data-i18n="modal.identity.sub">Este segundo correo (opcional) nos ayuda a personalizar mejor el
-          trabajo de la IA sobre tu deseo. Puedes omitirlo y tu ciclo de 30 días arranca igual.</p>
-        <div class="field">
-          <label for="identityName" data-i18n="modal.identity.nameLabel">¿Cómo te llamas?</label>
-          <input type="text" id="identityName" data-i18n-placeholder="modal.identity.namePlaceholder"
-            placeholder="Tu nombre">
-        </div>
-        <div class="field">
-          <label for="identityAge" data-i18n="modal.identity.ageLabel">¿Cuántos años tienes?</label>
-          <input type="number" id="identityAge" min="18" max="110" data-i18n-placeholder="modal.identity.agePlaceholder"
-            placeholder="Ej. 29">
-        </div>
-        <div class="field">
-          <label for="identityContext" data-i18n="modal.identity.contextLabel">Cuéntanos un poco más de contexto sobre
-            tu deseo</label>
-          <textarea id="identityContext" rows="3" maxlength="400"
-            data-i18n-placeholder="modal.identity.contextPlaceholder"
-            placeholder="Lo que creas que ayuda a entender mejor tu situación..."></textarea>
-        </div>
-        <button class="btn-primary btn-full" onclick="submitIdentityForm()" data-i18n="modal.identity.cta">Enviar
-          datos</button>
-        <button class="btn-ghost btn-full" style="margin-top:10px;" onclick="closeModal()"
-          data-i18n="modal.identity.skip">Omitir por ahora</button>
-      </div>
     </div>
   </div>
   <script src="fontana.js" defer></script>

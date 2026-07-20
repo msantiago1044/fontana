@@ -358,7 +358,7 @@ try {
 /* ----------------------------------------------------------------
    3. MODAL — CONTROL DE PASOS Y UI
 ---------------------------------------------------------------- */
-const STEPS = ['step-auth', 'step-wish', 'step-payment', 'step-processing', 'step-confirmed', 'step-identity'];
+const STEPS = ['step-auth', 'step-wish', 'step-payment', 'step-processing', 'step-confirmed'];
 
 function showStep(stepId) {
   STEPS.forEach(id => {
@@ -941,41 +941,15 @@ function discardPendingPayment() {
 }
 
 /* ----------------------------------------------------------------
-   9. FORMULARIO DE IDENTIDAD (opcional, paso post-confirmación)
+   9. FORMULARIO DE IDENTIDAD (Redirección a página externa)
 ---------------------------------------------------------------- */
-function goToIdentityForm() {
-  document.getElementById('step-confirmed').style.display = 'none';
-  document.getElementById('step-identity').style.display = 'block';
-}
-
-async function submitIdentityForm() {
+function goToIdentityUrl() {
   const wishId = window._lastWishId;
-  const name = document.getElementById('identityName')?.value || '';
-  const age = document.getElementById('identityAge')?.value || '';
-  const context = document.getElementById('identityContext')?.value || '';
-
-  if (!wishId) {
-    alert(isEn() ? 'Could not find your wish ID.' : 'No se pudo encontrar el ID de tu deseo.');
-    return closeModal();
+  if (wishId) {
+    window.location.href = `/identidad.html?wishId=${wishId}`;
+  } else {
+    closeModal();
   }
-
-  try {
-    const resp = await fetch(SUPABASE_URL + '/functions/v1/guardar-identidad', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ wishId, name, age, context })
-    });
-
-    if (!resp.ok) throw new Error('Error al guardar');
-
-    alert(isEn()
-      ? 'Thank you! The AI will use this context to help you better.'
-      : '¡Gracias! La IA usará este contexto para ayudarte mejor.');
-  } catch (e) {
-    console.error(e);
-    alert(isEn() ? 'Error saving details, but your wish is active.' : 'Error guardando datos, pero tu deseo está activo.');
-  }
-  closeModal();
 }
 
 /* ----------------------------------------------------------------
