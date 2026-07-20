@@ -45,10 +45,13 @@ async function getAccessToken(): Promise<string> {
 async function sendEmail(to: string, subject: string, html: string) {
   const accessToken = await getAccessToken();
 
+  // Codificar el asunto en UTF-8 Base64 según RFC 2047 para caracteres especiales (tildes, eñes)
+  const encodedSubject = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`;
+
   const message = [
     `From: ${FROM_NAME} <${FROM_EMAIL}>`,
     `To: ${to}`,
-    `Subject: ${subject}`,
+    `Subject: ${encodedSubject}`,
     `MIME-Version: 1.0`,
     `Content-Type: text/html; charset=UTF-8`,
     ``,

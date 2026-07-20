@@ -20,11 +20,17 @@ async function sendTelegram(text: string, replyMarkup?: object) {
     parse_mode: "HTML",
   };
   if (replyMarkup) body.reply_markup = replyMarkup;
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+  console.log("Enviando mensaje a Telegram al chatID:", CHAT_ID);
+  const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+  if (!res.ok) {
+    console.error("Error Telegram API:", await res.text());
+  } else {
+    console.log("Mensaje de Telegram enviado con exito");
+  }
 }
 
 Deno.serve(async (req) => {

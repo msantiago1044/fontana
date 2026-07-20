@@ -79,12 +79,21 @@ Deno.serve(async (req) => {
       .eq("id", wishId)
       .eq("status", "pending_payment") // solo si todavía está pendiente
       .select("*, profiles(email, full_name)")
-      .single();
+      .maybeSingle();
 
-    if (error || !wish) {
+    if (error) {
       console.error("Error actualizando wish:", error);
-      return new Response(JSON.stringify({ error: "Wish not found or already active" }), {
-        status: 404,
+      return new Response(JSON.stringify({ error: "DB Error" }), {
+        status: 500,
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!wish) {
+      // El deseo ya no está en 'pending_payment' o no existe.
+      // Wompi está haciendo un retry de algo que ya procesamos, así que devolvemos 200 OK.
+      console.log("Deseo ya procesado o no encontrado para activacion:", wishId);
+      return new Response(JSON.stringify({ ok: true, skipped: "already_active_or_not_found" }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }
