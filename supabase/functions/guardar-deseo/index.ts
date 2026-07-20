@@ -49,22 +49,31 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Insertar el deseo como active directamente
-    const { data, error } = await supabase
-    .from("wishes")
-    .insert({
-      id: wishId || undefined,        // ← usa el ID del frontend
+    // Insertar el deseo con status pending_payment.
+    // Upsert: si el wish con este ID ya existe (retry/recovery), actualiza en lugar de fallar.
+    const wishRow: Record<string, unknown> = {
+      id: wishId || undefined,
       user_id: userId,
       category,
       wish_text: wishText,
       contact_email: contactEmail,
       donor_alias: donorAlias || null,
       amount_usd: amountUsd,
-      status: "pending_payment",      // ← pendiente hasta que Wompi confirme
-      stripe_payment_intent_id: transactionId || reference
-    })
-    .select()
-    .single();
+      status: "pending_payment",
+    };
+
+    // Solo guardar stripe_payment_intent_id si tenemos un valor real
+    if (transactionId) {
+      wishRow.stripe_payment_intent_id = transactionId;
+    } else if (reference) {
+      wishRow.stripe_payment_intent_id = reference;
+    }
+
+    const { data, error } = await supabase
+      .from("wishes")
+      .upsert(wishRow, { onConflict: "id" })
+      .select()
+      .single();
 
     if (error) throw error;
 

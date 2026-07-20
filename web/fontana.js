@@ -698,7 +698,31 @@ async function simulatePayment() {
   showStep('step-processing');
 
   try {
-    // Obtener firma de integridad desde la Edge Function
+    // ─── PASO 1: Guardar el deseo en BD ANTES de abrir Wompi ──────────
+    // Esto garantiza que cuando el webhook de Wompi llegue (server-to-server),
+    // el wish ya exista con status 'pending_payment' y pueda ser actualizado.
+    const guardarResp = await fetch(EDGE_GUARDAR, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: pendingData.userId,
+        wishId: pendingData.wishId,
+        category: pendingData.category,
+        wishText: pendingData.wishText,
+        contactEmail: pendingData.contactEmail,
+        donorAlias: pendingData.donorAlias || null,
+        amountUsd: pendingData.amountUsd,
+        transactionId: null,       // aún no hay transacción
+        reference: pendingData.reference
+      })
+    });
+
+    if (!guardarResp.ok && guardarResp.status !== 409) {
+      const guardarErr = await guardarResp.json().catch(() => ({}));
+      throw new Error(guardarErr.error || `Error guardando deseo: ${guardarResp.status}`);
+    }
+
+    // ─── PASO 2: Obtener firma de integridad ──────────────────────────
     const sigResp = await fetch(EDGE_FIRMA, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -715,6 +739,7 @@ async function simulatePayment() {
     // Volver a visible el paso de pago mientras Wompi abre su modal
     showStep('step-payment');
 
+    // ─── PASO 3: Abrir widget de Wompi ────────────────────────────────
     const checkout = new WidgetCheckout({
       currency: 'COP',
       amountInCents,
@@ -726,19 +751,11 @@ async function simulatePayment() {
     checkout.open(function (result) {
       // result.transaction puede ser null si el usuario cerró sin pagar
       const status = result?.transaction?.status;
-      const txId = result?.transaction?.id;
 
       if (status === 'APPROVED') {
-        showStep('step-processing');
-        registrarDeseo(txId, pendingData).catch(e => {
-          console.error('[Fontana] Error registrando deseo:', e);
-          showStep('step-payment');
-          alert(isEn()
-            ? 'Payment received but an error occurred saving your wish. ' +
-            'Write to fontanadigital.ai@gmail.com with ref: ' + reference
-            : 'Pago recibido pero hubo un error guardando tu deseo. ' +
-            'Escríbenos a fontanadigital.ai@gmail.com con ref: ' + reference);
-        });
+        // El wish ya está en BD. El webhook de Wompi lo activa.
+        // Solo mostramos la pantalla de confirmación al usuario.
+        mostrarConfirmacion(pendingData);
       } else if (status && status !== 'DECLINED') {
         // PENDING: el pago está en proceso (ej. PSE), dejar datos y esperar
         showStep('step-payment');
@@ -747,6 +764,8 @@ async function simulatePayment() {
           : 'Tu pago está siendo procesado. Confirmaremos por correo.');
       } else {
         // null (cerró widget sin pagar) o DECLINED
+        // El wish queda como pending_payment en BD — se puede limpiar luego
+        // o reutilizar si vuelve a intentar.
         clearPendingPayment();
         showStep('step-payment');
         if (status === 'DECLINED') {
@@ -761,7 +780,7 @@ async function simulatePayment() {
 
   } catch (e) {
     showStep('step-payment');
-    console.error('[Fontana] Error iniciando Wompi:', e);
+    console.error('[Fontana] Error iniciando pago:', e);
     alert(isEn()
       ? 'Connection error. Please try again: ' + e.message
       : 'Error de conexión. Intenta de nuevo: ' + e.message);
@@ -769,10 +788,35 @@ async function simulatePayment() {
 }
 
 /* ----------------------------------------------------------------
-   7. REGISTRO EN SUPABASE — guardar-deseo
+   7. CONFIRMACIÓN Y REGISTRO — mostrar al usuario tras pago exitoso
 ---------------------------------------------------------------- */
+
+/** Muestra la pantalla de confirmación tras pago aprobado */
+function mostrarConfirmacion(pendingData) {
+  const data = pendingData || getPendingPayment();
+
+  // Limpiar el pago pendiente del localStorage
+  clearPendingPayment();
+
+  // Mostrar confirmación
+  const lang = localStorage.getItem('fontana_lang') || 'es';
+  const previewEl = document.getElementById('previewEmailBody');
+  if (previewEl) {
+    previewEl.textContent =
+      PREVIEW_TEMPLATES[lang]?.[data?.category] ||
+      PREVIEW_TEMPLATES[lang]?.other ||
+      '';
+  }
+  // Ocultar step-processing y mostrar confirmación
+  STEPS.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  document.getElementById('step-confirmed').style.display = 'block';
+}
+
+/**
+ * registrarDeseo — mantenido por compatibilidad con recoverPendingPayment().
+ * Intenta insertar el wish (idempotente: 409 = ya existe = OK).
+ */
 async function registrarDeseo(transactionId, pendingData) {
-  // Si pendingData no se pasó directamente, intentar recuperar de localStorage
   const data = pendingData || getPendingPayment();
   if (!data?.userId) {
     throw new Error('No hay datos del deseo pendiente.');
@@ -798,27 +842,12 @@ async function registrarDeseo(transactionId, pendingData) {
 
   if (!resp.ok) {
     console.error('[Fontana] guardar-deseo error:', result);
-    // Si el deseo ya existe (409 conflict) lo tratamos como éxito — ya estaba guardado
     if (resp.status !== 409) {
       throw new Error(result.error || `Server error ${resp.status}`);
     }
   }
 
-  // Limpiar el pago pendiente del localStorage solo cuando éxito
-  clearPendingPayment();
-
-  // Mostrar confirmación
-  const lang = localStorage.getItem('fontana_lang') || 'es';
-  const previewEl = document.getElementById('previewEmailBody');
-  if (previewEl) {
-    previewEl.textContent =
-      PREVIEW_TEMPLATES[lang]?.[data.category] ||
-      PREVIEW_TEMPLATES[lang]?.other ||
-      '';
-  }
-  // Ocultar step-processing y mostrar confirmación
-  STEPS.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-  document.getElementById('step-confirmed').style.display = 'block';
+  mostrarConfirmacion(data);
 }
 
 /* ----------------------------------------------------------------
@@ -943,9 +972,9 @@ async function renderRanking() {
   try {
     const { data, error } = await supabaseClient
       .from('wishes')
-      .select('alias, amount_usd')
+      .select('donor_alias, amount_usd')
       .eq('status', 'active')
-      .not('alias', 'is', null)
+      .not('donor_alias', 'is', null)
       .order('amount_usd', { ascending: false })
       .limit(10);
 
@@ -960,7 +989,7 @@ async function renderRanking() {
     list.innerHTML = data.map((d, i) => `
       <div class="rank-row ${i === 0 ? 'first' : ''}">
         <div class="rank-pos">${i === 0 ? '🥇' : '#' + (i + 1)}</div>
-        <div class="rank-name">${d.alias}</div>
+        <div class="rank-name">${d.donor_alias}</div>
         <div class="rank-amount">$${d.amount_usd} USD</div>
       </div>`).join('');
 

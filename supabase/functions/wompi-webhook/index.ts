@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       })
       .eq("id", wishId)
       .eq("status", "pending_payment") // solo si todavía está pendiente
-      .select("*, profiles!inner(email, full_name)")
+      .select("*, profiles(email, full_name)")
       .single();
 
     if (error || !wish) {
