@@ -465,15 +465,15 @@ function _resolveModalStep(session, hasActiveWish) {
     return;
   }
 
-  if (hasActiveWish) {
-    _showAlreadyHasWish();
-    showStep('step-auth');
-    return;
-  }
-
   const pending = getPendingPayment(session.user.id);
   if (pending) {
     showPendingPaymentRecovery(pending);
+    return;
+  }
+
+  if (hasActiveWish) {
+    _showAlreadyHasWish();
+    showStep('step-auth');
     return;
   }
 
@@ -717,10 +717,12 @@ async function simulatePayment() {
       })
     });
 
-    if (!guardarResp.ok && guardarResp.status !== 409) {
+    if (!guardarResp.ok) {
       const guardarErr = await guardarResp.json().catch(() => ({}));
       throw new Error(guardarErr.error || `Error guardando deseo: ${guardarResp.status}`);
     }
+
+    _auth.hasActiveWish = true;
 
     // ─── PASO 2: Obtener firma de integridad ──────────────────────────
     const sigResp = await fetch(EDGE_FIRMA, {
@@ -795,6 +797,10 @@ async function simulatePayment() {
 function mostrarConfirmacion(pendingData) {
   const data = pendingData || getPendingPayment();
 
+  if (data?.wishId) {
+    window._lastWishId = data.wishId;
+  }
+
   // Limpiar el pago pendiente del localStorage
   clearPendingPayment();
 
@@ -842,9 +848,7 @@ async function registrarDeseo(transactionId, pendingData) {
 
   if (!resp.ok) {
     console.error('[Fontana] guardar-deseo error:', result);
-    if (resp.status !== 409) {
-      throw new Error(result.error || `Server error ${resp.status}`);
-    }
+    throw new Error(result.error || `Server error ${resp.status}`);
   }
 
   mostrarConfirmacion(data);
@@ -944,12 +948,33 @@ function goToIdentityForm() {
   document.getElementById('step-identity').style.display = 'block';
 }
 
-function submitIdentityForm() {
-  // TODO (producción): enviar datos a Supabase vía Edge Function
-  // asociándolos al wish_id del usuario para que la IA los use.
-  alert(isEn()
-    ? 'Thank you — in the connected version this saves your data so the AI understands you better.'
-    : 'Gracias — en la versión conectada esto guarda tus datos para que la IA te conozca mejor.');
+async function submitIdentityForm() {
+  const wishId = window._lastWishId;
+  const name = document.getElementById('identityName')?.value || '';
+  const age = document.getElementById('identityAge')?.value || '';
+  const context = document.getElementById('identityContext')?.value || '';
+
+  if (!wishId) {
+    alert(isEn() ? 'Could not find your wish ID.' : 'No se pudo encontrar el ID de tu deseo.');
+    return closeModal();
+  }
+
+  try {
+    const resp = await fetch(SUPABASE_URL + '/functions/v1/guardar-identidad', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wishId, name, age, context })
+    });
+
+    if (!resp.ok) throw new Error('Error al guardar');
+
+    alert(isEn()
+      ? 'Thank you! The AI will use this context to help you better.'
+      : '¡Gracias! La IA usará este contexto para ayudarte mejor.');
+  } catch (e) {
+    console.error(e);
+    alert(isEn() ? 'Error saving details, but your wish is active.' : 'Error guardando datos, pero tu deseo está activo.');
+  }
   closeModal();
 }
 

@@ -62,6 +62,24 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (body.type === "identity_filled") {
+      const { wishId, email, wishText, name, age, context } = body;
+      const msg =
+        `📝 <b>Identidad del Deseo Completada</b>\n\n` +
+        `👤 <b>Correo:</b> ${email}\n` +
+        `🆔 <b>Deseo:</b> <code>${wishId}</code>\n` +
+        `💬 <b>Deseo Original:</b> ${wishText}\n\n` +
+        `🧑 <b>Nombre:</b> ${name || "N/A"}\n` +
+        `🎂 <b>Edad:</b> ${age || "N/A"}\n` +
+        `📖 <b>Contexto:</b> ${context || "N/A"}\n`;
+
+      await sendTelegram(msg);
+
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
     // ── B) Callback del botón "Responder" ─────────────────────────────────
     if (body.callback_query) {
       const cb   = body.callback_query;

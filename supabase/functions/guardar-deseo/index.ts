@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     // Verificar que el usuario existe en profiles
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, has_active_wish")
+      .select("id")
       .eq("id", userId)
       .maybeSingle();
 
@@ -42,15 +42,49 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (profile.has_active_wish) {
+    // Comprobar la restricción real: no permitir si hay uno activo o completado
+    const { data: existingWishes } = await supabase
+      .from("wishes")
+      .select("id, status")
+      .eq("user_id", userId)
+      .in("status", ["active", "completed"]);
+
+    if (existingWishes && existingWishes.length > 0) {
       return new Response(
-        JSON.stringify({ error: "Este usuario ya tiene un deseo activo" }),
+        JSON.stringify({ error: "Este usuario ya tiene un deseo activo o completado" }),
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Insertar el deseo con status pending_payment.
-    // Upsert: si el wish con este ID ya existe (retry/recovery), actualiza en lugar de fallar.
+    // Si había un deseo en pending_payment anterior con un ID distinto, lo eliminamos
+    // para cumplir con la restricción de base de datos de one_active_wish_per_user
+    // (que incluye pending_payment en su Unique Index).
+    if (wishId) {
+      await supabase
+        .from("wishes")
+        .delete()
+        .eq("user_id", userId)
+        .eq("status", "pending_payment")
+        .neq("id", wishId);
+    }
+
+    // Verificar si el deseo ya existe y su estado actual
+    if (wishId) {
+      const { data: existingWish } = await supabase
+        .from("wishes")
+        .select("status")
+        .eq("id", wishId)
+        .maybeSingle();
+
+      if (existingWish && (existingWish.status === "active" || existingWish.status === "completed")) {
+        // El deseo ya fue activado por el webhook de pago. No lo regresamos a pendiente.
+        return new Response(
+          JSON.stringify({ success: true, wishId, note: "Already active" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const wishRow: Record<string, unknown> = {
       id: wishId || undefined,
       user_id: userId,
@@ -62,7 +96,6 @@ Deno.serve(async (req) => {
       status: "pending_payment",
     };
 
-    // Solo guardar stripe_payment_intent_id si tenemos un valor real
     if (transactionId) {
       wishRow.stripe_payment_intent_id = transactionId;
     } else if (reference) {
