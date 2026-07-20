@@ -298,7 +298,7 @@ const I18N = {
 ---------------------------------------------------------------- */
 const SUPABASE_URL = 'https://cbvqwdrbwogsmcglsvzg.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_CAqF53kRDfzET56lLdKZIQ_UlnG-r5A';
-const WOMPI_PUB_KEY = 'pub_prod_VdYqV5Ej6aYnSbiuXqPuZw5TyL4mVJO3';
+const WOMPI_PUB_KEY = 'pub_test_0IxGzreyyHchWskYuckz5fWSptihxzuc';
 const USD_TO_COP = 4200;        // Actualiza periódicamente
 const EDGE_FIRMA = `${SUPABASE_URL}/functions/v1/wompi-firma`;
 const EDGE_GUARDAR = `${SUPABASE_URL}/functions/v1/guardar-deseo`;
@@ -930,7 +930,7 @@ async function renderRanking() {
   if (!list) return;
 
   // Mostrar skeleton mientras carga
-  list.innerHTML = [1,2,3,4,5].map(() => `
+  list.innerHTML = [1, 2, 3, 4, 5].map(() => `
     <div class="rank-row" style="opacity:.35">
       <div class="rank-pos">—</div>
       <div class="rank-name" style="background:var(--border-soft);height:14px;width:120px;border-radius:4px;"></div>

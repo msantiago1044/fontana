@@ -1,26 +1,19 @@
 // send-email/index.ts
-// Envía correos con Gmail SMTP en 4 situaciones:
-//   1. welcome           → usuario se registra (login con Google)
-//   2. reminder_24h      → usuario registrado que no pagó en 24h
-//   3. payment_confirmed → usuario pagó → correo inmediato
-//   4. manual_reply      → tú respondes desde Telegram
-//
-// Secrets requeridos en Supabase:
-//   SMTP_HOST     = smtp.gmail.com
-//   SMTP_PORT     = 587
-//   SMTP_USER     = fontanadigital.ai@gmail.com
-//   SMTP_PASS     = tu_app_password_sin_espacios   (16 caracteres)
-//   SMTP_FROM_NAME= La Fuente — Fontana
+// Envía correos usando Gmail API via OAuth2 con fetch nativo — sin librerías SMTP
+// Secrets requeridos:
+//   GMAIL_CLIENT_ID      → Google Cloud Console → OAuth 2.0
+//   GMAIL_CLIENT_SECRET  → Google Cloud Console → OAuth 2.0
+//   GMAIL_REFRESH_TOKEN  → generado con OAuth Playground
+//   GMAIL_FROM_NAME      → "La Fuente — Fontana"
+//   GMAIL_FROM_EMAIL     → fontanadigital.ai@gmail.com
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
-const SMTP_HOST      = Deno.env.get("SMTP_HOST")      ?? "smtp.gmail.com";
-const SMTP_PORT      = parseInt(Deno.env.get("SMTP_PORT") ?? "587");
-const SMTP_USER      = Deno.env.get("SMTP_USER")!;
-const SMTP_PASS      = Deno.env.get("SMTP_PASS")!;
-const SMTP_FROM_NAME = Deno.env.get("SMTP_FROM_NAME") ?? "Fontana";
-const FROM_HEADER    = `${SMTP_FROM_NAME} <${SMTP_USER}>`;
+const CLIENT_ID     = Deno.env.get("GMAIL_CLIENT_ID")!;
+const CLIENT_SECRET = Deno.env.get("GMAIL_CLIENT_SECRET")!;
+const REFRESH_TOKEN = Deno.env.get("GMAIL_REFRESH_TOKEN")!;
+const FROM_NAME     = Deno.env.get("GMAIL_FROM_NAME") ?? "Fontana";
+const FROM_EMAIL    = Deno.env.get("GMAIL_FROM_EMAIL") ?? "fontanadigital.ai@gmail.com";
 
 const SUPA_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPA_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -28,36 +21,67 @@ const supabase = createClient(SUPA_URL, SUPA_KEY);
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ── SMTP helper ───────────────────────────────────────────────────────────────
+// ── Obtener access token desde refresh token ──────────────────────────────────
+async function getAccessToken(): Promise<string> {
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+      refresh_token: REFRESH_TOKEN,
+      grant_type: "refresh_token",
+    }),
+  });
+  const data = await res.json();
+  if (!data.access_token) throw new Error(`Token error: ${JSON.stringify(data)}`);
+  return data.access_token;
+}
+
+// ── Enviar correo via Gmail API ───────────────────────────────────────────────
 async function sendEmail(to: string, subject: string, html: string) {
-  const client = new SmtpClient();
+  const accessToken = await getAccessToken();
 
-  await client.connectTLS({
-    hostname: SMTP_HOST,
-    port: SMTP_PORT,
-    username: SMTP_USER,
-    password: SMTP_PASS,
-  });
-
-  await client.send({
-    from: FROM_HEADER,
-    to,
-    subject,
-    content: "Este correo requiere un cliente que soporte HTML.",
+  const message = [
+    `From: ${FROM_NAME} <${FROM_EMAIL}>`,
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: text/html; charset=UTF-8`,
+    ``,
     html,
-  });
+  ].join("\r\n");
 
-  await client.close();
+  const encoded = btoa(unescape(encodeURIComponent(message)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+  const res = await fetch(
+    "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ raw: encoded }),
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Gmail API error: ${err}`);
+  }
+  return res.json();
 }
 
 // ── Plantilla base ────────────────────────────────────────────────────────────
 function emailBase(body: string) {
-  return `
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
 <style>
   body{background:#f5f3ee;font-family:Georgia,serif;margin:0;padding:40px 0;}
   .card{background:#fff;max-width:560px;margin:0 auto;padding:48px 40px;border-radius:12px;}
@@ -87,14 +111,13 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { type } = body;
 
-    // ── 1. Bienvenida al registrarse ─────────────────────────────────────────
+    // 1. Bienvenida
     if (type === "welcome") {
       const { to, name } = body;
       const firstName = (name || "").split(" ")[0] || "viajero";
-
       await sendEmail(
         to,
-        "Bienvenido a Fontana — tu intención ya fue recibida",
+        "Bienvenido a Fontana - tu intencion ya fue recibida",
         emailBase(`
           <p>Hola, ${firstName}.</p>
           <p>Tu cuenta en Fontana está lista. La fuente ya sabe que estás aquí.</p>
@@ -105,13 +128,12 @@ Deno.serve(async (req) => {
           <p><em>Fe y trabajo.</em></p>
         `)
       );
-
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
-    // ── 2. Recordatorio 24 h (disparado por pg_cron) ─────────────────────────
+    // 2. Recordatorio 24h
     if (type === "reminder_24h") {
       const { data: pending } = await supabase
         .from("wishes")
@@ -127,25 +149,22 @@ Deno.serve(async (req) => {
           emailBase(`
             <p>Hola,</p>
             <p>Hace 24 horas dejaste un deseo a medias en Fontana.</p>
-            <p>La fuente todavía está aquí. Si estás listo para dar el paso,
-               solo necesitas completar la contribución desde $1 USD.</p>
+            <p>La fuente todavía está aquí. Con una contribución desde $1 USD das el paso.</p>
             <p><a href="https://fontana-vert.vercel.app">Retomar mi deseo →</a></p>
             <p><em>Fe y trabajo.</em></p>
           `)
         );
       }
-
       return new Response(
         JSON.stringify({ ok: true, sent: pending?.length ?? 0 }),
         { headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
 
-    // ── 3. Confirmación de pago ───────────────────────────────────────────────
+    // 3. Confirmación de pago
     if (type === "payment_confirmed") {
       const { to, name } = body;
       const firstName = (name || "").split(" ")[0] || "viajero";
-
       await sendEmail(
         to,
         "Tu deseo ya está en marcha — próximas 24 horas",
@@ -159,23 +178,19 @@ Deno.serve(async (req) => {
           <p><em>Fe y trabajo.</em></p>
         `)
       );
-
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
-    // ── 4. Respuesta manual desde Telegram ───────────────────────────────────
+    // 4. Respuesta manual desde Telegram
     if (type === "manual_reply") {
       const { to, subject, body: emailBody, wishId } = body;
-
       const htmlBody = emailBody
         .split("\n\n")
         .map((p: string) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
         .join("");
-
       await sendEmail(to, subject, emailBase(htmlBody));
-
       await supabase.from("email_log").insert({
         wish_id: wishId,
         type: "followup",
@@ -183,7 +198,6 @@ Deno.serve(async (req) => {
         body_sent: emailBody,
         sent_at: new Date().toISOString(),
       });
-
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
