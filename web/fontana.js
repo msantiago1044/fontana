@@ -677,11 +677,13 @@ async function simulatePayment() {
 
   const amountInCents = Math.round(amountRaw * USD_TO_COP) * 100;
   const userId = session.user.id;
-  const reference = `FONTANA-${userId.slice(0, 8)}-${Date.now()}`;
+  const wishId = crypto.randomUUID();
+  const reference = `FONTANA-${wishId}-${Date.now()}`;
 
   // Persistir en localStorage (sobrevive si el usuario cierra el widget)
   const pendingData = {
     userId,
+    wishId,
     category: document.getElementById('wishCategory')?.value || 'other',
     wishText: document.getElementById('wishText')?.value || '',
     contactEmail: document.getElementById('wishEmail')?.value || '',
@@ -781,6 +783,7 @@ async function registrarDeseo(transactionId, pendingData) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       userId: data.userId,
+      wishId: data.wishId,
       category: data.category,
       wishText: data.wishText,
       contactEmail: data.contactEmail,

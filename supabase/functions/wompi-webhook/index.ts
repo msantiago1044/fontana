@@ -36,6 +36,17 @@ Deno.serve(async (req) => {
     const expected = createHash("sha256").update(cadena).digest("hex");
     const received = event?.signature?.checksum;
 
+    console.log("DEBUG firma:", {
+      txId: tx.id,
+      status: tx.status,
+      amount: tx.amount_in_cents,
+      timestamp,
+      secretPrimeros6: EVENTS_SECRET?.slice(0, 6),
+      expected,
+      received,
+      coinciden: expected === received,
+    });
+
     if (expected !== received) {
       console.error("Firma Wompi inválida");
       return new Response("Unauthorized", { status: 401 });
@@ -49,7 +60,13 @@ Deno.serve(async (req) => {
     }
 
     // La referencia es el wish_id que generamos en el frontend
-    const wishId = tx.reference;
+    const rawRef = tx.reference as string;
+    const parts = rawRef.split('-');
+    // Referencia: FONTANA-{uuid-5-segmentos}-{timestamp}
+    // partes:     [0]     [1,2,3,4,5]        [6]
+    const wishId = parts.length >= 7
+      ? parts.slice(1, 6).join('-')
+      : rawRef;
 
     // ── Actualizar deseo a 'active' ──────────────────────────────────────
     const { data: wish, error } = await supabase

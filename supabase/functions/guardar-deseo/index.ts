@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
 
   try {
     const {
-      userId, category, wishText, contactEmail,
+      userId, wishId, category, wishText, contactEmail,
       donorAlias, amountUsd, transactionId, reference
     } = await req.json();
 
@@ -51,20 +51,20 @@ Deno.serve(async (req) => {
 
     // Insertar el deseo como active directamente
     const { data, error } = await supabase
-      .from("wishes")
-      .insert({
-        user_id: userId,
-        category,
-        wish_text: wishText,
-        contact_email: contactEmail,
-        donor_alias: donorAlias || null,
-        amount_usd: amountUsd,
-        status: "active",
-        cycle_started_at: new Date().toISOString(),
-        stripe_payment_intent_id: transactionId || reference
-      })
-      .select()
-      .single();
+    .from("wishes")
+    .insert({
+      id: wishId || undefined,        // ← usa el ID del frontend
+      user_id: userId,
+      category,
+      wish_text: wishText,
+      contact_email: contactEmail,
+      donor_alias: donorAlias || null,
+      amount_usd: amountUsd,
+      status: "pending_payment",      // ← pendiente hasta que Wompi confirme
+      stripe_payment_intent_id: transactionId || reference
+    })
+    .select()
+    .single();
 
     if (error) throw error;
 
