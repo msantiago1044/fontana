@@ -16,11 +16,58 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { wishId, name, age, context } = await req.json();
+    const { wishId, name, age, context, checkOnly } = await req.json();
 
     if (!wishId) {
       return new Response(
         JSON.stringify({ error: "Falta wishId" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (checkOnly) {
+      const { data: wish, error } = await supabase
+        .from("wishes")
+        .select("identity_name, identity_context")
+        .eq("id", wishId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!wish) {
+        return new Response(
+          JSON.stringify({ error: "Deseo no encontrado" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const alreadyFilled = !!(wish.identity_name || wish.identity_context);
+
+      return new Response(
+        JSON.stringify({ success: true, alreadyFilled }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verificar si ya está lleno
+    const { data: existingWish, error: checkError } = await supabase
+      .from("wishes")
+      .select("identity_name, identity_context")
+      .eq("id", wishId)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+
+    if (!existingWish) {
+      return new Response(
+        JSON.stringify({ error: "Deseo no encontrado" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (existingWish.identity_name || existingWish.identity_context) {
+      return new Response(
+        JSON.stringify({ error: "Este deseo ya tiene la información de identidad completa" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -38,13 +85,6 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (error) throw error;
-
-    if (!wish) {
-      return new Response(
-        JSON.stringify({ error: "Deseo no encontrado" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     // Enviar notificación a Telegram (el segundo mensaje)
     await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/notify-telegram`, {

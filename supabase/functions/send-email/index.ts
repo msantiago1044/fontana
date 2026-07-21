@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
           <p>Hola, ${firstName}.</p>
           <p>Tu cuenta en Fontana está lista. La fuente ya sabe que estás aquí.</p>
           <p>Cuando estés listo, pide tu deseo desde
-            <a href="https://fontana-vert.vercel.app">nuestra página</a>.
+            <a href="https://fontanadigital.dpdns.org">nuestra página</a>.
             Con una contribución desde $1 USD, el sistema de IA empieza a trabajar en él de inmediato.
           </p>
           <p><em>Fe y trabajo.</em></p>
@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
             <p>Hola,</p>
             <p>Hace 24 horas dejaste un deseo a medias en Fontana.</p>
             <p>La fuente todavía está aquí. Con una contribución desde $1 USD das el paso.</p>
-            <p><a href="https://fontana-vert.vercel.app">Retomar mi deseo →</a></p>
+            <p><a href="https://fontanadigital.dpdns.org">Retomar mi deseo →</a></p>
             <p><em>Fe y trabajo.</em></p>
           `)
         );
@@ -169,8 +169,8 @@ Deno.serve(async (req) => {
       const { to, name, wishId } = body;
       const firstName = (name || "").split(" ")[0] || "viajero";
       const identityUrl = wishId 
-        ? `https://fontana-vert.vercel.app/identidad.html?wishId=${wishId}` 
-        : `https://fontana-vert.vercel.app`;
+        ? `https://fontanadigital.dpdns.org/identidad.html?wishId=${wishId}` 
+        : `https://fontanadigital.dpdns.org`;
       
       const identityButtonHtml = wishId ? `
         <div style="margin: 28px 0; padding: 20px; background: #faf8f5; border-radius: 8px; border: 1px solid #eadecc; text-align: center;">
