@@ -9,22 +9,17 @@ ALTER TABLE public.wishes
 
 COMMENT ON COLUMN public.wishes.internal_notes IS 'Notas internas del operador, editables desde el bot de Telegram con /nota [ID] [texto]';
 
--- 2. Agregar valores al enum email_type para uso del bot
--- PostgreSQL no permite IF NOT EXISTS en ALTER TYPE, así que usamos DO block
-DO $$
-BEGIN
-  -- 'manual' para correos registrados manualmente sin envío real
-  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'manual' AND enumtypid = 'email_type'::regtype) THEN
-    ALTER TYPE email_type ADD VALUE 'manual';
-  END IF;
-  -- 'manual_reply' para respuestas a correos manuales
-  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'manual_reply' AND enumtypid = 'email_type'::regtype) THEN
-    ALTER TYPE email_type ADD VALUE 'manual_reply';
-  END IF;
-END $$;
+-- 2. Cambiar la columna type de email_log de enum (email_type) a text para permitir nuevos tipos sin problemas de transacción
+ALTER TABLE public.email_log
+  ALTER COLUMN type TYPE text;
 
--- 3. Actualizar la vista wishes_dashboard para incluir internal_notes y donor_alias
-CREATE OR REPLACE VIEW public.wishes_dashboard AS
+-- 3. Eliminar vistas dependientes para evitar errores de columnas al recrear la vista principal
+DROP VIEW IF EXISTS public.wishes_stale_48h CASCADE;
+DROP VIEW IF EXISTS public.wishes_overdue_for_closing CASCADE;
+DROP VIEW IF EXISTS public.wishes_dashboard CASCADE;
+
+-- 4. Crear de nuevo la vista wishes_dashboard con las nuevas columnas
+CREATE VIEW public.wishes_dashboard AS
 SELECT
   w.id AS wish_id,
   p.email AS login_email,
@@ -49,11 +44,21 @@ SELECT
   w.final_email_sent_manual,
   w.followup_finished_manual
 FROM public.wishes w
-JOIN public.profiles p ON p.id = w.user_id
-ORDER BY w.cycle_started_at ASC NULLS LAST;
+JOIN public.profiles p ON p.id = w.user_id;
 
--- 4. Vista para deseos sin actividad en email_log por más de 48h
-CREATE OR REPLACE VIEW public.wishes_stale_48h AS
+COMMENT ON VIEW public.wishes_dashboard IS 'Panel de control manual: úsalo para ver qué deseos están activos, cuánto llevan, y si ya toca cerrarlos.';
+
+-- 5. Recrear la vista wishes_overdue_for_closing
+CREATE VIEW public.wishes_overdue_for_closing AS
+SELECT * FROM public.wishes_dashboard
+WHERE status = 'active'
+  AND cycle_due_at <= now()
+  AND followup_finished_manual = false;
+
+COMMENT ON VIEW public.wishes_overdue_for_closing IS 'Deseos que ya cumplieron 30 días y todavía no marcaste como cerrados. Revisa esta vista primero cada día.';
+
+-- 6. Crear la vista public.wishes_stale_48h
+CREATE VIEW public.wishes_stale_48h AS
 SELECT
   wd.*
 FROM public.wishes_dashboard wd
