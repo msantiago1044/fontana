@@ -1,4 +1,8 @@
 // notify-telegram/index.ts
+// Edge Function para enviar notificaciones salientes de Fontana a Telegram
+// Se invoca internamente desde otras Edge Functions (wompi-webhook, guardar-identidad, etc.)
+// Los comandos del bot ahora se manejan en telegram-bot/index.ts
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
@@ -39,9 +43,16 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
 
-    // ── A) Llamada interna: notificar nuevo deseo pagado ──────────────────
+    // ── A) Notificar nuevo deseo pagado ─────────────────────────────────────
     if (body.type === "new_wish") {
       const { wishId, email, wishText, category, amountUsd, alias } = body;
+
+      // Contar cuántos deseos activos hay para dar contexto
+      const { count: activeCount } = await supabase
+        .from("wishes")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "active");
+
       const msg =
         `🪙 <b>Nuevo deseo activo</b>\n\n` +
         `👤 <b>Correo:</b> ${email}\n` +
@@ -49,7 +60,32 @@ Deno.serve(async (req) => {
         `💬 <b>Deseo:</b> ${wishText}\n` +
         `💵 <b>Monto:</b> $${amountUsd} USD\n` +
         (alias ? `🏷 <b>Alias ranking:</b> ${alias}\n` : "") +
-        `\n🆔 <code>${wishId}</code>`;
+        `\n📊 <b>Deseos activos ahora:</b> ${activeCount ?? "?"}\n` +
+        `🆔 <code>${wishId}</code>`;
+
+      await sendTelegram(msg, {
+        inline_keyboard: [[
+          { text: "✉️ Responder", callback_data: `reply:${wishId}` },
+          { text: "🔍 Ver detalle", callback_data: `detail:${wishId}` },
+        ]],
+      });
+
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── B) Notificar identidad completada ───────────────────────────────────
+    if (body.type === "identity_filled") {
+      const { wishId, email, wishText, name, age, context } = body;
+      const msg =
+        `📝 <b>Identidad del Deseo Completada</b>\n\n` +
+        `👤 <b>Correo:</b> ${email}\n` +
+        `🆔 <b>Deseo:</b> <code>${wishId}</code>\n` +
+        `💬 <b>Deseo Original:</b> ${wishText}\n\n` +
+        `🧑 <b>Nombre:</b> ${name || "N/A"}\n` +
+        `🎂 <b>Edad:</b> ${age || "N/A"}\n` +
+        `📖 <b>Contexto:</b> ${context || "N/A"}\n`;
 
       await sendTelegram(msg, {
         inline_keyboard: [[
@@ -62,16 +98,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (body.type === "identity_filled") {
-      const { wishId, email, wishText, name, age, context } = body;
+    // ── C) Notificar correo enviado ─────────────────────────────────────────
+    if (body.type === "email_sent") {
+      const { wishId, email, subject, emailType } = body;
       const msg =
-        `📝 <b>Identidad del Deseo Completada</b>\n\n` +
-        `👤 <b>Correo:</b> ${email}\n` +
-        `🆔 <b>Deseo:</b> <code>${wishId}</code>\n` +
-        `💬 <b>Deseo Original:</b> ${wishText}\n\n` +
-        `🧑 <b>Nombre:</b> ${name || "N/A"}\n` +
-        `🎂 <b>Edad:</b> ${age || "N/A"}\n` +
-        `📖 <b>Contexto:</b> ${context || "N/A"}\n`;
+        `✉️ <b>Correo enviado</b>\n\n` +
+        `📧 <b>Para:</b> ${email}\n` +
+        `📋 <b>Asunto:</b> ${subject}\n` +
+        `📂 <b>Tipo:</b> ${emailType}\n` +
+        `🆔 <code>${wishId}</code>`;
 
       await sendTelegram(msg);
 
@@ -80,9 +115,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── B) Callback del botón "Responder" ─────────────────────────────────
+    // ── D) Callback del botón "Responder" (legacy, redirige al flujo del bot)
     if (body.callback_query) {
-      const cb   = body.callback_query;
+      const cb = body.callback_query;
       const data = cb.data as string;
 
       if (data.startsWith("reply:")) {
@@ -107,16 +142,62 @@ Deno.serve(async (req) => {
         );
       }
 
+      if (data.startsWith("detail:")) {
+        const wishId = data.replace("detail:", "");
+
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ callback_query_id: cb.id }),
+        });
+
+        // Fetch wish details
+        const { data: wish } = await supabase
+          .from("wishes")
+          .select("*")
+          .eq("id", wishId)
+          .maybeSingle();
+
+        if (wish) {
+          const { count: emailCount } = await supabase
+            .from("email_log")
+            .select("*", { count: "exact", head: true })
+            .eq("wish_id", wish.id);
+
+          const daysActive = wish.cycle_started_at
+            ? Math.max(0, Math.floor((Date.now() - new Date(wish.cycle_started_at).getTime()) / 86400000))
+            : 0;
+
+          let msg = `🔍 <b>Detalle del deseo</b>\n\n`;
+          msg += `🆔 <code>${wish.id}</code>\n`;
+          msg += `📊 Estado: <b>${wish.status}</b>\n`;
+          msg += `📧 ${wish.contact_email}\n`;
+          msg += `📂 ${wish.category}\n`;
+          msg += `💵 $${wish.amount_usd} USD\n`;
+          msg += `⏱ Día ${daysActive} · ${emailCount ?? 0} correos\n`;
+          msg += `\n💬 ${wish.wish_text}`;
+          if (wish.internal_notes) {
+            msg += `\n\n📝 <b>Notas:</b> ${wish.internal_notes}`;
+          }
+
+          await sendTelegram(msg, {
+            inline_keyboard: [[
+              { text: "✉️ Responder", callback_data: `reply:${wishId}` },
+            ]],
+          });
+        }
+      }
+
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
-    // ── C) Mensajes de texto del bot ──────────────────────────────────────
+    // ── E) Mensajes de texto (legacy — cuando webhook apunta aquí) ──────────
     if (body.message?.text) {
       const text = body.message.text as string;
 
-      // /cola y /pendientes — siempre disponibles, sin importar el estado
+      // Redirigir /cola y /pendientes aquí por compatibilidad
       if (text === "/cola" || text === "/pendientes") {
         const { data: pending } = await supabase
           .from("wishes_dashboard")
@@ -143,7 +224,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Flujo asunto/cuerpo — requiere estado activo
+      // Flujo asunto/cuerpo
       const { data: state } = await supabase
         .from("telegram_bot_state")
         .select("*")
