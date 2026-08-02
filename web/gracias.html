@@ -5,47 +5,260 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gracias — Fontana</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            background: #0c1016;
-            color: #f4f1ea;
-            font-family: Georgia, serif;
+            background: radial-gradient(circle at center, #141a24 0%, #0c1016 100%);
+            color: #c9c6bc;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            padding: 24px;
+            overflow-x: hidden;
+        }
+
+        /* Efecto sutil de ruido de fondo, igual que en el index */
+        .grain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.015'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 480px;
+            width: 100%;
+            padding: 48px 32px;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(232, 200, 115, 0.08);
+            border-radius: 28px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             text-align: center;
-            padding: 40px;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-8px) rotate(3deg);
+            }
+
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+        }
+
+        .coin-icon {
+            display: inline-block;
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: float 5s ease-in-out infinite;
+            filter: drop-shadow(0 8px 16px rgba(232, 200, 115, 0.15));
         }
 
         h1 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 32px;
+            font-weight: 500;
             color: #e8c873;
-            font-size: 36px;
+            line-height: 1.25;
             margin-bottom: 16px;
+            letter-spacing: -0.01em;
+            text-shadow: 0 2px 10px rgba(232, 200, 115, 0.05);
         }
 
-        p {
+        .subtitle {
+            font-size: 15px;
+            line-height: 1.6;
             color: #c9c6bc;
-            font-size: 18px;
-            max-width: 500px;
-            line-height: 1.7;
+            margin-bottom: 28px;
+            font-weight: 400;
         }
 
-        a {
+        .divider {
+            height: 1px;
+            background: radial-gradient(circle, rgba(232, 200, 115, 0.2) 0%, rgba(232, 200, 115, 0) 100%);
+            border: none;
+            margin: 28px auto;
+            width: 70%;
+        }
+
+        .ngo-text {
+            color: #a89060;
+            font-size: 13.5px;
+            line-height: 1.65;
+            margin-bottom: 36px;
+            font-style: italic;
+        }
+
+        .ngo-text strong {
             color: #e8c873;
+            font-style: normal;
+            font-weight: 600;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        button,
+        .btn-secondary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', system-ui, sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            width: 100%;
+            height: 52px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #e8c873 0%, #c9a14a 100%);
+            color: #0c1016;
+            border: none;
+            box-shadow: 0 4px 15px rgba(232, 200, 115, 0.15);
+            letter-spacing: 0.01em;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(232, 200, 115, 0.25);
+            opacity: 0.95;
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #c9c6bc;
+            border: 1px solid rgba(201, 198, 188, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(201, 198, 188, 0.05);
+            border-color: rgba(201, 198, 188, 0.35);
+            color: #f4f1ea;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 16px;
+            }
+
+            .container {
+                padding: 32px 20px;
+                border: none;
+                background: transparent;
+                box-shadow: none;
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .subtitle {
+                font-size: 14.5px;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div>
-        <div style="font-size:48px;margin-bottom:24px;">🪙</div>
+    <div class="grain"></div>
+
+    <main class="container">
+        <div class="coin-icon" aria-hidden="true">🪙</div>
         <h1>Tu deseo ya está en marcha</h1>
-        <p>Revisa tu correo en los próximos minutos. La Fuente ya está trabajando.</p>
-        <p style="margin-top:32px;font-size:14px;color:#8a8a82;">
-            <a href="/">← Volver a Fontana</a>
+        <p class="subtitle">Hiciste algo hermoso hoy. La Fuente ya trabaja contigo — revisa tu correo en los próximos
+            minutos.</p>
+
+        <hr class="divider">
+
+        <p class="ngo-text">
+            Con tu contribución no solo activas tu deseo — también apoyas la <strong>Fundación EMS</strong>, una
+            organización dedicada a explorar la inteligencia artificial para mejorar la vida humana a través de la
+            cibernetización de sistemas.
         </p>
-    </div>
+
+        <div class="btn-group">
+            <button id="shareBtn" class="btn-primary" onclick="shareWish()">✦ Compartir mi deseo</button>
+            <a href="/" class="btn-secondary">← Volver a Fontana</a>
+        </div>
+    </main>
+
+    <script>
+        async function shareWish() {
+            const shareText = "Acabo de activar mi deseo en Fontana ✨ fontana.digital";
+            const shareBtn = document.getElementById('shareBtn');
+            const originalHtml = shareBtn.innerHTML;
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        text: shareText
+                    });
+                } catch (err) {
+                    // Si el usuario cancela o hay un error, no mostramos alerta molesta.
+                    console.log('Share cancelado o fallido:', err);
+                }
+            } else {
+                copyToClipboard(shareText, shareBtn, originalHtml);
+            }
+        }
+
+        function copyToClipboard(text, btn, originalHtml) {
+            navigator.clipboard.writeText(text).then(() => {
+                btn.innerHTML = "✓ ¡Enlace copiado!";
+                btn.style.background = "linear-gradient(135deg, #a89060 0%, #8e774a 100%)";
+                btn.style.color = "#0c1016";
+                btn.style.boxShadow = "none";
+
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.style.background = "";
+                    btn.style.color = "";
+                    btn.style.boxShadow = "";
+                }, 2500);
+            }).catch(err => {
+                console.error('Error al copiar al portapapeles: ', err);
+                // Fallback secundario si falla clipboards API
+                alert("Copia este texto para compartir: " + text);
+            });
+        }
+    </script>
 </body>
 
 </html>
