@@ -416,6 +416,25 @@ async function handleResumenDiario() {
     }
   }
 
+  // Bloque de estado de servicios (desde monitor_state)
+  try {
+    const { data: monitorData } = await supabase
+      .from("monitor_state")
+      .select("service_name, last_status, last_response_ms")
+      .order("service_name", { ascending: true });
+
+    if (monitorData && monitorData.length > 0) {
+      msg += `\n📡 <b>Estado de servicios</b>\n`;
+      for (const s of monitorData) {
+        const icon = s.last_status === "ok" ? "✅" : "❌";
+        const ms = s.last_response_ms ? ` ${s.last_response_ms}ms` : "";
+        msg += `${s.service_name}: ${icon}${ms}\n`;
+      }
+    }
+  } catch (_) {
+    // Si monitor_state no existe aún, silenciar el error
+  }
+
   await sendTelegram(msg);
 }
 
@@ -431,8 +450,40 @@ async function handleHelp() {
     `💬 /respuesta [ID] [texto] — Registrar respuesta del usuario\n` +
     `⚠️ /alerta48 — Ver deseos sin actividad +48h\n` +
     `☀️ /resumen — Resumen diario manual\n` +
+    `🔍 /check — Health check completo de servicios\n` +
     `❓ /help — Este mensaje`;
   await sendTelegram(msg);
+}
+
+// ── Comando /check — Health check completo via función monitor ─────────────────
+async function handleCheck() {
+  await sendTelegram("🔄 Ejecutando health check... un momento.");
+  try {
+    const res = await fetch(`${SUPA_URL}/functions/v1/monitor`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${SUPA_KEY}`,
+      },
+      body: JSON.stringify({ silent: false }),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      await sendTelegram(`❌ Error en monitor: ${errText}`);
+      return;
+    }
+
+    const data = await res.json();
+    if (data.report) {
+      await sendTelegram(data.report);
+    } else {
+      await sendTelegram("✅ Check completado, pero sin reporte detallado.");
+    }
+  } catch (e) {
+    await sendTelegram(`❌ Error al ejecutar check: ${String(e)}`);
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -532,6 +583,11 @@ Deno.serve(async (req) => {
 
       if (text === "/resumen" || text === "/resumen@fontana_wish_bot") {
         await handleResumenDiario();
+        return okResponse();
+      }
+
+      if (text === "/check" || text === "/check@fontana_wish_bot") {
+        await handleCheck();
         return okResponse();
       }
 

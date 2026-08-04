@@ -46,3 +46,10 @@ verify_jwt = false
 import_map = "./functions/close-cycle/deno.json"
 entrypoint = "./functions/close-cycle/index.ts"
 
+[functions.monitor]
+enabled = true
+verify_jwt = false
+import_map = "./functions/monitor/deno.json"
+entrypoint = "./functions/monitor/index.ts"
+
+
