@@ -52,8 +52,8 @@ async function sendTelegram(text: string) {
 
 // ── Checks individuales ───────────────────────────────────────────────────────
 async function checkFrontend(): Promise<ServiceResult> {
-  return probe("Frontend (fontana.digital)", async () => {
-    const res = await fetch("https://fontana.digital", { signal: AbortSignal.timeout(8000) });
+  return probe("Frontend (fontanadigital.dpdns.org)", async () => {
+    const res = await fetch("https://fontanadigital.dpdns.org", { signal: AbortSignal.timeout(8000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
   });
 }
@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
 
     // Construir reporte completo para devolver (lo usa /check)
     const emoji: Record<string, string> = {
-      "Frontend (fontana.digital)": "🌐",
+      "Frontend (https://fontanadigital.dpdns.org)": "🌐",
       "guardar-deseo": "⚡",
       "wompi-webhook": "💳",
       "send-email": "📧",

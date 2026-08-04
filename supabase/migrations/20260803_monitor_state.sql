@@ -53,7 +53,7 @@ SELECT cron.schedule(
     url     := 'https://cbvqwdrbwogsmcglsvzg.supabase.co/functions/v1/monitor',
     headers := jsonb_build_object(
       'Content-Type',   'application/json',
-      'Authorization',  'Bearer REPLACE_WITH_SERVICE_ROLE_KEY'
+      'Authorization',  'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNidnF3ZHJid29nc21jZ2xzdnpnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjczNTE0NSwiZXhwIjoyMDk4MzExMTQ1fQ.DOJt4fiuWiqNT_AyLjN8mRzHFjZG3lrFV_zS0zUwZQM'
     ),
     body    := '{"silent": true}'::jsonb
   );
