@@ -39,3 +39,10 @@ entrypoint = "./functions/wompi-webhook/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/guardar-identidad/index.ts"
+
+[functions.close-cycle]
+enabled = true
+verify_jwt = false
+import_map = "./functions/close-cycle/deno.json"
+entrypoint = "./functions/close-cycle/index.ts"
+

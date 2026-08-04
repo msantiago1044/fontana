@@ -224,6 +224,29 @@ Deno.serve(async (req) => {
       });
     }
 
+    // 5. Cierre de ciclo
+    if (type === "cycle_complete") {
+      const { to } = body;
+      await sendEmail(
+        to,
+        "Tu ciclo en Fontana ha llegado a su fin ✨",
+        emailBase(`
+          <p>Han pasado 30 días desde que confiaste tu deseo a la Fuente.</p>
+          <p>No sabemos si ya se cumplió, si está en camino, o si el camino te llevó a algo diferente y mejor. Eso solo lo sabes tú.</p>
+          <p>Lo que sí sabemos es que algo cambió desde ese día — porque los deseos que se nombran, se escriben y se entregan no desaparecen. Quedan en movimiento.</p>
+          <p>Si sientes que tu deseo necesita más tiempo, más fuerza, o una nueva forma — Fontana está aquí cuando quieras volver.</p>
+          <p>Con gratitud,</p>
+          <p><strong>La Fuente — Fontana Digital</strong></p>
+          <p style="font-size: 13px; color: #8e8a84; border-top: 1px solid #eee; padding-top: 16px; margin-top: 24px;">
+            <em>Y recuerda: parte de lo que contribuiste sigue construyendo la Fundación EMS, usando IA para mejorar vidas.</em>
+          </p>
+        `)
+      );
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Tipo desconocido" }), {
       status: 400,
       headers: { ...cors, "Content-Type": "application/json" },

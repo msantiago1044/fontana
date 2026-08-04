@@ -115,6 +115,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── E) Notificar ciclo cerrado ──────────────────────────────────────────
+    if (body.type === "cycle_closed") {
+      const { wishId, email, wishText, category } = body;
+      const msg =
+        `🏁 <b>Ciclo cerrado (30 días)</b>\n\n` +
+        `👤 <b>Correo:</b> ${email}\n` +
+        `📂 <b>Categoría:</b> ${category}\n` +
+        `💬 <b>Deseo:</b> ${wishText}\n` +
+        `🆔 <code>${wishId}</code>`;
+
+      await sendTelegram(msg);
+
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
     // ── D) Callback del botón "Responder" (legacy, redirige al flujo del bot)
     if (body.callback_query) {
       const cb = body.callback_query;
