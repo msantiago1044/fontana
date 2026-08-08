@@ -129,6 +129,7 @@ const I18N = {
       a5: "Un reconocimiento público a quienes más fe (y contribución) han puesto en la Fuente. Eliges un apodo al donar — nunca tu nombre real si no quieres — y tu posición se actualiza según el total que hayas contribuido."
     },
     footer: {
+      how: "Cómo funciona", roadmap: "Roadmap",
       terms: "Términos y condiciones", privacy: "Privacidad", refunds: "Reembolsos", contact: "Contacto",
       fine: "Fontana es un servicio de inspiración y acompañamiento personal apoyado en inteligencia artificial. No constituye asesoría financiera, médica, legal ni psicológica, y no garantiza el cumplimiento de ningún deseo o resultado. Debes tener 18 años o más para usar este servicio. © {year} Fontana."
     },
@@ -234,6 +235,7 @@ const I18N = {
       a5: "A public recognition of those who've put the most faith (and contribution) into the Fountain. You choose an alias when donating — never your real name if you'd rather not — and your position updates based on your total contribution."
     },
     footer: {
+      how: "How it works", roadmap: "Roadmap",
       terms: "Terms and Conditions", privacy: "Privacy", refunds: "Refunds", contact: "Contact",
       fine: "Fontana is an inspiration and personal support service powered by artificial intelligence. It does not constitute financial, medical, legal, or psychological advice, and does not guarantee that any wish or outcome will be fulfilled. You must be 18 or older to use this service. © {year} Fontana."
     },

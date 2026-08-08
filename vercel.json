@@ -1,14 +1,48 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/web/index.html" },
-    { "source": "/como-funciona", "destination": "/web/como-funciona.html" },
-    { "source": "/gracias", "destination": "/web/gracias.html" },
-    { "source": "/identidad", "destination": "/web/identidad.html" },
-    { "source": "/privacidad", "destination": "/web/privacidad.html" },
-    { "source": "/reembolso", "destination": "/web/reembolsos.html" },
-    { "source": "/reembolsos", "destination": "/web/reembolsos.html" },
-    { "source": "/roadmap", "destination": "/web/roadmap.html" },
-    { "source": "/terminos", "destination": "/web/terminos.html" },
-    { "source": "/(.*)", "destination": "/web/$1" }
+    {
+      "source": "/",
+      "destination": "/web/index.html"
+    },
+    {
+      "source": "/como-funciona",
+      "destination": "/web/como-funciona.html"
+    },
+    {
+      "source": "/gracias",
+      "destination": "/web/gracias.html"
+    },
+    {
+      "source": "/identidad",
+      "destination": "/web/identidad.html"
+    },
+    {
+      "source": "/privacidad",
+      "destination": "/web/privacidad.html"
+    },
+    {
+      "source": "/reembolso",
+      "destination": "/web/reembolsos.html"
+    },
+    {
+      "source": "/reembolsos",
+      "destination": "/web/reembolsos.html"
+    },
+    {
+      "source": "/roadmap",
+      "destination": "/web/roadmap.html"
+    },
+    {
+      "source": "/contacto",
+      "destination": "/web/contacto.html"
+    },
+    {
+      "source": "/terminos",
+      "destination": "/web/terminos.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/web/$1"
+    }
   ]
 }
