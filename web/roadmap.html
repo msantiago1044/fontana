@@ -7,6 +7,8 @@
   <title>Roadmap — Fontana</title>
   <meta name="description"
     content="El plan de Fontana: una plataforma construida con visión, no con prisa. Conoce las fases y nuestra alianza con la Fundación EMS." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <script>(function () { var t = localStorage.getItem('fontana_theme') || 'light'; var l = localStorage.getItem('fontana_lang') || 'es'; document.documentElement.setAttribute('data-theme', t); document.documentElement.setAttribute('lang', l); })();</script>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -24,6 +26,36 @@
       padding: 0;
     }
 
+    html[data-theme="dark"] {
+      --bg: #0D0D1A;
+      --bg-card: #12121F;
+      --gold: #C9973A;
+      --cream: #EDE8DC;
+      --muted: #7A7A9A;
+      --border: rgba(201, 151, 58, 0.25);
+      --blue: #5A8FE0;
+    }
+
+    html[data-theme="light"] {
+      --bg: #f5f2ea;
+      --bg-card: #ffffff;
+      --gold: #9c6d28;
+      --cream: #1f2430;
+      --muted: #51564f;
+      --border: rgba(140, 100, 40, 0.2);
+      --blue: #235f88;
+    }
+
+    html[data-theme="blue"] {
+      --bg: #1c4f73;
+      --bg-card: #235f88;
+      --gold: #f2cd80;
+      --cream: #f5fbff;
+      --muted: #9bc9e0;
+      --border: rgba(242, 205, 128, 0.25);
+      --blue: #aee2f5;
+    }
+
     :root {
       --bg: #0D0D1A;
       --bg-card: #12121F;
@@ -31,9 +63,9 @@
       --cream: #EDE8DC;
       --muted: #7A7A9A;
       --border: rgba(201, 151, 58, 0.25);
+      --blue: #5A8FE0;
       --font-disp: 'Cormorant Garamond', Georgia, serif;
       --font-body: 'Inter', system-ui, sans-serif;
-      --blue: #5A8FE0;
     }
 
     html {
@@ -697,6 +729,7 @@
 
     document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
   </script>
+  <script src="/shared.js"></script>
 
 </body>
 

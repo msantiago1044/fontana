@@ -7,6 +7,8 @@
   <title>Cómo funciona — Fontana</title>
   <meta name="description"
     content="Descubre lo que sucede después de tu deseo. La IA planifica, el universo ejecuta. Fontana trabaja 24/7 por ti." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <script>(function () { var t = localStorage.getItem('fontana_theme') || 'light'; var l = localStorage.getItem('fontana_lang') || 'es'; document.documentElement.setAttribute('data-theme', t); document.documentElement.setAttribute('lang', l); })();</script>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -25,6 +27,38 @@
       padding: 0;
     }
 
+    /* ── Variables por tema ── */
+    html[data-theme="dark"] {
+      --bg: #0D0D1A;
+      --bg-card: #12121F;
+      --gold: #C9973A;
+      --gold-dim: #8A6525;
+      --cream: #EDE8DC;
+      --muted: #7A7A9A;
+      --border: rgba(201, 151, 58, 0.25);
+    }
+
+    html[data-theme="light"] {
+      --bg: #f5f2ea;
+      --bg-card: #ffffff;
+      --gold: #9c6d28;
+      --gold-dim: #b8853a;
+      --cream: #1f2430;
+      --muted: #51564f;
+      --border: rgba(140, 100, 40, 0.2);
+    }
+
+    html[data-theme="blue"] {
+      --bg: #1c4f73;
+      --bg-card: #235f88;
+      --gold: #f2cd80;
+      --gold-dim: #ffe3a3;
+      --cream: #f5fbff;
+      --muted: #9bc9e0;
+      --border: rgba(242, 205, 128, 0.25);
+    }
+
+    /* default (si aún no hay atributo) aplicar dark */
     :root {
       --bg: #0D0D1A;
       --bg-card: #12121F;
@@ -586,6 +620,7 @@
 
     document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
   </script>
+  <script src="/shared.js"></script>
 
 </body>
 
