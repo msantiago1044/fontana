@@ -455,35 +455,225 @@ async function handleHelp() {
   await sendTelegram(msg);
 }
 
-// ── Comando /check — Health check completo via función monitor ─────────────────
-async function handleCheck() {
-  await sendTelegram("🔄 Ejecutando health check... un momento.");
-  try {
-    const res = await fetch(`${SUPA_URL}/functions/v1/monitor`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${SUPA_KEY}`,
-      },
-      body: JSON.stringify({ silent: false }),
-      signal: AbortSignal.timeout(30000),
-    });
+// ── Helper: pin de mensaje en Telegram ────────────────────────────────────────
+async function pinMessage(messageId: number) {
+  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/pinChatMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: CHAT_ID,
+      message_id: messageId,
+      disable_notification: false,
+    }),
+  });
+}
 
-    if (!res.ok) {
-      const errText = await res.text();
-      await sendTelegram(`❌ Error en monitor: ${errText}`);
-      return;
-    }
-
-    const data = await res.json();
-    if (data.report) {
-      await sendTelegram(data.report);
-    } else {
-      await sendTelegram("✅ Check completado, pero sin reporte detallado.");
-    }
-  } catch (e) {
-    await sendTelegram(`❌ Error al ejecutar check: ${String(e)}`);
+// ── Helper: enviar mensaje y devolver message_id ───────────────────────────────
+async function sendTelegramWithId(text: string): Promise<number | null> {
+  const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: "HTML" }),
+  });
+  if (!res.ok) {
+    console.error("Error Telegram API:", await res.text());
+    return null;
   }
+  const data = await res.json();
+  return data?.result?.message_id ?? null;
+}
+
+// ── Interfaz de resultado de check ────────────────────────────────────────────
+interface CheckResult {
+  name: string;
+  ok: boolean;
+  ms: number;
+  error?: string;
+}
+
+// ── Probe individual de componente ────────────────────────────────────────────
+async function probeComponent(
+  name: string,
+  fn: () => Promise<void>
+): Promise<CheckResult> {
+  const start = Date.now();
+  try {
+    await fn();
+    return { name, ok: true, ms: Date.now() - start };
+  } catch (e) {
+    return { name, ok: false, ms: Date.now() - start, error: String(e) };
+  }
+}
+
+// ── Checks de componentes individuales ────────────────────────────────────────
+async function checkWompiWebhook(): Promise<CheckResult> {
+  return probeComponent("wompi-webhook", async () => {
+    const res = await fetch(`${SUPA_URL}/functions/v1/wompi-webhook`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPA_KEY}` },
+      body: JSON.stringify({}),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (res.status === 0) throw new Error("Sin respuesta");
+  });
+}
+
+async function checkGuardarDeseo(): Promise<CheckResult> {
+  return probeComponent("guardar-deseo", async () => {
+    const res = await fetch(`${SUPA_URL}/functions/v1/guardar-deseo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPA_KEY}` },
+      body: JSON.stringify({}),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (res.status === 0) throw new Error("Sin respuesta");
+  });
+}
+
+async function checkSupabaseDB(): Promise<CheckResult> {
+  return probeComponent("Supabase DB", async () => {
+    const { error } = await supabase.from("wishes").select("id", { count: "exact", head: true });
+    if (error) throw new Error(error.message);
+  });
+}
+
+async function checkSendEmail(): Promise<CheckResult> {
+  return probeComponent("send-email", async () => {
+    const res = await fetch(`${SUPA_URL}/functions/v1/send-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPA_KEY}` },
+      body: JSON.stringify({ type: "__health_check__" }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (res.status === 0) throw new Error("Sin respuesta");
+  });
+}
+
+async function checkAiThread(): Promise<CheckResult> {
+  return probeComponent("ai-thread", async () => {
+    const res = await fetch(`${SUPA_URL}/functions/v1/ai-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPA_KEY}` },
+      body: JSON.stringify({ type: "__health_check__" }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (res.status === 0) throw new Error("Sin respuesta");
+  });
+}
+
+// ── Obtener último cron ejecutado ─────────────────────────────────────────────
+async function getLastCronInfo(): Promise<string> {
+  try {
+    const { data } = await supabase
+      .from("cron.job_run_details")
+      .select("start_time")
+      .eq("jobname", "fontana-daily-summary")
+      .order("start_time", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!data?.start_time) return "desconocido";
+    const diff = Date.now() - new Date(data.start_time).getTime();
+    const hours = Math.floor(diff / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    if (hours >= 1) return `hace ${hours}h${minutes > 0 ? ` ${minutes}m` : ""}`;
+    return `hace ${minutes}m`;
+  } catch {
+    return "desconocido";
+  }
+}
+
+// ── Impacto en producción por componente crítico ──────────────────────────────
+const criticalImpact: Record<string, string> = {
+  "wompi-webhook": "Los webhooks de pago de Wompi no se procesarán. Los pagos no activarán deseos.",
+  "guardar-deseo": "No se pueden crear nuevos deseos. La persistencia en base de datos falla.",
+  "Supabase DB":   "La base de datos no responde. Todo el sistema está comprometido.",
+};
+
+// ── Comando /check — Health check con sistema de severidad ────────────────────
+async function handleCheck() {
+  await sendTelegram("🔄 Ejecutando health check con análisis de severidad...");
+
+  // Ejecutar todos los checks en paralelo
+  const [wompi, guardar, db, email, ai, lastCron] = await Promise.all([
+    checkWompiWebhook(),
+    checkGuardarDeseo(),
+    checkSupabaseDB(),
+    checkSendEmail(),
+    checkAiThread(),
+    getLastCronInfo(),
+  ]);
+
+  const criticals: CheckResult[] = [wompi, guardar, db];
+  const warnings: CheckResult[]  = [email, ai];
+
+  const failedCriticals = criticals.filter(c => !c.ok);
+  const failedWarnings  = warnings.filter(w => !w.ok);
+
+  const allResults = [...criticals, ...warnings];
+  const totalMs = allResults.reduce((sum, r) => sum + r.ms, 0);
+  const avgMs   = Math.round(totalMs / allResults.length);
+
+  // ── 1. Alertas críticas (mensajes separados + pin) ─────────────────────────
+  for (const c of failedCriticals) {
+    const impact = criticalImpact[c.name] ?? "Componente crítico no disponible.";
+    const alertText =
+      `🔴 <b>ALERTA CRÍTICA — Fontana</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `Componente: <b>${c.name}</b>\n` +
+      `Estado: FALLO\n` +
+      `${impact}\n` +
+      `⚠️ Acción requerida inmediata.`;
+
+    const msgId = await sendTelegramWithId(alertText);
+    if (msgId) await pinMessage(msgId);
+  }
+
+  // ── 2. Construir reporte completo ─────────────────────────────────────────
+  const ts = new Date().toLocaleString("es-CO", {
+    timeZone: "America/Bogota",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit",
+  });
+
+  const statusIcon = (r: CheckResult) => r.ok ? "✅" : "❌";
+  const warningLine = (r: CheckResult) => {
+    if (r.ok) return `  ✅ ${r.name} — OK`;
+    return `  🟡 ${r.name} — ${r.error ? r.error.slice(0, 60) : "Sin respuesta"}`;
+  };
+
+  // Estado general
+  let estadoGeneral: string;
+  if (failedCriticals.length > 0) {
+    estadoGeneral = "🔴 CRÍTICO";
+  } else if (failedWarnings.length > 0) {
+    estadoGeneral = "🟡 ADVERTENCIA";
+  } else {
+    estadoGeneral = "✅ OK";
+  }
+
+  let report =
+    `🔍 <b>Health Check — Fontana</b>\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `🔴 <b>CRÍTICOS</b>\n` +
+    `  ${statusIcon(wompi)} wompi-webhook — ${wompi.ok ? "OK" : (wompi.error?.slice(0, 50) ?? "Fallo")}\n` +
+    `  ${statusIcon(guardar)} guardar-deseo — ${guardar.ok ? "OK" : (guardar.error?.slice(0, 50) ?? "Fallo")}\n` +
+    `  ${statusIcon(db)} Supabase DB — ${db.ok ? "OK" : (db.error?.slice(0, 50) ?? "Fallo")}\n` +
+    `\n🟡 <b>ADVERTENCIAS</b>\n` +
+    `${warningLine(email)}\n` +
+    `${warningLine(ai)}\n` +
+    `\n📊 <b>INFO</b>\n` +
+    `  ⏱ Latencia promedio: ${avgMs}ms\n` +
+    `  🕐 Último cron: ${lastCron}\n` +
+    `\nEstado general: <b>${estadoGeneral}</b>\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `Revisión: ${ts} COT`;
+
+  if (failedWarnings.length > 0 && failedCriticals.length === 0) {
+    report += "\n\n⚠️ Revisar antes de 24h";
+  }
+
+  await sendTelegram(report);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
