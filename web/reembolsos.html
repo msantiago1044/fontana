@@ -9,43 +9,44 @@
   <script>(function () { var t = localStorage.getItem('fontana_theme') || 'light'; var l = localStorage.getItem('fontana_lang') || 'es'; document.documentElement.setAttribute('data-theme', t); document.documentElement.setAttribute('lang', l); })();</script>
   <style>
     body {
-      background: #0c1016;
-      color: #f4f1ea;
+      background: var(--night, #0c1016);
+      color: var(--ivory, #f4f1ea);
       font-family: Inter, sans-serif;
       max-width: 720px;
       margin: 0 auto;
       padding: 80px 24px;
       line-height: 1.7;
+      transition: background .35s ease, color .35s ease;
     }
 
     h1 {
       font-family: Georgia, serif;
-      color: #e8c873;
+      color: var(--gold-bright, #e8c873);
       margin-bottom: 8px;
     }
 
     h2 {
       font-size: 19px;
       margin-top: 36px;
-      color: #f4f1ea;
+      color: var(--ivory, #f4f1ea);
     }
 
     p,
     li {
-      color: #c9c6bc;
+      color: var(--ivory-dim, #c9c6bc);
       font-size: 15px;
     }
 
     a {
-      color: #e8c873;
+      color: var(--gold-bright, #e8c873);
     }
 
     .note {
-      background: #1a2029;
-      border-left: 3px solid #c9a14a;
+      background: var(--stone, #1a2029);
+      border-left: 3px solid var(--gold, #c9a14a);
       padding: 14px 18px;
       font-size: 13.5px;
-      color: #e8c873;
+      color: var(--gold-bright, #e8c873);
       margin: 24px 0;
     }
   </style>
