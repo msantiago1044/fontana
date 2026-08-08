@@ -1,0 +1,46 @@
+/* ============================================================
+   theme-variables.css — Paleta de colores globales para Fontana
+   Soportado por index.html y todas las páginas secundarias.
+   ============================================================ */
+
+/* ---------- TEMA: blanco (predeterminado) ---------- */
+html[data-theme="light"] {
+  --night: #fbfaf7;
+  --night-2: #ffffff;
+  --stone: #f1eee6;
+  --gold: #b8853a;
+  --gold-bright: #9c6d28;
+  --water-bright: #2e6f8e;
+  --ivory: #1f2430;
+  --ivory-dim: #51564f;
+  --ivory-faint: #84807a;
+  --border-soft: rgba(20, 20, 10, .1);
+}
+
+/* ---------- TEMA: azul ---------- */
+html[data-theme="blue"] {
+  --night: #1c4f73;
+  --night-2: #235f88;
+  --stone: #2a719d;
+  --gold: #f2cd80;
+  --gold-bright: #ffe3a3;
+  --water-bright: #aee2f5;
+  --ivory: #f5fbff;
+  --ivory-dim: #cfe8f5;
+  --ivory-faint: #9bc9e0;
+  --border-soft: rgba(244, 241, 234, .16);
+}
+
+/* ---------- TEMA: negro (original) ---------- */
+html[data-theme="dark"] {
+  --night: #0c1016;
+  --night-2: #11161f;
+  --stone: #1a2029;
+  --gold: #c9a14a;
+  --gold-bright: #e8c873;
+  --water-bright: #6fa8b8;
+  --ivory: #f4f1ea;
+  --ivory-dim: #c9c6bc;
+  --ivory-faint: #8a8a82;
+  --border-soft: rgba(244, 241, 234, .1);
+}

@@ -7,6 +7,7 @@
     <title>Fontana — Completar Perfil</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script>(function () { var t = localStorage.getItem('fontana_theme') || 'light'; var l = localStorage.getItem('fontana_lang') || 'es'; document.documentElement.setAttribute('data-theme', t); document.documentElement.setAttribute('lang', l); })();</script>
+    <link rel="stylesheet" href="/theme-variables.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -79,17 +80,19 @@
 
     <div class="identity-card">
         <div class="header-logo">
-            <svg width="24" height="24" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <defs>
-                    <radialGradient id="coinGradInd" cx="38%" cy="32%" r="75%">
+                    <radialGradient id="coinGradInd" cx="38%" cy="35%" r="65%">
                         <stop offset="0%" stop-color="#f2dca0" />
                         <stop offset="55%" stop-color="#c9a14a" />
                         <stop offset="100%" stop-color="#93732e" />
                     </radialGradient>
                 </defs>
-                <circle cx="16" cy="16" r="14" fill="none" stroke="#c9a14a" stroke-width="1.1" opacity="0.45" />
-                <circle cx="16" cy="16" r="10.5" fill="url(#coinGradInd)" stroke="#f2dca0" stroke-width="0.6"
-                    stroke-opacity="0.5" />
+                <circle cx="32" cy="32" r="28" fill="#7a5510" />
+                <circle cx="32" cy="30" r="28" fill="url(#coinGradInd)" />
+                <circle cx="32" cy="30" r="22" fill="none" stroke="#8a6520" stroke-width="1.5" opacity="0.5" />
+                <text x="32" y="39" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="28"
+                    font-weight="400" font-style="italic" fill="#4a3000" opacity="0.85">f</text>
             </svg>
             <span class="logo-text">font<em>a</em>na</span>
         </div>

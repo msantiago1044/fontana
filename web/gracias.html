@@ -7,6 +7,7 @@
     <title>Gracias — Fontana</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script>(function () { var t = localStorage.getItem('fontana_theme') || 'light'; var l = localStorage.getItem('fontana_lang') || 'es'; document.documentElement.setAttribute('data-theme', t); document.documentElement.setAttribute('lang', l); })();</script>
+    <link rel="stylesheet" href="/theme-variables.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -20,8 +21,8 @@
         }
 
         body {
-            background: radial-gradient(circle at center, #141a24 0%, #0c1016 100%);
-            color: #c9c6bc;
+            background: var(--night, #0c1016);
+            color: var(--ivory, #c9c6bc);
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             display: flex;
             align-items: center;
@@ -29,6 +30,7 @@
             min-height: 100vh;
             padding: 24px;
             overflow-x: hidden;
+            transition: background .35s ease, color .35s ease;
         }
 
         /* Efecto sutil de ruido de fondo, igual que en el index */
@@ -49,10 +51,10 @@
             max-width: 480px;
             width: 100%;
             padding: 48px 32px;
-            background: rgba(255, 255, 255, 0.01);
-            border: 1px solid rgba(232, 200, 115, 0.08);
+            background: var(--night-2, rgba(255, 255, 255, 0.01));
+            border: 1px solid var(--border-soft, rgba(232, 200, 115, 0.08));
             border-radius: 28px;
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.03);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             text-align: center;
@@ -94,7 +96,7 @@
         .subtitle {
             font-size: 15px;
             line-height: 1.6;
-            color: #c9c6bc;
+            color: var(--ivory-dim, #c9c6bc);
             margin-bottom: 28px;
             font-weight: 400;
         }
@@ -108,7 +110,7 @@
         }
 
         .ngo-text {
-            color: #a89060;
+            color: var(--gold-bright, #a89060);
             font-size: 13.5px;
             line-height: 1.65;
             margin-bottom: 36px;
@@ -116,7 +118,7 @@
         }
 
         .ngo-text strong {
-            color: #e8c873;
+            color: var(--gold, #e8c873);
             font-style: normal;
             font-weight: 600;
         }
@@ -163,14 +165,14 @@
 
         .btn-secondary {
             background: transparent;
-            color: #c9c6bc;
-            border: 1px solid rgba(201, 198, 188, 0.2);
+            color: var(--ivory-dim, #c9c6bc);
+            border: 1px solid var(--border-soft, rgba(201, 198, 188, 0.2));
         }
 
         .btn-secondary:hover {
-            background: rgba(201, 198, 188, 0.05);
-            border-color: rgba(201, 198, 188, 0.35);
-            color: #f4f1ea;
+            background: var(--stone, rgba(201, 198, 188, 0.05));
+            border-color: var(--gold-bright, rgba(201, 198, 188, 0.35));
+            color: var(--ivory, #f4f1ea);
         }
 
         @media (max-width: 480px) {
@@ -203,13 +205,13 @@
 
     <main class="container">
         <div class="coin-icon" aria-hidden="true">🪙</div>
-        <h1>Tu deseo ya está en marcha</h1>
-        <p class="subtitle">Hiciste algo hermoso hoy. La Fuente ya trabaja contigo — revisa tu correo en los próximos
-            minutos.</p>
+        <h1 id="txt-title">Tu deseo ya está en marcha</h1>
+        <p class="subtitle" id="txt-sub">Hiciste algo hermoso hoy. La Fuente ya trabaja contigo — revisa tu correo en
+            los próximos minutos.</p>
 
         <hr class="divider">
 
-        <p class="ngo-text">
+        <p class="ngo-text" id="txt-ngo">
             Con tu contribución no solo activas tu deseo — también apoyas la <strong>Fundación EMS</strong>, una
             organización dedicada a explorar la inteligencia artificial para mejorar la vida humana a través de la
             cibernetización de sistemas.
@@ -217,13 +219,44 @@
 
         <div class="btn-group">
             <button id="shareBtn" class="btn-primary" onclick="shareWish()">✦ Compartir mi deseo</button>
-            <a href="/" class="btn-secondary">← Volver a Fontana</a>
+            <a href="/" class="btn-secondary" id="btn-back">← Volver a Fontana</a>
         </div>
     </main>
 
     <script>
+        // Detección de idioma y traducciones locales
+        const savedLang = localStorage.getItem('fontana_lang') || 'es';
+        const TRANSLATIONS = {
+            es: {
+                title: "Tu deseo ya está en marcha",
+                sub: "Hiciste algo hermoso hoy. La Fuente ya trabaja contigo — revisa tu correo en los próximos minutos.",
+                ngo: 'Con tu contribución no solo activas tu deseo — también apoyas la <strong>Fundación EMS</strong>, una organización dedicada a explorar la inteligencia artificial para mejorar la vida humana a través de la cibernetización de sistemas.',
+                shareBtn: "✦ Compartir mi deseo",
+                btnBack: "← Volver a Fontana",
+                shareText: "Acabo de activar mi deseo en Fontana ✨ fontana.digital",
+                copied: "✓ ¡Enlace copiado!"
+            },
+            en: {
+                title: "Your wish is already in motion",
+                sub: "You did something beautiful today. The Fountain is already working with you — check your email in the next few minutes.",
+                ngo: 'With your contribution you not only activate your wish — you also support the <strong>EMS Foundation</strong>, an organization dedicated to exploring artificial intelligence to improve human life through the cybernetization of systems.',
+                shareBtn: "✦ Share my wish",
+                btnBack: "← Back to Fontana",
+                shareText: "I just activated my wish on Fontana ✨ fontana.digital",
+                copied: "✓ Link copied!"
+            }
+        };
+
+        const t = TRANSLATIONS[savedLang] || TRANSLATIONS.es;
+
+        document.getElementById('txt-title').innerHTML = t.title;
+        document.getElementById('txt-sub').textContent = t.sub;
+        document.getElementById('txt-ngo').innerHTML = t.ngo;
+        document.getElementById('shareBtn').textContent = t.shareBtn;
+        document.getElementById('btn-back').textContent = t.btnBack;
+
         async function shareWish() {
-            const shareText = "Acabo de activar mi deseo en Fontana ✨ fontana.digital";
+            const shareText = t.shareText;
             const shareBtn = document.getElementById('shareBtn');
             const originalHtml = shareBtn.innerHTML;
 
@@ -233,7 +266,6 @@
                         text: shareText
                     });
                 } catch (err) {
-                    // Si el usuario cancela o hay un error, no mostramos alerta molesta.
                     console.log('Share cancelado o fallido:', err);
                 }
             } else {
@@ -243,7 +275,7 @@
 
         function copyToClipboard(text, btn, originalHtml) {
             navigator.clipboard.writeText(text).then(() => {
-                btn.innerHTML = "✓ ¡Enlace copiado!";
+                btn.innerHTML = t.copied;
                 btn.style.background = "linear-gradient(135deg, #a89060 0%, #8e774a 100%)";
                 btn.style.color = "#0c1016";
                 btn.style.boxShadow = "none";
@@ -256,8 +288,7 @@
                 }, 2500);
             }).catch(err => {
                 console.error('Error al copiar al portapapeles: ', err);
-                // Fallback secundario si falla clipboards API
-                alert("Copia este texto para compartir: " + text);
+                alert("Copy this text to share: " + text);
             });
         }
     </script>

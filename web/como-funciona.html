@@ -9,6 +9,7 @@
     content="Descubre lo que sucede después de tu deseo. La IA planifica, el universo ejecuta. Fontana trabaja 24/7 por ti." />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <script>(function () { var t = localStorage.getItem('fontana_theme') || 'light'; var l = localStorage.getItem('fontana_lang') || 'es'; document.documentElement.setAttribute('data-theme', t); document.documentElement.setAttribute('lang', l); })();</script>
+  <link rel="stylesheet" href="/theme-variables.css">
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -27,46 +28,15 @@
       padding: 0;
     }
 
-    /* ── Variables por tema ── */
-    html[data-theme="dark"] {
-      --bg: #0D0D1A;
-      --bg-card: #12121F;
-      --gold: #C9973A;
-      --gold-dim: #8A6525;
-      --cream: #EDE8DC;
-      --muted: #7A7A9A;
-      --border: rgba(201, 151, 58, 0.25);
-    }
-
-    html[data-theme="light"] {
-      --bg: #f5f2ea;
-      --bg-card: #ffffff;
-      --gold: #9c6d28;
-      --gold-dim: #b8853a;
-      --cream: #1f2430;
-      --muted: #51564f;
-      --border: rgba(140, 100, 40, 0.2);
-    }
-
-    html[data-theme="blue"] {
-      --bg: #1c4f73;
-      --bg-card: #235f88;
-      --gold: #f2cd80;
-      --gold-dim: #ffe3a3;
-      --cream: #f5fbff;
-      --muted: #9bc9e0;
-      --border: rgba(242, 205, 128, 0.25);
-    }
-
-    /* default (si aún no hay atributo) aplicar dark */
+    /* Mapeo usando variables globales de theme-variables.css */
     :root {
-      --bg: #0D0D1A;
-      --bg-card: #12121F;
-      --gold: #C9973A;
-      --gold-dim: #8A6525;
-      --cream: #EDE8DC;
-      --muted: #7A7A9A;
-      --border: rgba(201, 151, 58, 0.25);
+      --bg: var(--night, #0c1016);
+      --bg-card: var(--night-2, #11161f);
+      --gold: var(--gold, #c9a14a);
+      --gold-dim: var(--gold-bright, #e8c873);
+      --cream: var(--ivory, #f4f1ea);
+      --muted: var(--ivory-dim, #c9c6bc);
+      --border: var(--border-soft, rgba(244, 241, 234, .1));
       --font-disp: 'Cormorant Garamond', Georgia, serif;
       --font-body: 'Inter', system-ui, sans-serif;
     }
