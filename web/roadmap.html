@@ -1,148 +1,703 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Roadmap — Fontana</title>
-  <meta name="description" content="Conoce el roadmap de Fontana: inteligencia, comunidad, alianzas de impacto y escala global.">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="description"
+    content="El plan de Fontana: una plataforma construida con visión, no con prisa. Conoce las fases y nuestra alianza con la Fundación EMS." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+
   <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     :root {
-      --night: #0D0D1A;
-      --night-soft: #141426;
+      --bg: #0D0D1A;
+      --bg-card: #12121F;
       --gold: #C9973A;
       --cream: #EDE8DC;
       --muted: #7A7A9A;
-      --line: rgba(201, 151, 58, .34);
-      --card: rgba(255, 255, 255, .035);
-      --serif: 'Cormorant Garamond', serif;
-      --sans: 'Inter', sans-serif;
+      --border: rgba(201, 151, 58, 0.25);
+      --font-disp: 'Cormorant Garamond', Georgia, serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --blue: #5A8FE0;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at 50% 0%, rgba(201, 151, 58, .13), transparent 32rem),
-        radial-gradient(circle at 14% 38%, rgba(122, 122, 154, .11), transparent 24rem),
-        var(--night);
+      background-color: var(--bg);
       color: var(--cream);
-      font-family: var(--sans);
+      font-family: var(--font-body);
+      font-weight: 400;
       line-height: 1.7;
-      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: .045;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
     }
-    a { color: inherit; }
-    .page-shell { width: min(1060px, calc(100% - 32px)); margin: 0 auto; }
-    .hero { min-height: 58vh; display: grid; place-items: center; text-align: center; padding: 88px 0 58px; }
-    .eyebrow { color: var(--gold); font-size: .78rem; font-weight: 700; letter-spacing: .24em; margin-bottom: 20px; text-transform: uppercase; }
-    h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: .98; }
-    h1 { font-size: clamp(3.7rem, 13vw, 7.8rem); letter-spacing: -.045em; }
-    .subtitle { max-width: 700px; margin: 28px auto 0; color: var(--muted); font-size: clamp(1.05rem, 2.4vw, 1.35rem); }
-    .hero::after, .section-title::after {
-      content: "";
-      display: block;
-      width: min(220px, 46vw);
+
+    .section {
+      padding: 100px 0;
+    }
+
+    .gold-rule {
+      width: 60px;
       height: 1px;
-      margin: 34px auto 0;
-      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      background: var(--gold);
+      margin: 0 auto 32px;
+      opacity: 0.7;
     }
-    section { padding: 68px 0; }
-    .timeline { position: relative; max-width: 920px; margin: 0 auto; padding-left: 30px; }
-    .timeline::before { content: ""; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 1px; background: linear-gradient(var(--gold), rgba(201,151,58,.1)); }
-    .timeline-item { position: relative; margin-bottom: 28px; padding: 24px; border: 1px solid var(--line); background: var(--card); opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease, border-color .25s ease; }
-    .timeline-item:last-child { margin-bottom: 0; }
-    .timeline-item::before { content: ""; position: absolute; left: -28px; top: 30px; width: 11px; height: 11px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 7px rgba(201,151,58,.13), 0 0 28px rgba(201,151,58,.45); }
-    .timeline-item.is-visible, .purpose-card.is-visible { opacity: 1; transform: translateY(0); }
-    .timeline-item:hover { border-color: rgba(201, 151, 58, .72); }
-    .phase-meta { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 12px; }
-    h3 { font-size: clamp(1.75rem, 4vw, 2.35rem); color: var(--cream); }
-    .status { color: var(--gold); border: 1px solid rgba(201,151,58,.42); padding: 4px 10px; font-size: .76rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
-    .timeline-item p, .purpose-card p { color: var(--muted); }
-    .section-title { text-align: center; margin-bottom: 26px; }
-    h2 { font-size: clamp(2.5rem, 8vw, 4.8rem); letter-spacing: -.035em; }
-    .purpose-card { max-width: 880px; margin: 0 auto; text-align: center; border: 1px solid var(--line); background: var(--card); padding: clamp(28px, 6vw, 54px); opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
-    blockquote { margin: 34px auto 0; color: var(--gold); font-family: var(--serif); font-size: clamp(2rem, 6vw, 3.65rem); line-height: 1.08; max-width: 760px; }
-    .back-wrap { text-align: center; padding-top: 6px; }
-    .back-link { color: var(--gold); display: inline-block; font-weight: 700; position: relative; text-decoration: none; }
-    .back-link::after { content: ""; position: absolute; left: 0; right: 0; bottom: -.2rem; height: 1px; background: var(--gold); transform: scaleX(0); transform-origin: right; transition: transform .28s ease; }
-    .back-link:hover::after { transform: scaleX(1); transform-origin: left; }
-    footer { padding: 42px 16px; text-align: center; color: var(--muted); font-size: .9rem; border-top: 1px solid rgba(201, 151, 58, .16); }
-    @media (min-width: 760px) { .timeline { padding-left: 54px; } .timeline::before { left: 17px; } .timeline-item::before { left: -43px; width: 13px; height: 13px; } .timeline-item { padding: 30px 34px; } }
-    @media (max-width: 520px) { .page-shell { width: min(100% - 24px, 1060px); } .hero { min-height: 54vh; padding-top: 72px; } section { padding: 52px 0; } .timeline-item { padding: 20px 18px; } }
+
+    .gold-rule.left {
+      margin-left: 0;
+    }
+
+    .section-label {
+      font-family: var(--font-body);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: var(--font-disp);
+      font-weight: 300;
+    }
+
+    h1 {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+    }
+
+    h2 {
+      font-size: clamp(2rem, 4.5vw, 3.4rem);
+      line-height: 1.15;
+    }
+
+    .fade-in {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.75s ease, transform 0.75s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── HERO ──────────────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 80svh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      overflow: hidden;
+      padding: 120px 24px 80px;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(201, 151, 58, 0.09) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 10% 90%, rgba(90, 143, 224, 0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(201, 151, 58, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201, 151, 58, 0.04) 1px, transparent 1px);
+      background-size: 80px 80px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+    }
+
+    .hero-eyebrow {
+      display: inline-block;
+      font-family: var(--font-body);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 32px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(201, 151, 58, 0.35);
+    }
+
+    .hero h1 {
+      margin-bottom: 28px;
+      background: linear-gradient(135deg, var(--cream) 40%, rgba(237, 232, 220, 0.6) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-family: var(--font-disp);
+      font-size: clamp(1.15rem, 2.5vw, 1.55rem);
+      font-weight: 300;
+      font-style: italic;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    /* ── TIMELINE ──────────────────────────────────────────────────── */
+    .timeline-section {
+      background: var(--bg);
+    }
+
+    .timeline-header {
+      margin-bottom: 72px;
+    }
+
+    .timeline-header h2 {
+      margin-bottom: 16px;
+    }
+
+    .timeline-header .sub {
+      font-size: 1rem;
+      color: var(--muted);
+      max-width: 520px;
+    }
+
+    .timeline {
+      position: relative;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 18px;
+      top: 8px;
+      bottom: 8px;
+      width: 1px;
+      background: linear-gradient(to bottom,
+          var(--gold) 0%,
+          rgba(201, 151, 58, 0.4) 55%,
+          rgba(58, 58, 90, 0.4) 100%);
+    }
+
+    .timeline-item {
+      position: relative;
+      padding-left: 64px;
+      padding-bottom: 56px;
+    }
+
+    .timeline-item:last-child {
+      padding-bottom: 0;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: 0;
+      top: 6px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+    }
+
+    .timeline-dot.done {
+      background: rgba(201, 151, 58, 0.12);
+      border: 1px solid var(--gold);
+    }
+
+    .timeline-dot.progress {
+      background: rgba(90, 143, 224, 0.12);
+      border: 1px solid var(--blue);
+    }
+
+    .timeline-dot.soon {
+      background: rgba(58, 58, 90, 0.5);
+      border: 1px solid rgba(201, 151, 58, 0.2);
+    }
+
+    .dot-inner {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .done .dot-inner {
+      background: var(--gold);
+    }
+
+    .progress .dot-inner {
+      background: var(--blue);
+      animation: pulseDot 2s ease-in-out infinite;
+    }
+
+    .soon .dot-inner {
+      background: rgba(201, 151, 58, 0.25);
+    }
+
+    @keyframes pulseDot {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.5;
+        transform: scale(0.7);
+      }
+    }
+
+    .timeline-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 2px;
+      margin-bottom: 12px;
+    }
+
+    .timeline-badge.done {
+      color: var(--gold);
+      background: rgba(201, 151, 58, 0.1);
+      border: 1px solid rgba(201, 151, 58, 0.25);
+    }
+
+    .timeline-badge.progress {
+      color: var(--blue);
+      background: rgba(90, 143, 224, 0.1);
+      border: 1px solid rgba(90, 143, 224, 0.25);
+    }
+
+    .timeline-badge.soon {
+      color: var(--muted);
+      background: rgba(58, 58, 90, 0.4);
+      border: 1px solid rgba(201, 151, 58, 0.1);
+    }
+
+    .badge-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+    }
+
+    .timeline-badge.done .badge-dot {
+      background: var(--gold);
+    }
+
+    .timeline-badge.progress .badge-dot {
+      background: var(--blue);
+    }
+
+    .timeline-badge.soon .badge-dot {
+      background: var(--muted);
+    }
+
+    .timeline-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 32px 36px;
+      position: relative;
+    }
+
+    .timeline-content::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+
+    .done-item .timeline-content::before {
+      background: linear-gradient(to right, var(--gold), transparent);
+    }
+
+    .progress-item .timeline-content::before {
+      background: linear-gradient(to right, var(--blue), transparent);
+    }
+
+    .soon-item .timeline-content::before {
+      background: linear-gradient(to right, rgba(201, 151, 58, 0.2), transparent);
+    }
+
+    .timeline-fase {
+      font-family: var(--font-body);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .timeline-title {
+      font-family: var(--font-disp);
+      font-size: clamp(1.4rem, 3vw, 1.95rem);
+      font-weight: 400;
+      color: var(--cream);
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+
+    .timeline-desc {
+      font-size: 0.925rem;
+      color: #9A9580;
+      line-height: 1.8;
+    }
+
+    /* ── EMS ─────────────────────────────────────────────────────────── */
+    .ems-section {
+      background: linear-gradient(180deg, var(--bg) 0%, #0A0A14 100%);
+      border-top: 1px solid var(--border);
+    }
+
+    .ems-inner {
+      max-width: 720px;
+    }
+
+    .ems-inner h2 {
+      margin-bottom: 24px;
+    }
+
+    .ems-inner p {
+      font-size: 1rem;
+      color: #B8B3A6;
+      line-height: 1.9;
+      margin-bottom: 20px;
+    }
+
+    .cita-wrap {
+      margin-top: 64px;
+      padding: 48px 40px;
+      border: 1px solid var(--border);
+      position: relative;
+      text-align: center;
+      background: rgba(201, 151, 58, 0.02);
+    }
+
+    .cita-wrap::before {
+      content: '\201C';
+      position: absolute;
+      top: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-disp);
+      font-size: 6rem;
+      line-height: 1;
+      color: var(--gold);
+      opacity: 0.35;
+    }
+
+    .cita-wrap blockquote {
+      font-family: var(--font-disp);
+      font-size: clamp(1.45rem, 3.5vw, 2.15rem);
+      font-weight: 300;
+      font-style: italic;
+      color: var(--gold);
+      line-height: 1.45;
+      letter-spacing: 0.01em;
+    }
+
+    /* ── REGRESO ─────────────────────────────────────────────────────── */
+    .back-section {
+      padding: 64px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      letter-spacing: 0.05em;
+      transition: color 0.3s ease;
+      position: relative;
+      padding-bottom: 3px;
+    }
+
+    .back-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--gold);
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .back-link:hover {
+      color: var(--gold);
+    }
+
+    .back-link:hover::after {
+      width: 100%;
+    }
+
+    .back-arrow {
+      transition: transform 0.3s ease;
+    }
+
+    .back-link:hover .back-arrow {
+      transform: translateX(-4px);
+    }
+
+    /* ── FOOTER ─────────────────────────────────────────────────────── */
+    footer {
+      padding: 40px 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    footer p {
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      opacity: 0.6;
+    }
+
+    /* ── RESPONSIVE ──────────────────────────────────────────────────── */
+    @media (max-width: 680px) {
+      .section {
+        padding: 72px 0;
+      }
+
+      .timeline-content {
+        padding: 24px 20px;
+      }
+
+      .timeline-item {
+        padding-left: 52px;
+        padding-bottom: 44px;
+      }
+
+      .cita-wrap {
+        padding: 40px 24px;
+      }
+
+      .cita-wrap::before {
+        font-size: 4rem;
+        top: -20px;
+      }
+
+      .hero {
+        min-height: 70svh;
+      }
+    }
   </style>
 </head>
+
 <body>
-  <main>
-    <section class="hero page-shell" aria-labelledby="hero-title">
-      <div>
-        <div class="eyebrow">Fontana · Visión</div>
-        <h1 id="hero-title">Roadmap de Fontana</h1>
-        <p class="subtitle">Una plataforma construida con visión, no con prisa.</p>
-      </div>
-    </section>
 
-    <section class="page-shell" aria-label="Línea de tiempo del roadmap">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <span class="hero-eyebrow">Fontana · Hoja de ruta</span>
+      <h1>Roadmap<br>de Fontana</h1>
+      <p class="hero-subtitle">Una plataforma construida con visión, no con prisa.</p>
+    </div>
+  </section>
+
+  <!-- TIMELINE -->
+  <section class="section timeline-section" id="timeline">
+    <div class="container">
+
+      <div class="timeline-header fade-in">
+        <p class="section-label">Fases del proyecto</p>
+        <div class="gold-rule left"></div>
+        <h2>El camino</h2>
+        <p class="sub">Cada fase construida sobre la anterior. Sin atajos. Con propósito.</p>
+      </div>
+
       <div class="timeline">
-        <article class="timeline-item reveal">
-          <div class="phase-meta"><h3>Fase 1 – Fundación</h3><span class="status">Completado</span></div>
-          <p>MVP de la plataforma: formulario de deseos, pasarela de pagos Wompi, almacenamiento en Supabase y notificaciones por Telegram.</p>
-        </article>
-        <article class="timeline-item reveal">
-          <div class="phase-meta"><h3>Fase 2 – Inteligencia</h3><span class="status">En progreso</span></div>
-          <p>Integración de IA para análisis y seguimiento de deseos. Emails automáticos con acompañamiento personalizado. Ciclo 24/7.</p>
-        </article>
-        <article class="timeline-item reveal">
-          <div class="phase-meta"><h3>Fase 3 – Comunidad</h3><span class="status">Próximamente</span></div>
-          <p>Espacio donde los usuarios pueden compartir (de forma anónima o pública) el cumplimiento de sus deseos. Testimonios verificados.</p>
-        </article>
-        <article class="timeline-item reveal">
-          <div class="phase-meta"><h3>Fase 4 – Alianzas</h3><span class="status">Próximamente</span></div>
-          <p>Integración con organizaciones de propósito social. Primera alianza con la Fundación EMS para canalizar parte de los recursos hacia proyectos de impacto humano en Colombia.</p>
-        </article>
-        <article class="timeline-item reveal">
-          <div class="phase-meta"><h3>Fase 5 – Escala global</h3><span class="status">Próximamente</span></div>
-          <p>Expansión a México, España y Chile. Campañas TikTok Ads. Múltiples idiomas. Infraestructura para millones de deseos.</p>
-        </article>
+
+        <div class="timeline-item done-item fade-in">
+          <div class="timeline-dot done">
+            <div class="dot-inner"></div>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-badge done">
+              <div class="badge-dot"></div> Completado
+            </div>
+            <p class="timeline-fase">Fase 1</p>
+            <h3 class="timeline-title">Fundación</h3>
+            <p class="timeline-desc">MVP de la plataforma: formulario de deseos, pasarela de pagos Wompi, almacenamiento
+              en Supabase y notificaciones por Telegram. La base sobre la que todo lo demás se construye.</p>
+          </div>
+        </div>
+
+        <div class="timeline-item progress-item fade-in" style="transition-delay:0.1s">
+          <div class="timeline-dot progress">
+            <div class="dot-inner"></div>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-badge progress">
+              <div class="badge-dot"></div> En progreso
+            </div>
+            <p class="timeline-fase">Fase 2</p>
+            <h3 class="timeline-title">Inteligencia</h3>
+            <p class="timeline-desc">Integración de IA para análisis y seguimiento de deseos. Emails automáticos con
+              acompañamiento personalizado. El sistema aprende, clasifica y responde. Ciclo 24/7 activo.</p>
+          </div>
+        </div>
+
+        <div class="timeline-item soon-item fade-in" style="transition-delay:0.15s">
+          <div class="timeline-dot soon">
+            <div class="dot-inner"></div>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-badge soon">
+              <div class="badge-dot"></div> Próximamente
+            </div>
+            <p class="timeline-fase">Fase 3</p>
+            <h3 class="timeline-title">Comunidad</h3>
+            <p class="timeline-desc">Espacio donde los usuarios pueden compartir —de forma anónima o pública— el
+              cumplimiento de sus deseos. Testimonios verificados que alimentan la fe de otros.</p>
+          </div>
+        </div>
+
+        <div class="timeline-item soon-item fade-in" style="transition-delay:0.2s">
+          <div class="timeline-dot soon">
+            <div class="dot-inner"></div>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-badge soon">
+              <div class="badge-dot"></div> Próximamente
+            </div>
+            <p class="timeline-fase">Fase 4</p>
+            <h3 class="timeline-title">Alianzas</h3>
+            <p class="timeline-desc">Integración con organizaciones de propósito social. Primera alianza con la <strong
+                style="color:var(--cream);font-weight:500">Fundación EMS</strong> para canalizar parte de los recursos
+              hacia proyectos de impacto humano en Colombia.</p>
+          </div>
+        </div>
+
+        <div class="timeline-item soon-item fade-in" style="transition-delay:0.25s">
+          <div class="timeline-dot soon">
+            <div class="dot-inner"></div>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-badge soon">
+              <div class="badge-dot"></div> Próximamente
+            </div>
+            <p class="timeline-fase">Fase 5</p>
+            <h3 class="timeline-title">Escala global</h3>
+            <p class="timeline-desc">Expansión a México, España y Chile. Campañas TikTok Ads. Soporte multilenguaje.
+              Infraestructura diseñada para millones de deseos simultáneos.</p>
+          </div>
+        </div>
+
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="page-shell" aria-labelledby="purpose-title">
-      <div class="purpose-card reveal">
-        <div class="section-title"><h2 id="purpose-title">Un propósito más grande</h2></div>
-        <p>Fontana no es solo una plataforma tecnológica: parte de lo recaudado se destinará a la Fundación EMS, una organización comprometida con el desarrollo humano y social. Cada deseo que entra al sistema también contribuye, de forma indirecta, a hacer realidad los deseos de otros.</p>
-        <blockquote>“Cuando un deseo se hace realidad, el mundo cambia un poco.”</blockquote>
+  <!-- FUNDACION EMS -->
+  <section class="section ems-section" id="ems">
+    <div class="container">
+      <div class="ems-inner fade-in">
+        <p class="section-label">Propósito y alianza</p>
+        <div class="gold-rule left"></div>
+        <h2>Un propósito<br>más grande</h2>
+        <br>
+        <p>Fontana no es solo una plataforma tecnológica: es una expresión de que la tecnología puede tener alma. Parte
+          de lo recaudado se destinará a la <strong style="color:var(--cream);font-weight:500">Fundación EMS</strong>,
+          una organización comprometida con el desarrollo humano y social en Colombia.</p>
+        <p>Cada deseo que entra al sistema también contribuye, de forma indirecta, a hacer realidad los deseos de otros.
+          La plataforma se convierte entonces en un puente: entre quien tiene un sueño y quien necesita recursos para
+          construir el suyo.</p>
+        <p>La alianza con EMS no es solo corporativa —es filosófica. Compartimos la convicción de que el progreso
+          individual y el bienestar colectivo no son opuestos: son la misma dirección.</p>
+
+        <div class="cita-wrap fade-in">
+          <blockquote>
+            "Cuando un deseo se hace realidad,<br>el mundo cambia un poco."
+          </blockquote>
+        </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <div class="back-wrap page-shell"><a class="back-link" href="como-funciona.html">← Volver a cómo funciona</a></div>
-  </main>
+  <!-- REGRESO -->
+  <section class="back-section">
+    <div class="container">
+      <a href="como-funciona.html" class="back-link">
+        <span class="back-arrow">←</span>
+        Volver a cómo funciona
+      </a>
+    </div>
+  </section>
 
-  <footer>© 2026 Fontana · Todos los derechos reservados</footer>
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <p>© 2026 Fontana · Todos los derechos reservados</p>
+    </div>
+  </footer>
 
   <script>
-    const revealObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('is-visible');
-          revealObserver.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.16 });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -30px 0px' }
+    );
 
-    document.querySelectorAll('.reveal').forEach((element) => revealObserver.observe(element));
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
   </script>
+
 </body>
+
 </html>
