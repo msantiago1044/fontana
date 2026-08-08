@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="light">
+<html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fontana — Completar Perfil</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <script>(function () { var t = localStorage.getItem('fontana_theme') || 'light'; var l = localStorage.getItem('fontana_lang') || 'es'; document.documentElement.setAttribute('data-theme', t); document.documentElement.setAttribute('lang', l); })();</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -133,11 +133,9 @@
         const SUPABASE_URL = 'https://cbvqwdrbwogsmcglsvzg.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_CAqF53kRDfzET56lLdKZIQ_UlnG-r5A';
 
-        // Asegurar mismo tema e idioma
+        // Tema e idioma ya aplicados en el <head> para evitar FOUC
         const savedTheme = localStorage.getItem('fontana_theme') || 'light';
         const savedLang = localStorage.getItem('fontana_lang') || 'es';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        document.documentElement.setAttribute('lang', savedLang);
 
         // Obtener wishId de la URL
         const urlParams = new URLSearchParams(window.location.search);
