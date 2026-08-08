@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
       const { to, name, wishId } = body;
       const firstName = (name || "").split(" ")[0] || "viajero";
       const identityUrl = wishId 
-        ? `https://fontanadigital.dpdns.org/identidad.html?wishId=${wishId}` 
+        ? `https://fontanadigital.dpdns.org/identidad?wishId=${wishId}` 
         : `https://fontanadigital.dpdns.org`;
       
       const identityButtonHtml = wishId ? `

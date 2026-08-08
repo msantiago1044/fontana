@@ -946,7 +946,7 @@ function discardPendingPayment() {
 function goToIdentityUrl() {
   const wishId = window._lastWishId;
   if (wishId) {
-    window.location.href = `/identidad.html?wishId=${wishId}`;
+    window.location.href = `/identidad?wishId=${wishId}`;
   } else {
     closeModal();
   }
