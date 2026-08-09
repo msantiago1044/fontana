@@ -264,14 +264,14 @@
     .ciclo-imagen-placeholder {
       width: 100%;
       max-width: 700px;
-      height: 360px;
-      border: 1px dashed rgba(201, 151, 58, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      height: auto;
+      /* ← esto era 360px, ahí estaba el corte */
+      border: none;
+      /* quitamos el borde punteado */
+      display: block;
       margin: 0 auto 72px;
       position: relative;
-      background: rgba(201, 151, 58, 0.02);
+      background: transparent;
     }
 
     .ciclo-imagen-placeholder::before,
@@ -466,20 +466,6 @@
         padding: 100px 24px 80px;
       }
     }
-
-    .ciclo-imagen-placeholder {
-      width: 100%;
-      max-width: 600px;
-      margin: 2rem auto;
-      display: block;
-    }
-
-    .ciclo-imagen-placeholder img {
-      width: 100%;
-      height: auto;
-      /* deja que la altura sea proporcional naturalmente */
-      display: block;
-    }
   </style>
 </head>
 
@@ -518,8 +504,7 @@
 
       <!-- Placeholder reservado para imagen real -->
       <div class="ciclo-imagen-placeholder fade-in">
-        <img src="/imagenes/fontana_ciclo_ia.png" alt="Ciclo IA de Fontana"
-          style="width: 100%; height: auto; display: block;" />
+        <img src="/imagenes/fontana_ciclo_ia.png" alt="Ciclo IA de Fontana" />
       </div>
 
       <!-- 4 fases -->
