@@ -471,18 +471,17 @@
       width: 100%;
       max-width: 600px;
       margin: 2rem auto;
-      overflow: hidden;
-      /* evita que se desborde */
-      position: relative;
-      /* contiene la imagen */
       display: block;
+      aspect-ratio: 1 / 1;
+      /* fuerza que sea cuadrado */
     }
 
     .ciclo-imagen-placeholder img {
       width: 100%;
-      height: auto;
+      height: 100%;
       display: block;
       object-fit: contain;
+      /* muestra toda la imagen sin recortar */
     }
   </style>
 </head>
