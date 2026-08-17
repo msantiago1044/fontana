@@ -88,7 +88,7 @@
             z-index: 0
         }
 
-        /* HEADER */
+        /* HEADER — glassmorphism siempre activo */
         header {
             position: fixed;
             top: 0;
@@ -99,12 +99,14 @@
             align-items: center;
             justify-content: space-between;
             padding: .8rem 1.6rem;
+            background: color-mix(in srgb, var(--bg) 55%, transparent);
+            backdrop-filter: blur(18px) saturate(1.4);
+            -webkit-backdrop-filter: blur(18px) saturate(1.4);
             transition: background .4s;
         }
 
         header.s {
-            background: color-mix(in srgb, var(--bg) 90%, transparent);
-            backdrop-filter: blur(14px);
+            background: color-mix(in srgb, var(--bg) 72%, transparent);
         }
 
         .logo {
@@ -1543,7 +1545,7 @@
             }
             function tgt() {
                 var s8 = document.getElementById('s8');
-                return s8 && s8.getBoundingClientRect().top < H * .85 ? 180 : 75;
+                return s8 && s8.getBoundingClientRect().top < H * .85 ? 70 : 30;
             }
             function drawP() {
                 if (PRM) return;
