@@ -7,10 +7,16 @@ const THEME_DOTS = { light: '#fbfaf7', blue: '#235f88', dark: '#0c1016' };
 function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('fontana_theme', theme);
-  document.getElementById('themeDot').style.background = THEME_DOTS[theme];
-  document.getElementById('themeDot').style.borderColor = theme === 'light' ? '#b8853a' : 'transparent';
+  const themeDot = document.getElementById('themeDot');
+  if (themeDot) {
+    themeDot.style.background = THEME_DOTS[theme];
+    themeDot.style.borderColor = theme === 'light' ? '#b8853a' : 'transparent';
+  }
   const lang = localStorage.getItem('fontana_lang') || 'es';
-  document.getElementById('themeLabel').textContent = THEME_LABELS[theme][lang];
+  const themeLabel = document.getElementById('themeLabel');
+  if (themeLabel) {
+    themeLabel.textContent = THEME_LABELS[theme][lang];
+  }
   document.querySelectorAll('[data-theme-option]').forEach(b => b.classList.toggle('active', b.dataset.themeOption === theme));
   closeAllMenus();
 }
@@ -18,23 +24,32 @@ function setTheme(theme) {
 function setLang(lang) {
   localStorage.setItem('fontana_lang', lang);
   document.documentElement.setAttribute('lang', lang);
-  document.getElementById('langFlagLabel').textContent = lang === 'es' ? '🌐 ES' : '🌐 EN';
+  const langFlagLabel = document.getElementById('langFlagLabel');
+  if (langFlagLabel) {
+    langFlagLabel.textContent = lang === 'es' ? '🌐 ES' : '🌐 EN';
+  }
   document.querySelectorAll('[data-lang-option]').forEach(b => b.classList.toggle('active', b.dataset.langOption === lang));
   applyTranslations(lang);
   const theme = localStorage.getItem('fontana_theme') || 'light';
-  document.getElementById('themeLabel').textContent = THEME_LABELS[theme][lang];
+  const themeLabel = document.getElementById('themeLabel');
+  if (themeLabel) {
+    themeLabel.textContent = THEME_LABELS[theme][lang];
+  }
   closeAllMenus();
 }
 
 function toggleMenu(id) {
   const menu = document.getElementById(id);
+  if (!menu) return;
   const isOpen = menu.classList.contains('show');
   closeAllMenus();
   if (!isOpen) menu.classList.add('show');
 }
 function closeAllMenus() {
-  document.getElementById('themeMenu').classList.remove('show');
-  document.getElementById('langMenu').classList.remove('show');
+  const tm = document.getElementById('themeMenu');
+  if (tm) tm.classList.remove('show');
+  const lm = document.getElementById('langMenu');
+  if (lm) lm.classList.remove('show');
   const um = document.getElementById('userMenu');
   if (um) um.classList.remove('show');
 }

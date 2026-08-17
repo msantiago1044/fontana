@@ -1126,7 +1126,25 @@
     <div class="hb">
       <button class="cb" id="langBtn" aria-label="Cambiar idioma">🌐 ES</button>
       <button class="cb" id="themeBtn" aria-label="Cambiar tema" aria-pressed="false">☀ Blanco</button>
-      <a href="#s10" class="ncta" id="mainCta">Pedir mi deseo</a>
+      <a href="#s10" class="ncta" id="navCta">Pedir mi deseo</a>
+      <!-- Se muestra cuando HAY sesión — inyectado por JS -->
+      <div class="user-chip" id="userChip" style="display:none">
+        <button class="user-chip-btn" onclick="toggleMenu('userMenu')" aria-label="Cuenta">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <span class="user-chip-name" id="userChipName">…</span>
+          <span class="user-chip-dot"></span>
+        </button>
+        <div class="user-menu" id="userMenu">
+          <div class="user-menu-email" id="userMenuEmail"></div>
+          <button class="wish-btn" onclick="closeAllMenus(); window.location.hash = '#s10';">
+            🪙 <span data-es="Pedir mi deseo" data-en="Make my wish">Pedir mi deseo</span>
+          </button>
+          <div class="user-menu-divider"></div>
+          <button class="logout-btn" onclick="signOut()">
+            ↩ <span data-es="Cerrar sesión" data-en="Sign out">Cerrar sesión</span>
+          </button>
+        </div>
+      </div>
     </div>
   </header>
   <nav id="nd" aria-label="Secciones">
@@ -1467,7 +1485,8 @@
         </div>
         <p class="fn wa au d3" style="margin-top:1.6rem"><a href="/terminos" data-es="Términos"
             data-en="Terms">Términos</a> · <a href="/privacidad" data-es="Privacidad" data-en="Privacy">Privacidad</a> ·
-          <a href="/reembolsos" data-es="Reembolsos" data-en="Refunds">Reembolsos</a></p>
+          <a href="/reembolsos" data-es="Reembolsos" data-en="Refunds">Reembolsos</a>
+        </p>
       </div>
     </section>
   </main>
@@ -1523,14 +1542,14 @@
       var THEME_LABEL = { light: { es: '☀ Blanco', en: '☀ Light' }, dark: { es: '☾ Negro', en: '☾ Dark' } };
       function applyTheme(t) {
         document.documentElement.setAttribute('data-theme', t);
-        localStorage.setItem('fs_theme', t);
+        localStorage.setItem('fontana_theme', t);
         var btn = document.getElementById('themeBtn');
         var lang = document.documentElement.getAttribute('lang') || 'es';
         if (btn) btn.textContent = THEME_LABEL[t][lang];
         btn && btn.setAttribute('aria-pressed', t === 'dark' ? 'true' : 'false');
       }
       (function initTheme() {
-        var saved = localStorage.getItem('fs_theme') || 'light';
+        var saved = localStorage.getItem('fontana_theme') || 'light';
         themeIdx = THEMES.indexOf(saved); if (themeIdx < 0) themeIdx = 0;
         applyTheme(THEMES[themeIdx]);
       })();
@@ -1540,11 +1559,11 @@
       });
 
       /* ── LANG ────────────────────────────────────────────────── */
-      var lang = localStorage.getItem('fs_lang') || 'es';
+      var lang = localStorage.getItem('fontana_lang') || 'es';
       function applyLang(l) {
         lang = l;
         document.documentElement.setAttribute('lang', l);
-        localStorage.setItem('fs_lang', l);
+        localStorage.setItem('fontana_lang', l);
         var btn = document.getElementById('langBtn');
         if (btn) btn.textContent = l === 'es' ? '🌐 ES' : '🌐 EN';
         /* translate all [data-es] [data-en] */
@@ -1568,8 +1587,12 @@
         var sk = document.querySelector('.skip');
         if (sk) sk.textContent = l === 'es' ? 'Saltar al contenido' : 'Skip to content';
         /* update main CTA */
-        var mc = document.getElementById('mainCta');
+        var mc = document.getElementById('navCta');
         if (mc) mc.textContent = l === 'es' ? 'Pedir mi deseo' : 'Make my wish';
+        /* sync other scripts */
+        if (typeof applyTranslations === 'function') {
+          applyTranslations(l);
+        }
       }
       (function initLang() { applyLang(lang); })();
       document.getElementById('langBtn').addEventListener('click', function () {
@@ -1752,7 +1775,8 @@
         </button>
         <p class="auth-note"><span data-i18n="modal.auth.note">Al continuar, aceptas nuestros</span> <a href="/terminos"
             class="link-underline" data-i18n="modal.auth.terms">Términos</a> <span data-i18n="modal.auth.and">y</span>
-          <a href="/privacidad" class="link-underline" data-i18n="modal.auth.privacy">Política de Privacidad</a>.</p>
+          <a href="/privacidad" class="link-underline" data-i18n="modal.auth.privacy">Política de Privacidad</a>.
+        </p>
       </div>
       <div id="step-wish" style="display:none">
         <h3 data-i18n="modal.wish.title">Tu deseo</h3>
