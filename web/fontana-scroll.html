@@ -99,14 +99,14 @@
             align-items: center;
             justify-content: space-between;
             padding: .8rem 1.6rem;
-            background: color-mix(in srgb, var(--bg) 55%, transparent);
-            backdrop-filter: blur(18px) saturate(1.4);
-            -webkit-backdrop-filter: blur(18px) saturate(1.4);
+            background: color-mix(in srgb, var(--bg) 40%, transparent);
+            backdrop-filter: blur(22px) saturate(1.6);
+            -webkit-backdrop-filter: blur(22px) saturate(1.6);
             transition: background .4s;
         }
 
         header.s {
-            background: color-mix(in srgb, var(--bg) 72%, transparent);
+            background: color-mix(in srgb, var(--bg) 60%, transparent);
         }
 
         .logo {
@@ -445,8 +445,15 @@
             width: clamp(155px, 27vw, 255px);
             height: clamp(155px, 27vw, 255px);
             border-radius: 50%;
-            background: radial-gradient(circle at 38% 35%, rgba(201, 168, 76, .58) 0%, rgba(201, 168, 76, .14) 45%, transparent 70%);
-            box-shadow: 0 0 65px rgba(201, 168, 76, .22), 0 0 130px rgba(201, 168, 76, .08);
+            background: radial-gradient(circle at 38% 35%,
+                    rgba(184, 134, 11, .82) 0%,
+                    rgba(201, 168, 76, .45) 38%,
+                    rgba(201, 168, 76, .12) 62%,
+                    transparent 78%);
+            box-shadow:
+                0 0 55px rgba(184, 134, 11, .55),
+                0 0 120px rgba(201, 168, 76, .30),
+                0 0 240px rgba(201, 168, 76, .14);
             animation: op 4s ease-in-out infinite;
             position: relative;
             flex-shrink: 0
@@ -463,10 +470,19 @@
         .orb::after {
             content: '';
             position: absolute;
-            inset: -8px;
+            inset: -16px;
             border-radius: 50%;
-            border: 1px solid rgba(201, 168, 76, .18);
+            border: 1px solid rgba(201, 168, 76, .28);
             animation: or 4s ease-in-out infinite .6s
+        }
+
+        .orb::before {
+            content: '';
+            position: absolute;
+            inset: -40px;
+            border-radius: 50%;
+            border: 1px solid rgba(201, 168, 76, .12);
+            animation: or 4s ease-in-out infinite 1.2s
         }
 
         @keyframes op {
@@ -1569,81 +1585,13 @@
                     ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 2.2, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
                 }
             }
-            rsz(); for (var i = 0; i < 75; i++) parts.push(mkP());
+            rsz(); for (var i = 0; i < 30; i++) parts.push(mkP());
             window.addEventListener('resize', rsz);
             window.addEventListener('mousemove', function (e) { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
             window.addEventListener('touchmove', function (e) { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; }, { passive: true });
             if (!PRM) drawP();
 
-            /* ── FOUNTAIN COINS ──────────────────────────────────────── */
-            var fcv = document.getElementById('fcv'), fctx = fcv.getContext('2d');
-            var FW, FH, coins = [], fountainActive = false;
-            function frsz() { FW = fcv.width = fcv.offsetWidth; FH = fcv.height = fcv.offsetHeight; }
-            function mkCoin() {
-                var x = FW * .5 + (Math.random() - .5) * FW * .18;
-                return { x: x, y: FH * .62 + (Math.random() - .5) * 30, vx: (Math.random() - .5) * 2.2, vy: -(3 + Math.random() * 5), r: 6 + Math.random() * 8, spin: Math.random() * Math.PI * 2, spinV: (Math.random() - .5) * .18, al: 1, life: 1 };
-            }
-            function drawFountain() {
-                if (PRM || !fountainActive) return;
-                requestAnimationFrame(drawFountain);
-                fctx.clearRect(0, 0, FW, FH);
-                if (Math.random() < .22) coins.push(mkCoin());
-                coins = coins.filter(function (c) { return c.al > 0.01; });
-                for (var i = 0; i < coins.length; i++) {
-                    var c = coins[i];
-                    c.vy += .18; c.x += c.vx; c.y += c.vy; c.spin += c.spinV; c.al -= .012;
-                    if (c.al < 0) continue;
-                    fctx.save();
-                    fctx.globalAlpha = c.al;
-                    fctx.translate(c.x, c.y);
-                    fctx.rotate(c.spin);
-                    /* coin face */
-                    var dark2 = document.documentElement.getAttribute('data-theme') === 'dark';
-                    var base = dark2 ? 'rgba(201,168,76,' : 'rgba(184,134,11,';
-                    var gr = fctx.createRadialGradient(-c.r * .3, -c.r * .3, 0, 0, 0, c.r);
-                    gr.addColorStop(0, 'rgba(242,220,160,' + c.al + ')');
-                    gr.addColorStop(.55, base + c.al + ')');
-                    gr.addColorStop(1, 'rgba(100,70,10,' + c.al + ')');
-                    /* ellipse for 3D coin effect */
-                    fctx.beginPath();
-                    fctx.ellipse(0, 0, c.r, c.r * .45, 0, 0, Math.PI * 2);
-                    fctx.fillStyle = gr; fctx.fill();
-                    /* rim */
-                    fctx.strokeStyle = 'rgba(100,70,10,' + c.al * .6 + ')';
-                    fctx.lineWidth = .8; fctx.stroke();
-                    /* f letter */
-                    fctx.fillStyle = 'rgba(60,35,0,' + c.al * .7 + ')';
-                    fctx.font = 'italic ' + (c.r * .8) + 'px Georgia,serif';
-                    fctx.textAlign = 'center'; fctx.textBaseline = 'middle';
-                    fctx.fillText('f', 0, 1);
-                    /* shine */
-                    fctx.beginPath();
-                    fctx.ellipse(-c.r * .28, -c.r * .12, c.r * .3, c.r * .1, -.3, 0, Math.PI * 2);
-                    fctx.fillStyle = 'rgba(255,255,255,0.25)'; fctx.fill();
-                    fctx.restore();
-                }
-                /* pool ripple at base */
-                fctx.save();
-                fctx.globalAlpha = .12;
-                fctx.strokeStyle = '#C9A84C';
-                fctx.lineWidth = 1;
-                var bx = FW * .5, by = FH * .72;
-                for (var r2 = 10; r2 < 80; r2 += 22) {
-                    fctx.beginPath();
-                    fctx.ellipse(bx, by, r2, r2 * .28, 0, 0, Math.PI * 2);
-                    fctx.stroke();
-                }
-                fctx.restore();
-            }
-            /* observe S8 to start fountain */
-            new IntersectionObserver(function (ents) {
-                if (ents[0].isIntersecting && !fountainActive) {
-                    fountainActive = true; frsz();
-                    if (!PRM) drawFountain();
-                }
-                if (!ents[0].isIntersecting) fountainActive = false;
-            }, { threshold: .3 }).observe(document.getElementById('s8'));
-            window.addEventListener('resize', function () { if (fountainActive) frsz(); });
+            /* fountain coins removed */
 
             /* ── HEADER SCROLL ───────────────────────────────────────── */
             window.addEventListener('scroll', function () {
@@ -1686,18 +1634,36 @@
                 d.addEventListener('click', function () { scs[i] && scs[i].scrollIntoView({ behavior: 'smooth' }); });
             });
 
-            /* ── COUNTER ─────────────────────────────────────────────── */
+            /* ── COUNTER: 785 + deseos reales de Supabase ───────────── */
             var cnEl = document.getElementById('cnum'), counted = false;
+            var BASE_COUNT = 785;
+            var SUPA_URL = 'https://cbvqwdrbwogsmcglsvzg.supabase.co';
+            var SUPA_KEY = 'sb_publishable_CAqF53kRDfzET56lLdKZIQ_UlnG-r5A';
+
+            function animateCounter(target) {
+                var start = performance.now();
+                (function run(now) {
+                    var p = Math.min((now - start) / 2400, 1);
+                    var e = 1 - Math.pow(1 - p, 3);
+                    cnEl.textContent = Math.round(e * target).toLocaleString('es-CO');
+                    if (p < 1) requestAnimationFrame(run);
+                })(start);
+            }
+
             new IntersectionObserver(function (ents) {
                 if (ents[0].isIntersecting && !counted) {
                     counted = true;
-                    var start = performance.now();
-                    (function run(now) {
-                        var p = Math.min((now - start) / 2400, 1);
-                        var e = 1 - Math.pow(1 - p, 3);
-                        cnEl.textContent = Math.round(e * 1247).toLocaleString('es-CO');
-                        if (p < 1) requestAnimationFrame(run);
-                    })(start);
+                    /* primero anima con el base, luego actualiza con el real */
+                    animateCounter(BASE_COUNT);
+                    fetch(SUPA_URL + '/rest/v1/wishes?select=id&status=eq.active',
+                        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } })
+                        .then(function (r) { return r.json(); })
+                        .then(function (rows) {
+                            var real = Array.isArray(rows) ? rows.length : 0;
+                            var total = BASE_COUNT + real;
+                            cnEl.textContent = total.toLocaleString('es-CO');
+                        })
+                        .catch(function () { /* si falla, deja el base */ });
                 }
             }, { threshold: .3 }).observe(cnEl);
 
