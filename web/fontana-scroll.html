@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fontana — Tu deseo te está esperando</title>
+    <meta name="description"
+        content="Fontana convierte lo que sientes en realidad. Una plataforma de deseos basada en Colombia donde cada intención cuenta con el apoyo de una comunidad." />
+    <meta name="theme-color" content="#0A0A0F" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+
+    <style>
+        /* ─── Reset & Base ──────────────────────────────────────── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #0A0A0F;
+            --gold: #C9A84C;
+            --gold-dim: #8A6E2E;
+            --white: #FFFFFF;
+            --mauve: #7B5EA7;
+            --text-secondary: rgba(255, 255, 255, 0.55);
+            --font-display: 'Cormorant Garamond', Georgia, serif;
+            --font-body: 'Inter', system-ui, sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            background: var(--bg);
+            color: var(--white);
+            font-family: var(--font-body);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            overflow-x: hidden;
+            background: var(--bg);
+        }
+
+        /* ─── Partículas canvas (fijas, fondo global) ─────────── */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ─── Sections ──────────────────────────────────────────── */
+        .scene {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            z-index: 1;
+            padding: 4rem 1.5rem;
+        }
+
+        /* ─── Typography ────────────────────────────────────────── */
+        .display {
+            font-family: var(--font-display);
+            font-weight: 300;
+            line-height: 1.1;
+            letter-spacing: -0.01em;
+        }
+
+        .display-italic {
+            font-style: italic;
+        }
+
+        /* ─── Animation states (IntersectionObserver) ─────────── */
+        .anim-ready {
+            opacity: 0;
+        }
+
+        /* fade-up: standard entrance */
+        .anim-fade-up {
+            transform: translateY(60px) translateZ(-80px);
+            opacity: 0;
+            transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .anim-fade-up.visible {
+            opacity: 1;
+            transform: translateY(0) translateZ(0);
+        }
+
+        /* zoom-out: hero text explodes toward user */
+        .anim-zoom-out {
+            transform: scale(0.82) translateZ(-120px);
+            opacity: 0;
+            transition: opacity 1.1s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .anim-zoom-out.visible {
+            opacity: 1;
+            transform: scale(1) translateZ(0);
+        }
+
+        /* slide-depth: steps appear from depth */
+        .anim-depth {
+            transform: perspective(900px) rotateX(18deg) translateY(80px);
+            opacity: 0;
+            transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .anim-depth.visible {
+            opacity: 1;
+            transform: perspective(900px) rotateX(0deg) translateY(0);
+        }
+
+        /* delay helpers */
+        .delay-1 {
+            transition-delay: 0.12s !important;
+        }
+
+        .delay-2 {
+            transition-delay: 0.28s !important;
+        }
+
+        .delay-3 {
+            transition-delay: 0.44s !important;
+        }
+
+        .delay-4 {
+            transition-delay: 0.60s !important;
+        }
+
+        /* ─── Reduced motion ─────────────────────────────────── */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+
+            .anim-fade-up,
+            .anim-zoom-out,
+            .anim-depth {
+                opacity: 1 !important;
+                transform: none !important;
+            }
+        }
+
+        /* ─── Gold divider ──────────────────────────────────── */
+        .gold-line {
+            display: block;
+            width: 48px;
+            height: 1px;
+            background: var(--gold);
+            margin: 1.5rem auto;
+            opacity: 0.7;
+        }
+
+        /* ─── CTA Button ────────────────────────────────────── */
+        .btn-gold {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.85rem 2.25rem;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            text-decoration: none;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: color 0.35s, background 0.35s, transform 0.2s;
+        }
+
+        .btn-gold::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--gold);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: -1;
+        }
+
+        .btn-gold:hover {
+            color: var(--bg);
+        }
+
+        .btn-gold:hover::before {
+            transform: scaleX(1);
+        }
+
+        .btn-gold:active {
+            transform: scale(0.97);
+        }
+
+        /* ─── SCENE 1 — HERO ────────────────────────────────── */
+        #scene-hero {
+            text-align: center;
+            perspective: 800px;
+        }
+
+        #scene-hero .hero-label {
+            font-family: var(--font-body);
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 1.5rem;
+        }
+
+        #scene-hero h1 {
+            font-size: clamp(3.2rem, 9vw, 8rem);
+            color: var(--white);
+            max-width: 14ch;
+            margin: 0 auto 1.2rem;
+        }
+
+        #scene-hero .hero-sub {
+            font-size: clamp(0.95rem, 2vw, 1.15rem);
+            color: var(--text-secondary);
+            font-weight: 300;
+            max-width: 38ch;
+            margin: 0 auto 3rem;
+            line-height: 1.65;
+        }
+
+        #scroll-indicator {
+            position: absolute;
+            bottom: 2.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.4rem;
+            opacity: 0.45;
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--gold);
+            animation: scrollBob 2.4s ease-in-out infinite;
+        }
+
+        #scroll-indicator svg {
+            animation: scrollBob 2.4s ease-in-out infinite 0.2s;
+        }
+
+        @keyframes scrollBob {
+
+            0%,
+            100% {
+                transform: translateX(-50%) translateY(0);
+            }
+
+            50% {
+                transform: translateX(-50%) translateY(8px);
+            }
+        }
+
+        /* ─── SCENE 2 — EL DESEO ─────────────────────────────── */
+        #scene-desire {
+            flex-direction: column;
+            gap: 4rem;
+        }
+
+        @media (min-width: 768px) {
+            #scene-desire {
+                flex-direction: row;
+                gap: 6rem;
+            }
+        }
+
+        .orb-wrap {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .orb {
+            width: clamp(180px, 30vw, 280px);
+            height: clamp(180px, 30vw, 280px);
+            border-radius: 50%;
+            background: radial-gradient(circle at 38% 36%,
+                    rgba(201, 168, 76, 0.55) 0%,
+                    rgba(201, 168, 76, 0.18) 40%,
+                    rgba(201, 168, 76, 0.04) 70%,
+                    transparent 100%);
+            box-shadow:
+                0 0 80px rgba(201, 168, 76, 0.22),
+                0 0 160px rgba(201, 168, 76, 0.08),
+                inset 0 0 40px rgba(201, 168, 76, 0.12);
+            animation: orbPulse 4s ease-in-out infinite;
+            position: relative;
+        }
+
+        .orb::before {
+            content: '';
+            position: absolute;
+            inset: 12%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 40% 35%,
+                    rgba(255, 255, 255, 0.18) 0%,
+                    transparent 60%);
+        }
+
+        .orb::after {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 1px solid rgba(201, 168, 76, 0.2);
+            animation: orbRing 4s ease-in-out infinite 0.6s;
+        }
+
+        @keyframes orbPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 80px rgba(201, 168, 76, 0.22), 0 0 160px rgba(201, 168, 76, 0.08), inset 0 0 40px rgba(201, 168, 76, 0.12);
+            }
+
+            50% {
+                transform: scale(1.04);
+                box-shadow: 0 0 110px rgba(201, 168, 76, 0.32), 0 0 220px rgba(201, 168, 76, 0.12), inset 0 0 60px rgba(201, 168, 76, 0.18);
+            }
+        }
+
+        @keyframes orbRing {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.4;
+            }
+
+            50% {
+                transform: scale(1.12);
+                opacity: 0;
+            }
+        }
+
+        .desire-text {
+            max-width: 38ch;
+        }
+
+        .desire-text .scene-tag {
+            font-size: 0.68rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--gold);
+            font-weight: 500;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .desire-text h2 {
+            font-size: clamp(2.2rem, 5vw, 3.8rem);
+            margin-bottom: 1.4rem;
+        }
+
+        .desire-text p {
+            color: var(--text-secondary);
+            font-size: clamp(0.95rem, 1.8vw, 1.05rem);
+            line-height: 1.75;
+            font-weight: 300;
+        }
+
+        /* ─── SCENE 3 — COMUNIDAD ────────────────────────────── */
+        #scene-community {
+            flex-direction: column;
+            text-align: center;
+            gap: 3rem;
+        }
+
+        .counter-block {
+            margin: 0 auto;
+        }
+
+        .counter-label {
+            font-size: 0.68rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 0.75rem;
+        }
+
+        #counter-number {
+            font-family: var(--font-display);
+            font-size: clamp(4rem, 14vw, 10rem);
+            font-weight: 300;
+            color: var(--white);
+            line-height: 1;
+        }
+
+        .counter-suffix {
+            font-size: clamp(1rem, 3vw, 1.6rem);
+            color: var(--gold);
+            font-family: var(--font-display);
+            font-weight: 300;
+            margin-top: 0.25rem;
+        }
+
+        .thoughts-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.75rem 1rem;
+            max-width: 540px;
+            margin: 0 auto;
+        }
+
+        .thought {
+            font-family: var(--font-display);
+            font-style: italic;
+            font-size: clamp(0.9rem, 2.2vw, 1.05rem);
+            color: var(--text-secondary);
+            padding: 0.4rem 1rem;
+            border: 1px solid rgba(201, 168, 76, 0.15);
+            white-space: nowrap;
+            animation: floatThought 5s ease-in-out infinite;
+        }
+
+        .thought:nth-child(2) {
+            animation-delay: -1.2s;
+        }
+
+        .thought:nth-child(3) {
+            animation-delay: -2.4s;
+        }
+
+        .thought:nth-child(4) {
+            animation-delay: -0.8s;
+        }
+
+        .thought:nth-child(5) {
+            animation-delay: -3.1s;
+        }
+
+        .thought:nth-child(6) {
+            animation-delay: -1.8s;
+        }
+
+        @keyframes floatThought {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-6px);
+            }
+        }
+
+        #scene-community h2 {
+            font-size: clamp(1.6rem, 4vw, 2.8rem);
+            max-width: 28ch;
+            margin: 0 auto;
+        }
+
+        #scene-community .sub {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 300;
+            max-width: 38ch;
+            margin: 0.9rem auto 0;
+            line-height: 1.7;
+        }
+
+        /* ─── SCENE 4 — CÓMO FUNCIONA ────────────────────────── */
+        #scene-how {
+            flex-direction: column;
+            text-align: center;
+            gap: 4rem;
+        }
+
+        #scene-how .section-head {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #scene-how .scene-tag {
+            font-size: 0.68rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 1rem;
+        }
+
+        #scene-how h2 {
+            font-size: clamp(2rem, 5vw, 3.4rem);
+        }
+
+        .steps-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+            max-width: 680px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 768px) {
+            .steps-grid {
+                flex-direction: row;
+                gap: 2rem;
+            }
+        }
+
+        .step-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.2rem;
+            padding: 0.5rem;
+        }
+
+        .step-icon {
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-num {
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 0.35rem;
+        }
+
+        .step-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: var(--white);
+        }
+
+        .step-card p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-weight: 300;
+            max-width: 20ch;
+            margin: 0 auto;
+        }
+
+        .step-connector {
+            display: none;
+            align-items: center;
+            color: rgba(201, 168, 76, 0.3);
+            font-size: 1.5rem;
+            padding-top: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .step-connector {
+                display: flex;
+            }
+        }
+
+        /* ─── SCENE 5 — TESTIMONIO ───────────────────────────── */
+        #scene-testimony {
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* grain overlay */
+        #scene-testimony::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            background-size: 200px 200px;
+            opacity: 0.25;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #scene-testimony::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 80% 60% at 50% 50%,
+                    rgba(123, 94, 167, 0.06) 0%,
+                    transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .testimony-inner {
+            position: relative;
+            z-index: 1;
+            max-width: 720px;
+            text-align: center;
+        }
+
+        .open-quote {
+            font-family: var(--font-display);
+            font-size: 8rem;
+            line-height: 0.5;
+            color: var(--gold);
+            opacity: 0.25;
+            display: block;
+            margin-bottom: 1rem;
+        }
+
+        .testimony-text {
+            font-family: var(--font-display);
+            font-style: italic;
+            font-size: clamp(1.6rem, 4.5vw, 3rem);
+            font-weight: 300;
+            line-height: 1.35;
+            color: var(--white);
+            margin-bottom: 2.5rem;
+        }
+
+        .testimony-author {
+            font-size: 0.8rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--gold);
+            font-weight: 500;
+        }
+
+        /* mauve accent dot */
+        .mauve-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--mauve);
+            margin: 0 0.6rem;
+            vertical-align: middle;
+        }
+
+        /* ─── SCENE 6 — CTA FINAL ────────────────────────────── */
+        #scene-cta {
+            flex-direction: column;
+            text-align: center;
+            gap: 2.5rem;
+        }
+
+        #scene-cta h2 {
+            font-size: clamp(2.8rem, 8vw, 7rem);
+            max-width: 16ch;
+            margin: 0 auto;
+        }
+
+        .wish-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.2rem;
+            width: 100%;
+            max-width: 520px;
+            margin: 0 auto;
+        }
+
+        .wish-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(201, 168, 76, 0.3);
+            padding: 1.1rem 1.6rem;
+            font-family: var(--font-display);
+            font-style: italic;
+            font-size: 1.1rem;
+            color: var(--white);
+            outline: none;
+            transition: border-color 0.3s, background 0.3s;
+            text-align: center;
+        }
+
+        .wish-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .wish-input:focus {
+            border-color: var(--gold);
+            background: rgba(201, 168, 76, 0.06);
+        }
+
+        .btn-gold-large {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 1rem 2.8rem;
+            background: var(--gold);
+            color: var(--bg);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+            box-shadow: 0 4px 32px rgba(201, 168, 76, 0.2);
+        }
+
+        .btn-gold-large:hover {
+            background: #d4b05c;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 48px rgba(201, 168, 76, 0.35);
+        }
+
+        .btn-gold-large:active {
+            transform: translateY(0);
+        }
+
+        .cta-footer-note {
+            font-size: 0.68rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        .cta-footer-note span {
+            color: rgba(201, 168, 76, 0.4);
+        }
+
+        /* ─── Nav dot indicators ─────────────────────────────── */
+        #nav-dots {
+            position: fixed;
+            right: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+            z-index: 100;
+        }
+
+        .nav-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(201, 168, 76, 0.25);
+            transition: background 0.4s, transform 0.4s;
+            cursor: pointer;
+            border: none;
+            padding: 0;
+        }
+
+        .nav-dot.active {
+            background: var(--gold);
+            transform: scale(1.5);
+        }
+
+        @media (max-width: 600px) {
+            #nav-dots {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── Canvas de partículas ──────────────────────────────── -->
+    <canvas id="particle-canvas" aria-hidden="true"></canvas>
+
+    <!-- ── Dots de navegación ────────────────────────────────── -->
+    <nav id="nav-dots" aria-label="Navegación de secciones">
+        <button class="nav-dot active" data-scene="0" aria-label="Escena 1: Hero"></button>
+        <button class="nav-dot" data-scene="1" aria-label="Escena 2: El Deseo"></button>
+        <button class="nav-dot" data-scene="2" aria-label="Escena 3: Comunidad"></button>
+        <button class="nav-dot" data-scene="3" aria-label="Escena 4: Cómo Funciona"></button>
+        <button class="nav-dot" data-scene="4" aria-label="Escena 5: Testimonio"></button>
+        <button class="nav-dot" data-scene="5" aria-label="Escena 6: CTA Final"></button>
+    </nav>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- ESCENA 1 — HERO                                         -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <section class="scene" id="scene-hero" data-scene-index="0">
+        <div style="position:relative;z-index:1;perspective:800px">
+            <p class="hero-label anim-fade-up">Fontana · Colombia · 2025</p>
+            <h1 class="display display-italic anim-zoom-out delay-1">
+                Todo empieza<br>con un deseo
+            </h1>
+            <span class="gold-line anim-fade-up delay-2"></span>
+            <p class="hero-sub anim-fade-up delay-3">
+                Fontana convierte lo que sientes en realidad
+            </p>
+            <a href="#scene-desire" class="btn-gold anim-fade-up delay-4" id="hero-cta">
+                Conoce cómo
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M6 1v10M1 7l5 4 5-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </a>
+        </div>
+
+        <div id="scroll-indicator" aria-hidden="true">
+            scroll
+            <svg width="16" height="24" viewBox="0 0 16 24" fill="none">
+                <rect x="1" y="1" width="14" height="22" rx="7" stroke="rgba(201,168,76,0.4)" stroke-width="1.2" />
+                <circle cx="8" cy="7" r="2.5" fill="rgba(201,168,76,0.6)">
+                    <animate attributeName="cy" values="7;15;7" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="1;0.2;1" dur="2s" repeatCount="indefinite" />
+                </circle>
+            </svg>
+        </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- ESCENA 2 — EL DESEO                                     -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <section class="scene" id="scene-desire" data-scene-index="1">
+        <div class="orb-wrap anim-fade-up">
+            <div class="orb"></div>
+        </div>
+        <div class="desire-text anim-fade-up delay-2">
+            <span class="scene-tag">El deseo</span>
+            <h2 class="display display-italic">¿Qué quieres<br>que pase?</h2>
+            <span class="gold-line" style="margin:1.2rem 0"></span>
+            <p>
+                No importa si es algo pequeño o algo enorme.<br>
+                Fontana lo escucha.
+            </p>
+        </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- ESCENA 3 — COMUNIDAD                                    -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <section class="scene" id="scene-community" data-scene-index="2">
+        <div class="counter-block anim-zoom-out">
+            <p class="counter-label">Deseos activos ahora mismo</p>
+            <div id="counter-number" aria-live="polite">0</div>
+            <p class="counter-suffix">y contando</p>
+        </div>
+
+        <div class="thoughts-cloud anim-fade-up delay-2" aria-label="Deseos de la comunidad">
+            <span class="thought">"Quiero graduarme"</span>
+            <span class="thought">"Quiero sanar"</span>
+            <span class="thought">"Quiero viajar a Japón"</span>
+            <span class="thought">"Quiero mi propia empresa"</span>
+            <span class="thought">"Quiero encontrar el amor"</span>
+            <span class="thought">"Quiero paz"</span>
+        </div>
+
+        <div class="anim-fade-up delay-3">
+            <h2 class="display">No estás solo</h2>
+            <p class="sub">Otros ya están en su camino.<br>Tú puedes empezar hoy.</p>
+        </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- ESCENA 4 — CÓMO FUNCIONA                                -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <section class="scene" id="scene-how" data-scene-index="3">
+        <div class="section-head anim-fade-up">
+            <span class="scene-tag">El proceso</span>
+            <h2 class="display display-italic">El ciclo de 30 días</h2>
+            <span class="gold-line"></span>
+        </div>
+
+        <div class="steps-grid">
+            <!-- Step 1 -->
+            <div class="step-card anim-depth delay-1">
+                <div class="step-icon" aria-hidden="true">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                        <circle cx="24" cy="24" r="22" stroke="rgba(201,168,76,0.35)" stroke-width="1.2" />
+                        <circle cx="24" cy="24" r="8" fill="rgba(201,168,76,0.15)" stroke="rgba(201,168,76,0.6)"
+                            stroke-width="1.2" />
+                        <circle cx="24" cy="24" r="2.5" fill="#C9A84C" />
+                    </svg>
+                </div>
+                <p class="step-num">01</p>
+                <h3>Declares<br>tu deseo</h3>
+                <p>Pon en palabras lo que realmente quieres</p>
+            </div>
+
+            <div class="step-connector" aria-hidden="true">
+                <svg width="24" height="2" viewBox="0 0 24 2">
+                    <line x1="0" y1="1" x2="24" y2="1" stroke="rgba(201,168,76,0.3)" stroke-width="1.2"
+                        stroke-dasharray="4 3" />
+                </svg>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-card anim-depth delay-2">
+                <div class="step-icon" aria-hidden="true">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                        <path d="M24 8 C10 8 8 24 8 24 C8 24 10 40 24 40 C38 40 40 24 40 24 C40 24 38 8 24 8Z"
+                            stroke="rgba(201,168,76,0.4)" stroke-width="1.2" fill="rgba(201,168,76,0.08)" />
+                        <path d="M16 24 C16 19.6 19.6 16 24 16 C28.4 16 32 19.6 32 24" stroke="#C9A84C"
+                            stroke-width="1.2" fill="none" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <p class="step-num">02</p>
+                <h3>La comunidad<br>te apoya</h3>
+                <p>Su energía colectiva impulsa tu intención</p>
+            </div>
+
+            <div class="step-connector" aria-hidden="true">
+                <svg width="24" height="2" viewBox="0 0 24 2">
+                    <line x1="0" y1="1" x2="24" y2="1" stroke="rgba(201,168,76,0.3)" stroke-width="1.2"
+                        stroke-dasharray="4 3" />
+                </svg>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step-card anim-depth delay-3">
+                <div class="step-icon" aria-hidden="true">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                        <polygon points="24,6 28.5,17.5 41,17.5 31,25 34.5,37 24,30 13.5,37 17,25 7,17.5 19.5,17.5"
+                            stroke="rgba(201,168,76,0.5)" stroke-width="1.2" fill="rgba(201,168,76,0.12)"
+                            stroke-linejoin="round" />
+                        <polygon
+                            points="24,13 26.8,21.2 35.5,21.2 28.5,26.2 30.8,34.5 24,29.5 17.2,34.5 19.5,26.2 12.5,21.2 21.2,21.2"
+                            fill="rgba(201,168,76,0.2)" stroke="none" />
+                    </svg>
+                </div>
+                <p class="step-num">03</p>
+                <h3>En 30 días,<br>ves la diferencia</h3>
+                <p>Cada ciclo es un paso concreto hacia tu deseo</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- ESCENA 5 — TESTIMONIO                                   -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <section class="scene" id="scene-testimony" data-scene-index="4">
+        <div class="testimony-inner">
+            <span class="open-quote anim-fade-up" aria-hidden="true">&ldquo;</span>
+            <blockquote>
+                <p class="testimony-text anim-zoom-out">
+                    Escribí mi deseo sin creer mucho. Tres semanas después, recibí la llamada que esperaba hace un año.
+                </p>
+                <footer class="testimony-author anim-fade-up delay-2">
+                    <span class="mauve-dot" aria-hidden="true"></span>
+                    María C.<span aria-hidden="true"> &mdash; </span> Medellín
+                    <span class="mauve-dot" aria-hidden="true"></span>
+                </footer>
+            </blockquote>
+        </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- ESCENA 6 — CTA FINAL                                    -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <section class="scene" id="scene-cta" data-scene-index="5">
+        <h2 class="display display-italic anim-zoom-out">
+            Tu deseo<br>te está esperando
+        </h2>
+        <span class="gold-line anim-fade-up delay-1"></span>
+        <div class="wish-form anim-fade-up delay-2">
+            <input id="wish-input" class="wish-input" type="text" placeholder="Escribe aquí lo que deseas..."
+                maxlength="160" aria-label="Tu deseo" />
+            <button class="btn-gold-large" id="cta-comenzar" type="button">
+                Comenzar ahora
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </button>
+        </div>
+        <p class="cta-footer-note anim-fade-up delay-3">
+            <span>Fontana</span> · Colombia · 2025
+        </p>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- JAVASCRIPT                                              -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <script>
+        (function () {
+            'use strict';
+
+            /* ── Reduced motion check ─────────────────────────────── */
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            /* ══════════════════════════════════════════════════════════
+               CANVAS PARTICLES
+            ══════════════════════════════════════════════════════════ */
+            const canvas = document.getElementById('particle-canvas');
+            const ctx = canvas.getContext('2d');
+
+            let W, H, particles = [], mouse = { x: -9999, y: -9999 };
+            const SCENE_INDEX = [
+                'scene-hero', 'scene-desire', 'scene-community',
+                'scene-how', 'scene-testimony', 'scene-cta'
+            ];
+
+            /* Current particle density (more on CTA) */
+            function getTargetCount() {
+                const cta = document.getElementById('scene-cta');
+                if (!cta) return 80;
+                const rect = cta.getBoundingClientRect();
+                const inView = rect.top < H * 0.8;
+                return inView ? 160 : 80;
+            }
+
+            function resize() {
+                W = canvas.width = window.innerWidth;
+                H = canvas.height = window.innerHeight;
+            }
+
+            function createParticle(forceNew) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 0.08 + Math.random() * 0.18;
+                return {
+                    x: forceNew ? Math.random() * W : Math.random() * W,
+                    y: forceNew ? Math.random() * H : Math.random() * H,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: 0.5 + Math.random() * 1.6,
+                    alpha: 0.1 + Math.random() * 0.55,
+                    twinkle: Math.random() * Math.PI * 2,
+                    twinkleSpeed: 0.012 + Math.random() * 0.025,
+                };
+            }
+
+            function initParticles(count) {
+                particles = Array.from({ length: count }, () => createParticle(true));
+            }
+
+            function drawParticles() {
+                ctx.clearRect(0, 0, W, H);
+                if (prefersReducedMotion) return;
+
+                const target = getTargetCount();
+
+                /* adjust count gradually */
+                if (particles.length < target) particles.push(createParticle(true));
+                if (particles.length > target) particles.splice(0, 1);
+
+                const time = performance.now() * 0.001;
+
+                particles.forEach(p => {
+                    /* mouse repulsion — gentle */
+                    const dx = p.x - mouse.x;
+                    const dy = p.y - mouse.y;
+                    const distSq = dx * dx + dy * dy;
+                    if (distSq < 16000 && distSq > 0) {
+                        const dist = Math.sqrt(distSq);
+                        const force = (1 - dist / 126) * 0.012;
+                        p.vx += (dx / dist) * force;
+                        p.vy += (dy / dist) * force;
+                    }
+
+                    /* damping */
+                    p.vx *= 0.99;
+                    p.vy *= 0.99;
+
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.twinkle += p.twinkleSpeed;
+
+                    /* wrap */
+                    if (p.x < -4) p.x = W + 4;
+                    if (p.x > W + 4) p.x = -4;
+                    if (p.y < -4) p.y = H + 4;
+                    if (p.y > H + 4) p.y = -4;
+
+                    const alpha = p.alpha * (0.6 + 0.4 * Math.sin(p.twinkle));
+
+                    /* gold gradient */
+                    const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
+                    grad.addColorStop(0, `rgba(201,168,76,${alpha})`);
+                    grad.addColorStop(1, 'rgba(201,168,76,0)');
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+                });
+
+                requestAnimationFrame(drawParticles);
+            }
+
+            window.addEventListener('resize', () => { resize(); });
+            window.addEventListener('mousemove', e => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+            });
+            window.addEventListener('touchmove', e => {
+                mouse.x = e.touches[0].clientX;
+                mouse.y = e.touches[0].clientY;
+            }, { passive: true });
+
+            resize();
+            initParticles(80);
+            if (!prefersReducedMotion) drawParticles();
+
+            /* ══════════════════════════════════════════════════════════
+               INTERSECTION OBSERVER — animation triggers
+            ══════════════════════════════════════════════════════════ */
+            const animEls = document.querySelectorAll(
+                '.anim-fade-up, .anim-zoom-out, .anim-depth'
+            );
+
+            if (!prefersReducedMotion) {
+                const visObs = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('visible');
+                            visObs.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.15 });
+
+                animEls.forEach(el => visObs.observe(el));
+            } else {
+                animEls.forEach(el => el.classList.add('visible'));
+            }
+
+            /* ══════════════════════════════════════════════════════════
+               COUNTER ANIMATION (Scene 3)
+            ══════════════════════════════════════════════════════════ */
+            const counterEl = document.getElementById('counter-number');
+            let counted = false;
+
+            function animateCounter(target, duration) {
+                const start = performance.now();
+                function step(now) {
+                    const elapsed = now - start;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    const value = Math.round(eased * target);
+                    counterEl.textContent = value.toLocaleString('es-CO');
+                    if (progress < 1) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
+            }
+
+            const counterObs = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !counted) {
+                        counted = true;
+                        animateCounter(1247, 2200);
+                        counterObs.disconnect();
+                    }
+                });
+            }, { threshold: 0.4 });
+
+            if (counterEl) counterObs.observe(counterEl);
+
+            /* ══════════════════════════════════════════════════════════
+               NAV DOTS — active state
+            ══════════════════════════════════════════════════════════ */
+            const dots = document.querySelectorAll('.nav-dot');
+            const scenes = document.querySelectorAll('.scene[data-scene-index]');
+
+            const sceneObs = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const idx = entry.target.dataset.sceneIndex;
+                        dots.forEach((d, i) => d.classList.toggle('active', String(i) === idx));
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            scenes.forEach(s => sceneObs.observe(s));
+
+            dots.forEach((dot, i) => {
+                dot.addEventListener('click', () => {
+                    scenes[i]?.scrollIntoView({ behavior: 'smooth' });
+                });
+            });
+
+            /* ══════════════════════════════════════════════════════════
+               HERO CTA — smooth scroll
+            ══════════════════════════════════════════════════════════ */
+            const heroCta = document.getElementById('hero-cta');
+            if (heroCta) {
+                heroCta.addEventListener('click', e => {
+                    e.preventDefault();
+                    document.getElementById('scene-desire')?.scrollIntoView({ behavior: 'smooth' });
+                });
+            }
+
+            /* ══════════════════════════════════════════════════════════
+               CTA BUTTON — decorative interaction
+            ══════════════════════════════════════════════════════════ */
+            const ctaBtn = document.getElementById('cta-comenzar');
+            const wishInput = document.getElementById('wish-input');
+            if (ctaBtn && wishInput) {
+                ctaBtn.addEventListener('click', () => {
+                    if (!wishInput.value.trim()) {
+                        wishInput.focus();
+                        wishInput.style.borderColor = `var(--gold)`;
+                        wishInput.animate([
+                            { transform: 'translateX(-6px)' },
+                            { transform: 'translateX(6px)' },
+                            { transform: 'translateX(-4px)' },
+                            { transform: 'translateX(4px)' },
+                            { transform: 'translateX(0)' }
+                        ], { duration: 380, easing: 'ease-out' });
+                    } else {
+                        /* Decorative: pulse effect */
+                        ctaBtn.style.transform = 'scale(0.96)';
+                        setTimeout(() => { ctaBtn.style.transform = ''; }, 180);
+                    }
+                });
+            }
+
+        })();
+    </script>
+</body>
+
+</html>
