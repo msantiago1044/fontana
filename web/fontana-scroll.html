@@ -117,14 +117,16 @@
             align-items: center;
             justify-content: space-between;
             padding: .8rem 1.6rem;
-            background: color-mix(in srgb, var(--bg) 12%, transparent);
-            backdrop-filter: blur(28px) saturate(1.8);
-            -webkit-backdrop-filter: blur(28px) saturate(1.8);
-            transition: background .4s;
+            background: color-mix(in srgb, var(--bg) 10%, transparent);
+            backdrop-filter: blur(10px) saturate(1.4);
+            -webkit-backdrop-filter: blur(10px) saturate(1.4);
+            transition: background .4s, backdrop-filter .4s;
         }
 
         header.s {
-            background: color-mix(in srgb, var(--bg) 28%, transparent);
+            background: color-mix(in srgb, var(--bg) 22%, transparent);
+            backdrop-filter: blur(14px) saturate(1.5);
+            -webkit-backdrop-filter: blur(14px) saturate(1.5);
         }
 
         .logo {
