@@ -16,7 +16,7 @@
         rel="stylesheet" />
 
     <style>
-        /* ─── Reset & Base ──────────────────────────────────────── */
+        /* ─── Reset & Base ──────────────────────────────────────────── */
         *,
         *::before,
         *::after {
@@ -28,19 +28,18 @@
         :root {
             --bg: #0A0A0F;
             --gold: #C9A84C;
-            --gold-dim: #8A6E2E;
             --white: #FFFFFF;
             --mauve: #7B5EA7;
-            --text-secondary: rgba(255, 255, 255, 0.55);
-            --font-display: 'Cormorant Garamond', Georgia, serif;
-            --font-body: 'Inter', system-ui, sans-serif;
+            --grey: rgba(255, 255, 255, 0.52);
+            --ff-disp: 'Cormorant Garamond', Georgia, serif;
+            --ff-body: 'Inter', system-ui, sans-serif;
         }
 
         html {
             scroll-behavior: smooth;
             background: var(--bg);
             color: var(--white);
-            font-family: var(--font-body);
+            font-family: var(--ff-body);
             -webkit-font-smoothing: antialiased;
         }
 
@@ -49,18 +48,15 @@
             background: var(--bg);
         }
 
-        /* ─── Partículas canvas (fijas, fondo global) ─────────── */
+        /* ─── Canvas partículas ─────────────────────────────────────── */
         #particle-canvas {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             pointer-events: none;
             z-index: 0;
         }
 
-        /* ─── Sections ──────────────────────────────────────────── */
+        /* ─── Scenes ────────────────────────────────────────────────── */
         .scene {
             position: relative;
             min-height: 100vh;
@@ -69,208 +65,261 @@
             justify-content: center;
             overflow: hidden;
             z-index: 1;
-            padding: 4rem 1.5rem;
+            padding: 5rem 1.5rem;
         }
 
-        /* ─── Typography ────────────────────────────────────────── */
-        .display {
-            font-family: var(--font-display);
+        /* ─── Typography helpers ────────────────────────────────────── */
+        .ff-disp {
+            font-family: var(--ff-disp);
             font-weight: 300;
-            line-height: 1.1;
-            letter-spacing: -0.01em;
+            line-height: 1.08;
+            letter-spacing: -.01em;
         }
 
-        .display-italic {
+        .italic {
             font-style: italic;
         }
 
-        /* ─── Animation states (IntersectionObserver) ─────────── */
-        .anim-ready {
-            opacity: 0;
+        /* ───────────────────────────────────────────────────────────────
+       ANIMACIONES — dos fases:
+       .js-ready   → clase añadida por JS antes del primer frame
+                     (el CSS default es visible para noscript)
+       .will-anim  → elemento esperando ser animado (invisible)
+       .is-visible → observer lo activó → transición hacia visible
+    ─────────────────────────────────────────────────────────────── */
+
+        /* Sin JS: todo visible */
+        .will-anim {
+            /* nada por defecto */
         }
 
-        /* fade-up: standard entrance */
-        .anim-fade-up {
-            transform: translateY(60px) translateZ(-80px);
+        /* Con JS: se añade .js-ready al <html>, ahí ocultamos */
+        .js-ready .will-anim {
             opacity: 0;
-            transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-                transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
         }
 
-        .anim-fade-up.visible {
+        /* Variante: fade + rise */
+        .js-ready .anim-up {
+            transform: translateY(52px);
+            transition: opacity .88s cubic-bezier(.16, 1, .3, 1), transform .88s cubic-bezier(.16, 1, .3, 1);
+        }
+
+        .js-ready .anim-up.is-visible {
             opacity: 1;
-            transform: translateY(0) translateZ(0);
+            transform: translateY(0);
         }
 
-        /* zoom-out: hero text explodes toward user */
-        .anim-zoom-out {
-            transform: scale(0.82) translateZ(-120px);
-            opacity: 0;
-            transition: opacity 1.1s cubic-bezier(0.16, 1, 0.3, 1),
-                transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+        /* Variante: zoom desde atrás */
+        .js-ready .anim-zoom {
+            transform: scale(.84);
+            transition: opacity 1.05s cubic-bezier(.16, 1, .3, 1), transform 1.05s cubic-bezier(.16, 1, .3, 1);
         }
 
-        .anim-zoom-out.visible {
+        .js-ready .anim-zoom.is-visible {
             opacity: 1;
-            transform: scale(1) translateZ(0);
+            transform: scale(1);
         }
 
-        /* slide-depth: steps appear from depth */
-        .anim-depth {
-            transform: perspective(900px) rotateX(18deg) translateY(80px);
-            opacity: 0;
-            transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
-                transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+        /* Variante: rotación 3D desde profundidad */
+        .js-ready .anim-depth {
+            transform: perspective(800px) rotateX(20deg) translateY(70px);
+            transition: opacity .82s cubic-bezier(.16, 1, .3, 1), transform .82s cubic-bezier(.16, 1, .3, 1);
         }
 
-        .anim-depth.visible {
+        .js-ready .anim-depth.is-visible {
             opacity: 1;
-            transform: perspective(900px) rotateX(0deg) translateY(0);
+            transform: perspective(800px) rotateX(0deg) translateY(0);
         }
 
-        /* delay helpers */
-        .delay-1 {
-            transition-delay: 0.12s !important;
+        /* Delays escalonados */
+        .d1 {
+            transition-delay: .1s !important;
         }
 
-        .delay-2 {
-            transition-delay: 0.28s !important;
+        .d2 {
+            transition-delay: .24s !important;
         }
 
-        .delay-3 {
-            transition-delay: 0.44s !important;
+        .d3 {
+            transition-delay: .4s !important;
         }
 
-        .delay-4 {
-            transition-delay: 0.60s !important;
+        .d4 {
+            transition-delay: .58s !important;
         }
 
-        /* ─── Reduced motion ─────────────────────────────────── */
+        /* ─── Reduced motion ────────────────────────────────────────── */
         @media (prefers-reduced-motion: reduce) {
-
-            *,
-            *::before,
-            *::after {
-                animation-duration: 0.01ms !important;
-                transition-duration: 0.01ms !important;
-            }
-
-            .anim-fade-up,
-            .anim-zoom-out,
-            .anim-depth {
+            .js-ready .will-anim {
                 opacity: 1 !important;
                 transform: none !important;
+                transition: none !important;
+            }
+
+            .orb,
+            .thought,
+            #scroll-indicator {
+                animation: none !important;
             }
         }
 
-        /* ─── Gold divider ──────────────────────────────────── */
-        .gold-line {
+        /* ─── Gold rule ─────────────────────────────────────────────── */
+        .gold-rule {
             display: block;
-            width: 48px;
+            width: 44px;
             height: 1px;
             background: var(--gold);
-            margin: 1.5rem auto;
-            opacity: 0.7;
+            margin: 1.4rem auto;
+            opacity: .65;
         }
 
-        /* ─── CTA Button ────────────────────────────────────── */
-        .btn-gold {
+        /* ─── Tag label ─────────────────────────────────────────────── */
+        .tag {
+            display: block;
+            font-size: .67rem;
+            letter-spacing: .26em;
+            text-transform: uppercase;
+            color: var(--gold);
+            font-weight: 500;
+            margin-bottom: .9rem;
+        }
+
+        /* ─── Button outline ────────────────────────────────────────── */
+        .btn-outline {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.85rem 2.25rem;
+            gap: .45rem;
+            padding: .82rem 2.1rem;
             border: 1px solid var(--gold);
             color: var(--gold);
-            font-family: var(--font-body);
-            font-size: 0.875rem;
+            font-family: var(--ff-body);
+            font-size: .82rem;
             font-weight: 500;
-            letter-spacing: 0.12em;
+            letter-spacing: .13em;
             text-transform: uppercase;
             text-decoration: none;
             background: transparent;
             cursor: pointer;
             position: relative;
             overflow: hidden;
-            transition: color 0.35s, background 0.35s, transform 0.2s;
+            transition: color .32s, transform .18s;
         }
 
-        .btn-gold::before {
+        .btn-outline::before {
             content: '';
             position: absolute;
             inset: 0;
             background: var(--gold);
             transform: scaleX(0);
             transform-origin: left;
-            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: -1;
+            transition: transform .32s cubic-bezier(.16, 1, .3, 1);
+            z-index: 0;
         }
 
-        .btn-gold:hover {
+        .btn-outline span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-outline:hover {
             color: var(--bg);
         }
 
-        .btn-gold:hover::before {
+        .btn-outline:hover::before {
             transform: scaleX(1);
         }
 
-        .btn-gold:active {
-            transform: scale(0.97);
+        .btn-outline:active {
+            transform: scale(.97);
         }
 
-        /* ─── SCENE 1 — HERO ────────────────────────────────── */
-        #scene-hero {
+        /* ─── Button solid ──────────────────────────────────────────── */
+        .btn-solid {
+            display: inline-flex;
+            align-items: center;
+            gap: .55rem;
+            padding: 1rem 2.6rem;
+            background: var(--gold);
+            color: var(--bg);
+            font-family: var(--ff-body);
+            font-size: .88rem;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            transition: background .28s, transform .2s, box-shadow .28s;
+            box-shadow: 0 4px 28px rgba(201, 168, 76, .22);
+        }
+
+        .btn-solid:hover {
+            background: #d8b55e;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 44px rgba(201, 168, 76, .38);
+        }
+
+        .btn-solid:active {
+            transform: translateY(0);
+        }
+
+        /* ══════════════════════════════════════════════════════════════
+       ESCENA 1 — HERO
+    ══════════════════════════════════════════════════════════════ */
+        #s1 {
             text-align: center;
-            perspective: 800px;
+            perspective: 900px;
         }
 
-        #scene-hero .hero-label {
-            font-family: var(--font-body);
-            font-size: 0.7rem;
-            font-weight: 500;
-            letter-spacing: 0.28em;
+        #s1 .inner {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-eyebrow {
+            font-size: .67rem;
+            letter-spacing: .28em;
             text-transform: uppercase;
             color: var(--gold);
-            margin-bottom: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 1.6rem;
         }
 
-        #scene-hero h1 {
-            font-size: clamp(3.2rem, 9vw, 8rem);
+        .hero-h1 {
+            font-size: clamp(3rem, 9.5vw, 8.5rem);
             color: var(--white);
-            max-width: 14ch;
-            margin: 0 auto 1.2rem;
+            max-width: 13ch;
+            margin: 0 auto 1.1rem;
         }
 
-        #scene-hero .hero-sub {
-            font-size: clamp(0.95rem, 2vw, 1.15rem);
-            color: var(--text-secondary);
+        .hero-sub {
+            font-size: clamp(.95rem, 2vw, 1.13rem);
+            color: var(--grey);
             font-weight: 300;
-            max-width: 38ch;
-            margin: 0 auto 3rem;
-            line-height: 1.65;
+            max-width: 36ch;
+            margin: 0 auto 2.8rem;
+            line-height: 1.68;
         }
 
-        #scroll-indicator {
+        /* Scroll indicator */
+        #scroll-cue {
             position: absolute;
-            bottom: 2.5rem;
+            bottom: 2.4rem;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 0.4rem;
-            opacity: 0.45;
-            font-size: 0.65rem;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
+            gap: .35rem;
             color: var(--gold);
-            animation: scrollBob 2.4s ease-in-out infinite;
+            opacity: .4;
+            font-size: .6rem;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            animation: bob 2.6s ease-in-out infinite;
         }
 
-        #scroll-indicator svg {
-            animation: scrollBob 2.4s ease-in-out infinite 0.2s;
-        }
-
-        @keyframes scrollBob {
+        @keyframes bob {
 
             0%,
             100% {
@@ -278,20 +327,22 @@
             }
 
             50% {
-                transform: translateX(-50%) translateY(8px);
+                transform: translateX(-50%) translateY(9px);
             }
         }
 
-        /* ─── SCENE 2 — EL DESEO ─────────────────────────────── */
-        #scene-desire {
+        /* ══════════════════════════════════════════════════════════════
+       ESCENA 2 — EL DESEO
+    ══════════════════════════════════════════════════════════════ */
+        #s2 {
             flex-direction: column;
-            gap: 4rem;
+            gap: 3.5rem;
         }
 
         @media (min-width: 768px) {
-            #scene-desire {
+            #s2 {
                 flex-direction: row;
-                gap: 6rem;
+                gap: 7rem;
             }
         }
 
@@ -303,39 +354,34 @@
         }
 
         .orb {
-            width: clamp(180px, 30vw, 280px);
-            height: clamp(180px, 30vw, 280px);
+            width: clamp(160px, 28vw, 270px);
+            height: clamp(160px, 28vw, 270px);
             border-radius: 50%;
-            background: radial-gradient(circle at 38% 36%,
-                    rgba(201, 168, 76, 0.55) 0%,
-                    rgba(201, 168, 76, 0.18) 40%,
-                    rgba(201, 168, 76, 0.04) 70%,
-                    transparent 100%);
+            background: radial-gradient(circle at 37% 34%,
+                    rgba(201, 168, 76, .6) 0%, rgba(201, 168, 76, .18) 42%,
+                    rgba(201, 168, 76, .03) 70%, transparent 100%);
             box-shadow:
-                0 0 80px rgba(201, 168, 76, 0.22),
-                0 0 160px rgba(201, 168, 76, 0.08),
-                inset 0 0 40px rgba(201, 168, 76, 0.12);
-            animation: orbPulse 4s ease-in-out infinite;
+                0 0 70px rgba(201, 168, 76, .24), 0 0 150px rgba(201, 168, 76, .08),
+                inset 0 0 40px rgba(201, 168, 76, .14);
+            animation: orbPulse 4.2s ease-in-out infinite;
             position: relative;
         }
 
         .orb::before {
             content: '';
             position: absolute;
-            inset: 12%;
+            inset: 14%;
             border-radius: 50%;
-            background: radial-gradient(circle at 40% 35%,
-                    rgba(255, 255, 255, 0.18) 0%,
-                    transparent 60%);
+            background: radial-gradient(circle at 38% 34%, rgba(255, 255, 255, .2) 0%, transparent 60%);
         }
 
         .orb::after {
             content: '';
             position: absolute;
-            inset: -8px;
+            inset: -10px;
             border-radius: 50%;
-            border: 1px solid rgba(201, 168, 76, 0.2);
-            animation: orbRing 4s ease-in-out infinite 0.6s;
+            border: 1px solid rgba(201, 168, 76, .18);
+            animation: orbRing 4.2s ease-in-out infinite .7s;
         }
 
         @keyframes orbPulse {
@@ -343,12 +389,12 @@
             0%,
             100% {
                 transform: scale(1);
-                box-shadow: 0 0 80px rgba(201, 168, 76, 0.22), 0 0 160px rgba(201, 168, 76, 0.08), inset 0 0 40px rgba(201, 168, 76, 0.12);
+                box-shadow: 0 0 70px rgba(201, 168, 76, .24), 0 0 150px rgba(201, 168, 76, .08), inset 0 0 40px rgba(201, 168, 76, .14);
             }
 
             50% {
-                transform: scale(1.04);
-                box-shadow: 0 0 110px rgba(201, 168, 76, 0.32), 0 0 220px rgba(201, 168, 76, 0.12), inset 0 0 60px rgba(201, 168, 76, 0.18);
+                transform: scale(1.05);
+                box-shadow: 0 0 110px rgba(201, 168, 76, .34), 0 0 220px rgba(201, 168, 76, .12), inset 0 0 60px rgba(201, 168, 76, .2);
             }
         }
 
@@ -357,117 +403,108 @@
             0%,
             100% {
                 transform: scale(1);
-                opacity: 0.4;
+                opacity: .35;
             }
 
             50% {
-                transform: scale(1.12);
+                transform: scale(1.14);
                 opacity: 0;
             }
         }
 
-        .desire-text {
-            max-width: 38ch;
+        .desire-copy {
+            max-width: 36ch;
         }
 
-        .desire-text .scene-tag {
-            font-size: 0.68rem;
-            letter-spacing: 0.25em;
-            text-transform: uppercase;
-            color: var(--gold);
-            font-weight: 500;
-            margin-bottom: 1rem;
-            display: block;
+        .desire-copy h2 {
+            font-size: clamp(2rem, 5vw, 3.7rem);
+            margin-bottom: 1.3rem;
         }
 
-        .desire-text h2 {
-            font-size: clamp(2.2rem, 5vw, 3.8rem);
-            margin-bottom: 1.4rem;
-        }
-
-        .desire-text p {
-            color: var(--text-secondary);
-            font-size: clamp(0.95rem, 1.8vw, 1.05rem);
-            line-height: 1.75;
+        .desire-copy p {
+            color: var(--grey);
+            font-size: clamp(.93rem, 1.9vw, 1.04rem);
+            line-height: 1.78;
             font-weight: 300;
         }
 
-        /* ─── SCENE 3 — COMUNIDAD ────────────────────────────── */
-        #scene-community {
+        /* ══════════════════════════════════════════════════════════════
+       ESCENA 3 — COMUNIDAD
+    ══════════════════════════════════════════════════════════════ */
+        #s3 {
             flex-direction: column;
             text-align: center;
-            gap: 3rem;
+            gap: 2.8rem;
         }
 
-        .counter-block {
+        .counter-wrap {
             margin: 0 auto;
         }
 
         .counter-label {
-            font-size: 0.68rem;
-            letter-spacing: 0.25em;
+            font-size: .67rem;
+            letter-spacing: .26em;
             text-transform: uppercase;
             color: var(--gold);
-            margin-bottom: 0.75rem;
+            margin-bottom: .6rem;
         }
 
-        #counter-number {
-            font-family: var(--font-display);
+        #counter {
+            font-family: var(--ff-disp);
             font-size: clamp(4rem, 14vw, 10rem);
             font-weight: 300;
             color: var(--white);
             line-height: 1;
         }
 
-        .counter-suffix {
-            font-size: clamp(1rem, 3vw, 1.6rem);
+        .counter-sub {
+            font-family: var(--ff-disp);
+            font-size: clamp(.95rem, 3vw, 1.55rem);
             color: var(--gold);
-            font-family: var(--font-display);
             font-weight: 300;
-            margin-top: 0.25rem;
+            margin-top: .2rem;
         }
 
-        .thoughts-cloud {
+        .thoughts {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 0.75rem 1rem;
-            max-width: 540px;
+            gap: .65rem .9rem;
+            max-width: 520px;
             margin: 0 auto;
         }
 
         .thought {
-            font-family: var(--font-display);
+            font-family: var(--ff-disp);
             font-style: italic;
-            font-size: clamp(0.9rem, 2.2vw, 1.05rem);
-            color: var(--text-secondary);
-            padding: 0.4rem 1rem;
-            border: 1px solid rgba(201, 168, 76, 0.15);
-            white-space: nowrap;
-            animation: floatThought 5s ease-in-out infinite;
+            font-size: clamp(.88rem, 2.2vw, 1.02rem);
+            color: var(--grey);
+            padding: .38rem 1rem;
+            border: 1px solid rgba(201, 168, 76, .14);
+            animation: hov 5.5s ease-in-out infinite;
         }
 
         .thought:nth-child(2) {
-            animation-delay: -1.2s;
+            animation-delay: -1.3s;
         }
 
         .thought:nth-child(3) {
-            animation-delay: -2.4s;
+            animation-delay: -2.6s;
         }
 
         .thought:nth-child(4) {
-            animation-delay: -0.8s;
+            animation-delay: -0.7s;
         }
 
         .thought:nth-child(5) {
-            animation-delay: -3.1s;
+            animation-delay: -3.3s;
         }
 
         .thought:nth-child(6) {
-            animation-delay: -1.8s;
+            animation-delay: -1.9s;
         }
 
-        @keyframes floatThought {
+        @keyframes hov {
 
             0%,
             100% {
@@ -475,207 +512,190 @@
             }
 
             50% {
-                transform: translateY(-6px);
+                transform: translateY(-7px);
             }
         }
 
-        #scene-community h2 {
-            font-size: clamp(1.6rem, 4vw, 2.8rem);
-            max-width: 28ch;
+        #s3 h2 {
+            font-size: clamp(1.5rem, 4.2vw, 2.7rem);
+            max-width: 26ch;
             margin: 0 auto;
         }
 
-        #scene-community .sub {
-            color: var(--text-secondary);
+        #s3 .sub {
+            color: var(--grey);
             font-size: 1rem;
             font-weight: 300;
-            max-width: 38ch;
-            margin: 0.9rem auto 0;
+            max-width: 36ch;
+            margin: .8rem auto 0;
             line-height: 1.7;
         }
 
-        /* ─── SCENE 4 — CÓMO FUNCIONA ────────────────────────── */
-        #scene-how {
+        /* ══════════════════════════════════════════════════════════════
+       ESCENA 4 — CÓMO FUNCIONA
+    ══════════════════════════════════════════════════════════════ */
+        #s4 {
             flex-direction: column;
             text-align: center;
             gap: 4rem;
         }
 
-        #scene-how .section-head {
+        #s4 .head {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
-        #scene-how .scene-tag {
-            font-size: 0.68rem;
-            letter-spacing: 0.25em;
-            text-transform: uppercase;
-            color: var(--gold);
-            margin-bottom: 1rem;
+        #s4 h2 {
+            font-size: clamp(2rem, 5vw, 3.3rem);
         }
 
-        #scene-how h2 {
-            font-size: clamp(2rem, 5vw, 3.4rem);
-        }
-
-        .steps-grid {
+        .steps {
             display: flex;
             flex-direction: column;
             gap: 2.5rem;
-            max-width: 680px;
+            max-width: 660px;
             width: 100%;
             margin: 0 auto;
         }
 
         @media (min-width: 768px) {
-            .steps-grid {
+            .steps {
                 flex-direction: row;
-                gap: 2rem;
+                gap: 1.8rem;
+                align-items: flex-start;
             }
         }
 
-        .step-card {
+        .step {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 1.2rem;
-            padding: 0.5rem;
-        }
-
-        .step-icon {
-            width: 56px;
-            height: 56px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            gap: 1rem;
         }
 
         .step-num {
-            font-family: var(--font-display);
-            font-size: 0.7rem;
-            letter-spacing: 0.2em;
+            font-family: var(--ff-disp);
+            font-size: .68rem;
+            letter-spacing: .22em;
             color: var(--gold);
             text-transform: uppercase;
-            margin-bottom: 0.35rem;
         }
 
-        .step-card h3 {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
+        .step h3 {
+            font-family: var(--ff-disp);
+            font-size: 1.45rem;
             font-weight: 400;
-            color: var(--white);
         }
 
-        .step-card p {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
+        .step p {
+            font-size: .88rem;
+            color: var(--grey);
             line-height: 1.7;
             font-weight: 300;
-            max-width: 20ch;
+            max-width: 19ch;
             margin: 0 auto;
         }
 
-        .step-connector {
+        .step-sep {
             display: none;
-            align-items: center;
-            color: rgba(201, 168, 76, 0.3);
-            font-size: 1.5rem;
-            padding-top: 1rem;
         }
 
         @media (min-width: 768px) {
-            .step-connector {
-                display: flex;
+            .step-sep {
+                display: block;
+                padding-top: 1.8rem;
+                opacity: .3;
+                color: var(--gold);
             }
         }
 
-        /* ─── SCENE 5 — TESTIMONIO ───────────────────────────── */
-        #scene-testimony {
+        /* ══════════════════════════════════════════════════════════════
+       ESCENA 5 — TESTIMONIO
+    ══════════════════════════════════════════════════════════════ */
+        #s5 {
             position: relative;
             overflow: hidden;
         }
 
-        /* grain overlay */
-        #scene-testimony::before {
+        #s5::before {
             content: '';
             position: absolute;
             inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-            background-size: 200px 200px;
-            opacity: 0.25;
+            background: radial-gradient(ellipse 75% 55% at 50% 50%,
+                    rgba(123, 94, 167, .07) 0%, transparent 70%);
             pointer-events: none;
-            z-index: 0;
         }
 
-        #scene-testimony::after {
+        /* grain */
+        #s5::after {
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(ellipse 80% 60% at 50% 50%,
-                    rgba(123, 94, 167, 0.06) 0%,
-                    transparent 70%);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+            background-size: 300px;
+            opacity: .22;
             pointer-events: none;
-            z-index: 0;
         }
 
-        .testimony-inner {
+        .testi {
             position: relative;
             z-index: 1;
-            max-width: 720px;
+            max-width: 700px;
             text-align: center;
         }
 
-        .open-quote {
-            font-family: var(--font-display);
-            font-size: 8rem;
-            line-height: 0.5;
+        .open-q {
+            font-family: var(--ff-disp);
+            font-size: 7rem;
+            line-height: .4;
             color: var(--gold);
-            opacity: 0.25;
+            opacity: .22;
             display: block;
             margin-bottom: 1rem;
         }
 
-        .testimony-text {
-            font-family: var(--font-display);
+        .testi-text {
+            font-family: var(--ff-disp);
             font-style: italic;
-            font-size: clamp(1.6rem, 4.5vw, 3rem);
+            font-size: clamp(1.5rem, 4.4vw, 2.9rem);
             font-weight: 300;
-            line-height: 1.35;
+            line-height: 1.38;
             color: var(--white);
-            margin-bottom: 2.5rem;
+            margin-bottom: 2.2rem;
         }
 
-        .testimony-author {
-            font-size: 0.8rem;
-            letter-spacing: 0.18em;
+        .testi-author {
+            font-size: .78rem;
+            letter-spacing: .18em;
             text-transform: uppercase;
             color: var(--gold);
             font-weight: 500;
         }
 
-        /* mauve accent dot */
-        .mauve-dot {
+        .dot-mauve {
             display: inline-block;
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
             background: var(--mauve);
-            margin: 0 0.6rem;
+            margin: 0 .55rem;
             vertical-align: middle;
         }
 
-        /* ─── SCENE 6 — CTA FINAL ────────────────────────────── */
-        #scene-cta {
+        /* ══════════════════════════════════════════════════════════════
+       ESCENA 6 — CTA FINAL
+    ══════════════════════════════════════════════════════════════ */
+        #s6 {
             flex-direction: column;
             text-align: center;
-            gap: 2.5rem;
+            gap: 2.2rem;
         }
 
-        #scene-cta h2 {
-            font-size: clamp(2.8rem, 8vw, 7rem);
-            max-width: 16ch;
+        #s6 h2 {
+            font-size: clamp(2.6rem, 8vw, 7rem);
+            max-width: 14ch;
             margin: 0 auto;
         }
 
@@ -683,100 +703,72 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 1.2rem;
+            gap: 1.1rem;
             width: 100%;
-            max-width: 520px;
+            max-width: 500px;
             margin: 0 auto;
         }
 
         .wish-input {
             width: 100%;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(201, 168, 76, 0.3);
-            padding: 1.1rem 1.6rem;
-            font-family: var(--font-display);
+            background: rgba(255, 255, 255, .04);
+            border: 1px solid rgba(201, 168, 76, .28);
+            padding: 1.05rem 1.5rem;
+            font-family: var(--ff-disp);
             font-style: italic;
-            font-size: 1.1rem;
+            font-size: 1.08rem;
             color: var(--white);
             outline: none;
-            transition: border-color 0.3s, background 0.3s;
+            transition: border-color .28s, background .28s;
             text-align: center;
         }
 
         .wish-input::placeholder {
-            color: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, .28);
         }
 
         .wish-input:focus {
             border-color: var(--gold);
-            background: rgba(201, 168, 76, 0.06);
+            background: rgba(201, 168, 76, .06);
         }
 
-        .btn-gold-large {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.6rem;
-            padding: 1rem 2.8rem;
-            background: var(--gold);
-            color: var(--bg);
-            font-family: var(--font-body);
-            font-size: 0.9rem;
-            font-weight: 600;
-            letter-spacing: 0.1em;
+        .cta-note {
+            font-size: .66rem;
+            letter-spacing: .22em;
             text-transform: uppercase;
-            border: none;
-            cursor: pointer;
-            transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
-            box-shadow: 0 4px 32px rgba(201, 168, 76, 0.2);
+            color: rgba(255, 255, 255, .18);
         }
 
-        .btn-gold-large:hover {
-            background: #d4b05c;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 48px rgba(201, 168, 76, 0.35);
+        .cta-note span {
+            color: rgba(201, 168, 76, .38);
         }
 
-        .btn-gold-large:active {
-            transform: translateY(0);
-        }
-
-        .cta-footer-note {
-            font-size: 0.68rem;
-            letter-spacing: 0.22em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.2);
-        }
-
-        .cta-footer-note span {
-            color: rgba(201, 168, 76, 0.4);
-        }
-
-        /* ─── Nav dot indicators ─────────────────────────────── */
+        /* ─── Nav dots ──────────────────────────────────────────────── */
         #nav-dots {
             position: fixed;
-            right: 1.5rem;
+            right: 1.4rem;
             top: 50%;
             transform: translateY(-50%);
             display: flex;
             flex-direction: column;
-            gap: 0.7rem;
-            z-index: 100;
+            gap: .65rem;
+            z-index: 200;
         }
 
-        .nav-dot {
+        .ndot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            background: rgba(201, 168, 76, 0.25);
-            transition: background 0.4s, transform 0.4s;
-            cursor: pointer;
+            background: rgba(201, 168, 76, .22);
             border: none;
             padding: 0;
+            cursor: pointer;
+            transition: background .38s, transform .38s;
         }
 
-        .nav-dot.active {
+        .ndot.on {
             background: var(--gold);
-            transform: scale(1.5);
+            transform: scale(1.55);
         }
 
         @media (max-width: 600px) {
@@ -789,82 +781,75 @@
 
 <body>
 
-    <!-- ── Canvas de partículas ──────────────────────────────── -->
     <canvas id="particle-canvas" aria-hidden="true"></canvas>
 
-    <!-- ── Dots de navegación ────────────────────────────────── -->
+    <!-- Nav dots -->
     <nav id="nav-dots" aria-label="Navegación de secciones">
-        <button class="nav-dot active" data-scene="0" aria-label="Escena 1: Hero"></button>
-        <button class="nav-dot" data-scene="1" aria-label="Escena 2: El Deseo"></button>
-        <button class="nav-dot" data-scene="2" aria-label="Escena 3: Comunidad"></button>
-        <button class="nav-dot" data-scene="3" aria-label="Escena 4: Cómo Funciona"></button>
-        <button class="nav-dot" data-scene="4" aria-label="Escena 5: Testimonio"></button>
-        <button class="nav-dot" data-scene="5" aria-label="Escena 6: CTA Final"></button>
+        <button class="ndot on" data-i="0" aria-label="Ir a escena 1"></button>
+        <button class="ndot" data-i="1" aria-label="Ir a escena 2"></button>
+        <button class="ndot" data-i="2" aria-label="Ir a escena 3"></button>
+        <button class="ndot" data-i="3" aria-label="Ir a escena 4"></button>
+        <button class="ndot" data-i="4" aria-label="Ir a escena 5"></button>
+        <button class="ndot" data-i="5" aria-label="Ir a escena 6"></button>
     </nav>
 
-    <!-- ════════════════════════════════════════════════════════ -->
-    <!-- ESCENA 1 — HERO                                         -->
-    <!-- ════════════════════════════════════════════════════════ -->
-    <section class="scene" id="scene-hero" data-scene-index="0">
-        <div style="position:relative;z-index:1;perspective:800px">
-            <p class="hero-label anim-fade-up">Fontana · Colombia · 2025</p>
-            <h1 class="display display-italic anim-zoom-out delay-1">
+    <!-- ══════════════════════════════════════════════════════════════
+     ESCENA 1 — HERO
+═══════════════════════════════════════════════════════════════ -->
+    <section class="scene" id="s1" data-si="0">
+        <div class="inner">
+            <p class="hero-eyebrow will-anim anim-up">Fontana · Colombia · 2025</p>
+            <h1 class="ff-disp italic hero-h1 will-anim anim-zoom d1">
                 Todo empieza<br>con un deseo
             </h1>
-            <span class="gold-line anim-fade-up delay-2"></span>
-            <p class="hero-sub anim-fade-up delay-3">
-                Fontana convierte lo que sientes en realidad
-            </p>
-            <a href="#scene-desire" class="btn-gold anim-fade-up delay-4" id="hero-cta">
-                Conoce cómo
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path d="M6 1v10M1 7l5 4 5-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
+            <span class="gold-rule will-anim anim-up d2"></span>
+            <p class="hero-sub will-anim anim-up d2">Fontana convierte lo que sientes en realidad</p>
+            <a href="#s2" class="btn-outline will-anim anim-up d3" id="hero-cta">
+                <span>Conoce cómo</span>
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                    <path d="M5.5 1v9M1 7l4.5 3.5L10 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"
                         stroke-linejoin="round" />
                 </svg>
             </a>
         </div>
-
-        <div id="scroll-indicator" aria-hidden="true">
+        <div id="scroll-cue" aria-hidden="true">
             scroll
-            <svg width="16" height="24" viewBox="0 0 16 24" fill="none">
-                <rect x="1" y="1" width="14" height="22" rx="7" stroke="rgba(201,168,76,0.4)" stroke-width="1.2" />
-                <circle cx="8" cy="7" r="2.5" fill="rgba(201,168,76,0.6)">
-                    <animate attributeName="cy" values="7;15;7" dur="2s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="1;0.2;1" dur="2s" repeatCount="indefinite" />
+            <svg width="15" height="22" viewBox="0 0 15 22" fill="none">
+                <rect x="1" y="1" width="13" height="20" rx="6.5" stroke="rgba(201,168,76,.4)" stroke-width="1.1" />
+                <circle cx="7.5" cy="6.5" r="2" fill="rgba(201,168,76,.65)">
+                    <animate attributeName="cy" values="6.5;13.5;6.5" dur="2.2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="1;.15;1" dur="2.2s" repeatCount="indefinite" />
                 </circle>
             </svg>
         </div>
     </section>
 
-    <!-- ════════════════════════════════════════════════════════ -->
-    <!-- ESCENA 2 — EL DESEO                                     -->
-    <!-- ════════════════════════════════════════════════════════ -->
-    <section class="scene" id="scene-desire" data-scene-index="1">
-        <div class="orb-wrap anim-fade-up">
-            <div class="orb"></div>
+    <!-- ══════════════════════════════════════════════════════════════
+     ESCENA 2 — EL DESEO
+═══════════════════════════════════════════════════════════════ -->
+    <section class="scene" id="s2" data-si="1">
+        <div class="orb-wrap will-anim anim-zoom">
+            <div class="orb" aria-hidden="true"></div>
         </div>
-        <div class="desire-text anim-fade-up delay-2">
-            <span class="scene-tag">El deseo</span>
-            <h2 class="display display-italic">¿Qué quieres<br>que pase?</h2>
-            <span class="gold-line" style="margin:1.2rem 0"></span>
-            <p>
-                No importa si es algo pequeño o algo enorme.<br>
-                Fontana lo escucha.
-            </p>
+        <div class="desire-copy will-anim anim-up d2">
+            <span class="tag">El deseo</span>
+            <h2 class="ff-disp italic">¿Qué quieres<br>que pase?</h2>
+            <span class="gold-rule" style="margin:1.1rem 0"></span>
+            <p>No importa si es algo pequeño o algo enorme.<br>Fontana lo escucha.</p>
         </div>
     </section>
 
-    <!-- ════════════════════════════════════════════════════════ -->
-    <!-- ESCENA 3 — COMUNIDAD                                    -->
-    <!-- ════════════════════════════════════════════════════════ -->
-    <section class="scene" id="scene-community" data-scene-index="2">
-        <div class="counter-block anim-zoom-out">
+    <!-- ══════════════════════════════════════════════════════════════
+     ESCENA 3 — COMUNIDAD
+═══════════════════════════════════════════════════════════════ -->
+    <section class="scene" id="s3" data-si="2">
+        <div class="counter-wrap will-anim anim-zoom">
             <p class="counter-label">Deseos activos ahora mismo</p>
-            <div id="counter-number" aria-live="polite">0</div>
-            <p class="counter-suffix">y contando</p>
+            <div id="counter" aria-live="polite">0</div>
+            <p class="counter-sub">y contando</p>
         </div>
 
-        <div class="thoughts-cloud anim-fade-up delay-2" aria-label="Deseos de la comunidad">
+        <div class="thoughts will-anim anim-up d2" aria-label="Deseos de la comunidad">
             <span class="thought">"Quiero graduarme"</span>
             <span class="thought">"Quiero sanar"</span>
             <span class="thought">"Quiero viajar a Japón"</span>
@@ -873,79 +858,65 @@
             <span class="thought">"Quiero paz"</span>
         </div>
 
-        <div class="anim-fade-up delay-3">
-            <h2 class="display">No estás solo</h2>
+        <div class="will-anim anim-up d3">
+            <h2 class="ff-disp">No estás solo</h2>
             <p class="sub">Otros ya están en su camino.<br>Tú puedes empezar hoy.</p>
         </div>
     </section>
 
-    <!-- ════════════════════════════════════════════════════════ -->
-    <!-- ESCENA 4 — CÓMO FUNCIONA                                -->
-    <!-- ════════════════════════════════════════════════════════ -->
-    <section class="scene" id="scene-how" data-scene-index="3">
-        <div class="section-head anim-fade-up">
-            <span class="scene-tag">El proceso</span>
-            <h2 class="display display-italic">El ciclo de 30 días</h2>
-            <span class="gold-line"></span>
+    <!-- ══════════════════════════════════════════════════════════════
+     ESCENA 4 — CÓMO FUNCIONA
+═══════════════════════════════════════════════════════════════ -->
+    <section class="scene" id="s4" data-si="3">
+        <div class="head will-anim anim-up">
+            <span class="tag">El proceso</span>
+            <h2 class="ff-disp italic">El ciclo de 30 días</h2>
+            <span class="gold-rule"></span>
         </div>
 
-        <div class="steps-grid">
-            <!-- Step 1 -->
-            <div class="step-card anim-depth delay-1">
-                <div class="step-icon" aria-hidden="true">
-                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                        <circle cx="24" cy="24" r="22" stroke="rgba(201,168,76,0.35)" stroke-width="1.2" />
-                        <circle cx="24" cy="24" r="8" fill="rgba(201,168,76,0.15)" stroke="rgba(201,168,76,0.6)"
-                            stroke-width="1.2" />
-                        <circle cx="24" cy="24" r="2.5" fill="#C9A84C" />
-                    </svg>
-                </div>
+        <div class="steps">
+            <div class="step will-anim anim-depth d1">
+                <svg width="50" height="50" viewBox="0 0 50 50" fill="none" aria-hidden="true">
+                    <circle cx="25" cy="25" r="23" stroke="rgba(201,168,76,.32)" stroke-width="1.1" />
+                    <circle cx="25" cy="25" r="9" fill="rgba(201,168,76,.12)" stroke="rgba(201,168,76,.55)"
+                        stroke-width="1.1" />
+                    <circle cx="25" cy="25" r="3" fill="#C9A84C" />
+                </svg>
                 <p class="step-num">01</p>
                 <h3>Declares<br>tu deseo</h3>
                 <p>Pon en palabras lo que realmente quieres</p>
             </div>
 
-            <div class="step-connector" aria-hidden="true">
-                <svg width="24" height="2" viewBox="0 0 24 2">
-                    <line x1="0" y1="1" x2="24" y2="1" stroke="rgba(201,168,76,0.3)" stroke-width="1.2"
-                        stroke-dasharray="4 3" />
+            <div class="step-sep" aria-hidden="true">
+                <svg width="28" height="2" viewBox="0 0 28 2">
+                    <line x1="0" y1="1" x2="28" y2="1" stroke="#C9A84C" stroke-width="1" stroke-dasharray="4 3" />
                 </svg>
             </div>
 
-            <!-- Step 2 -->
-            <div class="step-card anim-depth delay-2">
-                <div class="step-icon" aria-hidden="true">
-                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                        <path d="M24 8 C10 8 8 24 8 24 C8 24 10 40 24 40 C38 40 40 24 40 24 C40 24 38 8 24 8Z"
-                            stroke="rgba(201,168,76,0.4)" stroke-width="1.2" fill="rgba(201,168,76,0.08)" />
-                        <path d="M16 24 C16 19.6 19.6 16 24 16 C28.4 16 32 19.6 32 24" stroke="#C9A84C"
-                            stroke-width="1.2" fill="none" stroke-linecap="round" />
-                    </svg>
-                </div>
+            <div class="step will-anim anim-depth d2">
+                <svg width="50" height="50" viewBox="0 0 50 50" fill="none" aria-hidden="true">
+                    <path d="M25 8C12 8 9 25 9 25s3 17 16 17 16-17 16-17S38 8 25 8z" stroke="rgba(201,168,76,.38)"
+                        stroke-width="1.1" fill="rgba(201,168,76,.07)" />
+                    <path d="M17 25c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#C9A84C" stroke-width="1.1" fill="none"
+                        stroke-linecap="round" />
+                </svg>
                 <p class="step-num">02</p>
                 <h3>La comunidad<br>te apoya</h3>
                 <p>Su energía colectiva impulsa tu intención</p>
             </div>
 
-            <div class="step-connector" aria-hidden="true">
-                <svg width="24" height="2" viewBox="0 0 24 2">
-                    <line x1="0" y1="1" x2="24" y2="1" stroke="rgba(201,168,76,0.3)" stroke-width="1.2"
-                        stroke-dasharray="4 3" />
+            <div class="step-sep" aria-hidden="true">
+                <svg width="28" height="2" viewBox="0 0 28 2">
+                    <line x1="0" y1="1" x2="28" y2="1" stroke="#C9A84C" stroke-width="1" stroke-dasharray="4 3" />
                 </svg>
             </div>
 
-            <!-- Step 3 -->
-            <div class="step-card anim-depth delay-3">
-                <div class="step-icon" aria-hidden="true">
-                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                        <polygon points="24,6 28.5,17.5 41,17.5 31,25 34.5,37 24,30 13.5,37 17,25 7,17.5 19.5,17.5"
-                            stroke="rgba(201,168,76,0.5)" stroke-width="1.2" fill="rgba(201,168,76,0.12)"
-                            stroke-linejoin="round" />
-                        <polygon
-                            points="24,13 26.8,21.2 35.5,21.2 28.5,26.2 30.8,34.5 24,29.5 17.2,34.5 19.5,26.2 12.5,21.2 21.2,21.2"
-                            fill="rgba(201,168,76,0.2)" stroke="none" />
-                    </svg>
-                </div>
+            <div class="step will-anim anim-depth d3">
+                <svg width="50" height="50" viewBox="0 0 50 50" fill="none" aria-hidden="true">
+                    <polygon points="25,5 29.5,17 42,17 32,24.5 35.5,37 25,30 14.5,37 18,24.5 8,17 20.5,17"
+                        stroke="rgba(201,168,76,.45)" stroke-width="1.1" fill="rgba(201,168,76,.1)"
+                        stroke-linejoin="round" />
+                </svg>
                 <p class="step-num">03</p>
                 <h3>En 30 días,<br>ves la diferencia</h3>
                 <p>Cada ciclo es un paso concreto hacia tu deseo</p>
@@ -953,283 +924,259 @@
         </div>
     </section>
 
-    <!-- ════════════════════════════════════════════════════════ -->
-    <!-- ESCENA 5 — TESTIMONIO                                   -->
-    <!-- ════════════════════════════════════════════════════════ -->
-    <section class="scene" id="scene-testimony" data-scene-index="4">
-        <div class="testimony-inner">
-            <span class="open-quote anim-fade-up" aria-hidden="true">&ldquo;</span>
+    <!-- ══════════════════════════════════════════════════════════════
+     ESCENA 5 — TESTIMONIO
+═══════════════════════════════════════════════════════════════ -->
+    <section class="scene" id="s5" data-si="4">
+        <div class="testi">
+            <span class="open-q will-anim anim-up" aria-hidden="true">&ldquo;</span>
             <blockquote>
-                <p class="testimony-text anim-zoom-out">
+                <p class="testi-text will-anim anim-zoom d1">
                     Escribí mi deseo sin creer mucho. Tres semanas después, recibí la llamada que esperaba hace un año.
                 </p>
-                <footer class="testimony-author anim-fade-up delay-2">
-                    <span class="mauve-dot" aria-hidden="true"></span>
-                    María C.<span aria-hidden="true"> &mdash; </span> Medellín
-                    <span class="mauve-dot" aria-hidden="true"></span>
+                <footer class="testi-author will-anim anim-up d2">
+                    <span class="dot-mauve" aria-hidden="true"></span>
+                    María C.&nbsp;&mdash;&nbsp;Medellín
+                    <span class="dot-mauve" aria-hidden="true"></span>
                 </footer>
             </blockquote>
         </div>
     </section>
 
-    <!-- ════════════════════════════════════════════════════════ -->
-    <!-- ESCENA 6 — CTA FINAL                                    -->
-    <!-- ════════════════════════════════════════════════════════ -->
-    <section class="scene" id="scene-cta" data-scene-index="5">
-        <h2 class="display display-italic anim-zoom-out">
+    <!-- ══════════════════════════════════════════════════════════════
+     ESCENA 6 — CTA FINAL
+═══════════════════════════════════════════════════════════════ -->
+    <section class="scene" id="s6" data-si="5">
+        <h2 class="ff-disp italic will-anim anim-zoom">
             Tu deseo<br>te está esperando
         </h2>
-        <span class="gold-line anim-fade-up delay-1"></span>
-        <div class="wish-form anim-fade-up delay-2">
+        <span class="gold-rule will-anim anim-up d1"></span>
+        <div class="wish-form will-anim anim-up d2">
             <input id="wish-input" class="wish-input" type="text" placeholder="Escribe aquí lo que deseas..."
                 maxlength="160" aria-label="Tu deseo" />
-            <button class="btn-gold-large" id="cta-comenzar" type="button">
+            <button class="btn-solid" id="cta-btn" type="button">
                 Comenzar ahora
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                    <path d="M3 7.5h9M9 4l4 3.5L9 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
                         stroke-linejoin="round" />
                 </svg>
             </button>
         </div>
-        <p class="cta-footer-note anim-fade-up delay-3">
+        <p class="cta-note will-anim anim-up d3">
             <span>Fontana</span> · Colombia · 2025
         </p>
     </section>
 
-    <!-- ════════════════════════════════════════════════════════ -->
-    <!-- JAVASCRIPT                                              -->
-    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════════════ -->
     <script>
         (function () {
             'use strict';
 
-            /* ── Reduced motion check ─────────────────────────────── */
-            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            /* 1. Marcar html con .js-ready ANTES del primer frame de pintura
+                  → CSS puede ocultar elementos .will-anim seguros */
+            document.documentElement.classList.add('js-ready');
 
-            /* ══════════════════════════════════════════════════════════
-               CANVAS PARTICLES
-            ══════════════════════════════════════════════════════════ */
+            const PRM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            /* ── 2. CANVAS PARTÍCULAS ───────────────────────────────────── */
             const canvas = document.getElementById('particle-canvas');
             const ctx = canvas.getContext('2d');
-
-            let W, H, particles = [], mouse = { x: -9999, y: -9999 };
-            const SCENE_INDEX = [
-                'scene-hero', 'scene-desire', 'scene-community',
-                'scene-how', 'scene-testimony', 'scene-cta'
-            ];
-
-            /* Current particle density (more on CTA) */
-            function getTargetCount() {
-                const cta = document.getElementById('scene-cta');
-                if (!cta) return 80;
-                const rect = cta.getBoundingClientRect();
-                const inView = rect.top < H * 0.8;
-                return inView ? 160 : 80;
-            }
+            let W, H, RAF;
+            let mouse = { x: -9999, y: -9999 };
 
             function resize() {
                 W = canvas.width = window.innerWidth;
                 H = canvas.height = window.innerHeight;
             }
 
-            function createParticle(forceNew) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 0.08 + Math.random() * 0.18;
+            /* Crear partícula individual */
+            function mkParticle(randomY) {
+                const a = Math.random() * Math.PI * 2;
+                const s = .07 + Math.random() * .17;
                 return {
-                    x: forceNew ? Math.random() * W : Math.random() * W,
-                    y: forceNew ? Math.random() * H : Math.random() * H,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    size: 0.5 + Math.random() * 1.6,
-                    alpha: 0.1 + Math.random() * 0.55,
-                    twinkle: Math.random() * Math.PI * 2,
-                    twinkleSpeed: 0.012 + Math.random() * 0.025,
+                    x: Math.random() * W,
+                    y: randomY ? Math.random() * H : H + 10,
+                    vx: Math.cos(a) * s,
+                    vy: Math.sin(a) * s,
+                    r: .5 + Math.random() * 1.7,
+                    a: .1 + Math.random() * .5,
+                    t: Math.random() * Math.PI * 2,
+                    ts: .01 + Math.random() * .024,
                 };
             }
 
-            function initParticles(count) {
-                particles = Array.from({ length: count }, () => createParticle(true));
+            let particles = [];
+
+            function initP(count) {
+                particles = Array.from({ length: count }, () => mkParticle(true));
+            }
+
+            /* Sección CTA en viewport? → más densidad */
+            function targetCount() {
+                const s6 = document.getElementById('s6');
+                if (!s6) return 80;
+                return s6.getBoundingClientRect().top < H * .85 ? 180 : 80;
             }
 
             function drawParticles() {
+                if (PRM) return;
+                RAF = requestAnimationFrame(drawParticles);
                 ctx.clearRect(0, 0, W, H);
-                if (prefersReducedMotion) return;
 
-                const target = getTargetCount();
+                const target = targetCount();
+                while (particles.length < target) particles.push(mkParticle(true));
+                if (particles.length > target) particles.splice(0, particles.length - target);
 
-                /* adjust count gradually */
-                if (particles.length < target) particles.push(createParticle(true));
-                if (particles.length > target) particles.splice(0, 1);
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
 
-                const time = performance.now() * 0.001;
-
-                particles.forEach(p => {
-                    /* mouse repulsion — gentle */
-                    const dx = p.x - mouse.x;
-                    const dy = p.y - mouse.y;
-                    const distSq = dx * dx + dy * dy;
-                    if (distSq < 16000 && distSq > 0) {
-                        const dist = Math.sqrt(distSq);
-                        const force = (1 - dist / 126) * 0.012;
-                        p.vx += (dx / dist) * force;
-                        p.vy += (dy / dist) * force;
+                    /* repulsión suave del cursor */
+                    const dx = p.x - mouse.x, dy = p.y - mouse.y;
+                    const d2 = dx * dx + dy * dy;
+                    if (d2 < 14400 && d2 > 0) {
+                        const d = Math.sqrt(d2);
+                        const f = (1 - d / 120) * .013;
+                        p.vx += dx / d * f;
+                        p.vy += dy / d * f;
                     }
 
-                    /* damping */
-                    p.vx *= 0.99;
-                    p.vy *= 0.99;
+                    p.vx *= .988; p.vy *= .988;
+                    p.x += p.vx; p.y += p.vy;
+                    p.t += p.ts;
 
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.twinkle += p.twinkleSpeed;
-
-                    /* wrap */
                     if (p.x < -4) p.x = W + 4;
                     if (p.x > W + 4) p.x = -4;
                     if (p.y < -4) p.y = H + 4;
                     if (p.y > H + 4) p.y = -4;
 
-                    const alpha = p.alpha * (0.6 + 0.4 * Math.sin(p.twinkle));
-
-                    /* gold gradient */
-                    const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
-                    grad.addColorStop(0, `rgba(201,168,76,${alpha})`);
-                    grad.addColorStop(1, 'rgba(201,168,76,0)');
-
+                    const alpha = p.a * (.58 + .42 * Math.sin(p.t));
+                    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 2.2);
+                    g.addColorStop(0, `rgba(201,168,76,${alpha})`);
+                    g.addColorStop(1, 'rgba(201,168,76,0)');
                     ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
-                    ctx.fillStyle = grad;
+                    ctx.arc(p.x, p.y, p.r * 2.2, 0, Math.PI * 2);
+                    ctx.fillStyle = g;
                     ctx.fill();
-                });
-
-                requestAnimationFrame(drawParticles);
+                }
             }
 
-            window.addEventListener('resize', () => { resize(); });
-            window.addEventListener('mousemove', e => {
-                mouse.x = e.clientX;
-                mouse.y = e.clientY;
-            });
-            window.addEventListener('touchmove', e => {
-                mouse.x = e.touches[0].clientX;
-                mouse.y = e.touches[0].clientY;
-            }, { passive: true });
+            window.addEventListener('resize', resize);
+            window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
+            window.addEventListener('touchmove', e => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; }, { passive: true });
 
             resize();
-            initParticles(80);
-            if (!prefersReducedMotion) drawParticles();
+            initP(80);
+            if (!PRM) drawParticles();
 
-            /* ══════════════════════════════════════════════════════════
-               INTERSECTION OBSERVER — animation triggers
-            ══════════════════════════════════════════════════════════ */
-            const animEls = document.querySelectorAll(
-                '.anim-fade-up, .anim-zoom-out, .anim-depth'
-            );
+            /* ── 3. INTERSECTION OBSERVER ──────────────────────────────── */
+            /* Usamos threshold:0 + rootMargin para disparar tan pronto la
+               parte superior del elemento entra en pantalla */
+            const animEls = document.querySelectorAll('.will-anim');
 
-            if (!prefersReducedMotion) {
-                const visObs = new IntersectionObserver((entries) => {
+            function revealAll(list) {
+                list.forEach(el => el.classList.add('is-visible'));
+            }
+
+            if (PRM) {
+                revealAll(animEls);
+            } else {
+                const io = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {
                         if (entry.isIntersecting) {
-                            entry.target.classList.add('visible');
-                            visObs.unobserve(entry.target);
+                            entry.target.classList.add('is-visible');
+                            io.unobserve(entry.target);
                         }
                     });
-                }, { threshold: 0.15 });
+                }, {
+                    threshold: 0,
+                    rootMargin: '0px 0px -60px 0px'
+                });
 
-                animEls.forEach(el => visObs.observe(el));
-            } else {
-                animEls.forEach(el => el.classList.add('visible'));
+                animEls.forEach(el => io.observe(el));
+
+                /* Forzar reveal de elementos YA visibles en el viewport inicial
+                   (hero) después del primer paint */
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        animEls.forEach(el => {
+                            const r = el.getBoundingClientRect();
+                            if (r.top < window.innerHeight && r.bottom > 0) {
+                                el.classList.add('is-visible');
+                                io.unobserve(el);
+                            }
+                        });
+                    });
+                });
             }
 
-            /* ══════════════════════════════════════════════════════════
-               COUNTER ANIMATION (Scene 3)
-            ══════════════════════════════════════════════════════════ */
-            const counterEl = document.getElementById('counter-number');
+            /* ── 4. COUNTER ---------------------------------------------------------------- */
+            const counterEl = document.getElementById('counter');
             let counted = false;
 
-            function animateCounter(target, duration) {
+            function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+            function runCounter(target, ms) {
                 const start = performance.now();
-                function step(now) {
-                    const elapsed = now - start;
-                    const progress = Math.min(elapsed / duration, 1);
-                    const eased = 1 - Math.pow(1 - progress, 3);
-                    const value = Math.round(eased * target);
-                    counterEl.textContent = value.toLocaleString('es-CO');
-                    if (progress < 1) requestAnimationFrame(step);
-                }
-                requestAnimationFrame(step);
+                (function step(now) {
+                    const p = Math.min((now - start) / ms, 1);
+                    counterEl.textContent = Math.round(easeOutCubic(p) * target).toLocaleString('es-CO');
+                    if (p < 1) requestAnimationFrame(step);
+                })(start);
             }
 
-            const counterObs = new IntersectionObserver(entries => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting && !counted) {
-                        counted = true;
-                        animateCounter(1247, 2200);
-                        counterObs.disconnect();
-                    }
-                });
-            }, { threshold: 0.4 });
+            new IntersectionObserver(entries => {
+                if (entries[0].isIntersecting && !counted) {
+                    counted = true;
+                    runCounter(1247, 2400);
+                }
+            }, { threshold: .3 }).observe(counterEl);
 
-            if (counterEl) counterObs.observe(counterEl);
+            /* ── 5. NAV DOTS ─────────────────────────────────────────────── */
+            const scenes = document.querySelectorAll('.scene[data-si]');
+            const dots = document.querySelectorAll('.ndot');
 
-            /* ══════════════════════════════════════════════════════════
-               NAV DOTS — active state
-            ══════════════════════════════════════════════════════════ */
-            const dots = document.querySelectorAll('.nav-dot');
-            const scenes = document.querySelectorAll('.scene[data-scene-index]');
-
-            const sceneObs = new IntersectionObserver(entries => {
+            new IntersectionObserver(entries => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
-                        const idx = entry.target.dataset.sceneIndex;
-                        dots.forEach((d, i) => d.classList.toggle('active', String(i) === idx));
+                        const i = entry.target.dataset.si;
+                        dots.forEach((d, j) => d.classList.toggle('on', String(j) === i));
                     }
                 });
-            }, { threshold: 0.5 });
+            }, { threshold: .5 }).observe(scenes[0]);
 
-            scenes.forEach(s => sceneObs.observe(s));
+            scenes.forEach(s =>
+                new IntersectionObserver(entries => {
+                    if (entries[0].isIntersecting) {
+                        const i = s.dataset.si;
+                        dots.forEach((d, j) => d.classList.toggle('on', String(j) === i));
+                    }
+                }, { threshold: .5 }).observe(s)
+            );
 
-            dots.forEach((dot, i) => {
-                dot.addEventListener('click', () => {
-                    scenes[i]?.scrollIntoView({ behavior: 'smooth' });
-                });
+            dots.forEach((d, i) => {
+                d.addEventListener('click', () => scenes[i]?.scrollIntoView({ behavior: 'smooth' }));
             });
 
-            /* ══════════════════════════════════════════════════════════
-               HERO CTA — smooth scroll
-            ══════════════════════════════════════════════════════════ */
-            const heroCta = document.getElementById('hero-cta');
-            if (heroCta) {
-                heroCta.addEventListener('click', e => {
-                    e.preventDefault();
-                    document.getElementById('scene-desire')?.scrollIntoView({ behavior: 'smooth' });
-                });
-            }
+            /* ── 6. HERO CTA smooth scroll ──────────────────────────────── */
+            document.getElementById('hero-cta')?.addEventListener('click', e => {
+                e.preventDefault();
+                document.getElementById('s2')?.scrollIntoView({ behavior: 'smooth' });
+            });
 
-            /* ══════════════════════════════════════════════════════════
-               CTA BUTTON — decorative interaction
-            ══════════════════════════════════════════════════════════ */
-            const ctaBtn = document.getElementById('cta-comenzar');
-            const wishInput = document.getElementById('wish-input');
-            if (ctaBtn && wishInput) {
-                ctaBtn.addEventListener('click', () => {
-                    if (!wishInput.value.trim()) {
-                        wishInput.focus();
-                        wishInput.style.borderColor = `var(--gold)`;
-                        wishInput.animate([
-                            { transform: 'translateX(-6px)' },
-                            { transform: 'translateX(6px)' },
-                            { transform: 'translateX(-4px)' },
-                            { transform: 'translateX(4px)' },
-                            { transform: 'translateX(0)' }
-                        ], { duration: 380, easing: 'ease-out' });
-                    } else {
-                        /* Decorative: pulse effect */
-                        ctaBtn.style.transform = 'scale(0.96)';
-                        setTimeout(() => { ctaBtn.style.transform = ''; }, 180);
-                    }
-                });
-            }
+            /* ── 7. CTA input: shake si vacío ───────────────────────────── */
+            document.getElementById('cta-btn')?.addEventListener('click', () => {
+                const inp = document.getElementById('wish-input');
+                if (!inp.value.trim()) {
+                    inp.focus();
+                    inp.animate([
+                        { transform: 'translateX(-7px)' }, { transform: 'translateX(7px)' },
+                        { transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' },
+                        { transform: 'translateX(0)' }
+                    ], { duration: 360, easing: 'ease-out' });
+                }
+            });
 
         })();
     </script>
