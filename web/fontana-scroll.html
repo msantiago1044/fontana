@@ -10,6 +10,24 @@
     <title>Fontana — Pide tu deseo. La IA trabaja por él.</title>
     <meta name="description"
         content="Entrega tu moneda con fe. Fontana activa un sistema de IA que trabaja 30 días por tu deseo." />
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://fontanadigital.dpdns.org/fontana-scroll" />
+    <meta property="og:title" content="Fontana — Pide tu deseo. La IA trabaja por él." />
+    <meta property="og:description"
+        content="Entrega tu moneda con fe. Fontana activa un sistema de inteligencia artificial que trabaja 30 días sin pausa por tu deseo." />
+    <meta property="og:image" content="https://fontanadigital.dpdns.org/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="Fontana" />
+    <meta property="og:locale" content="es_CO" />
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@fontanadigital" />
+    <meta name="twitter:title" content="Fontana — Pide tu deseo. La IA trabaja por él." />
+    <meta name="twitter:description"
+        content="Entrega tu moneda con fe. Fontana activa un sistema de IA que trabaja 30 días por tu deseo." />
+    <meta name="twitter:image" content="https://fontanadigital.dpdns.org/og-image.png" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -88,7 +106,7 @@
             z-index: 0
         }
 
-        /* HEADER — glassmorphism siempre activo */
+        /* HEADER — glassmorphism ultra suave */
         header {
             position: fixed;
             top: 0;
@@ -99,14 +117,14 @@
             align-items: center;
             justify-content: space-between;
             padding: .8rem 1.6rem;
-            background: color-mix(in srgb, var(--bg) 40%, transparent);
-            backdrop-filter: blur(22px) saturate(1.6);
-            -webkit-backdrop-filter: blur(22px) saturate(1.6);
+            background: color-mix(in srgb, var(--bg) 12%, transparent);
+            backdrop-filter: blur(28px) saturate(1.8);
+            -webkit-backdrop-filter: blur(28px) saturate(1.8);
             transition: background .4s;
         }
 
         header.s {
-            background: color-mix(in srgb, var(--bg) 60%, transparent);
+            background: color-mix(in srgb, var(--bg) 28%, transparent);
         }
 
         .logo {
@@ -1169,9 +1187,12 @@
                 <p class="csub" data-es="y contando" data-en="and counting">y contando</p>
             </div>
             <div class="thoughts wa au d2" role="list" aria-label="Deseos de la comunidad">
-                <span class="th">"Quiero graduarme"</span><span class="th">"Quiero sanar"</span><span class="th">"Quiero
-                    viajar a Japón"</span><span class="th">"Quiero mi empresa"</span><span class="th">"Quiero el
-                    amor"</span><span class="th">"Quiero paz"</span>
+                <span class="th" role="listitem">"Quiero graduarme"</span>
+                <span class="th" role="listitem">"Quiero sanar"</span>
+                <span class="th" role="listitem">"Quiero viajar a Japón"</span>
+                <span class="th" role="listitem">"Quiero mi empresa"</span>
+                <span class="th" role="listitem">"Quiero el amor"</span>
+                <span class="th" role="listitem">"Quiero paz"</span>
             </div>
             <div class="wa au d3">
                 <h2 class="ff" style="font-size:clamp(1.5rem,4vw,2.6rem);max-width:24ch;margin:0 auto"
@@ -1336,7 +1357,6 @@
         </section>
         <!-- S8 FOUNTAIN -->
         <section class="sc" id="s8" data-si="7">
-            <canvas id="fcv" aria-hidden="true"></canvas>
             <div class="fc">
                 <span class="tag wa au" data-es="La Fuente" data-en="The Fountain">La Fuente</span>
                 <h2 class="ff it wa az d1" style="font-size:clamp(2.2rem,6vw,4.5rem)"
