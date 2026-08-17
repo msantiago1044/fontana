@@ -99,14 +99,12 @@
             align-items: center;
             justify-content: space-between;
             padding: .8rem 1.6rem;
-            transition: background .4s, border-color .4s;
-            border-bottom: 1px solid transparent
+            transition: background .4s;
         }
 
         header.s {
             background: color-mix(in srgb, var(--bg) 90%, transparent);
             backdrop-filter: blur(14px);
-            border-color: var(--brd)
         }
 
         .logo {
@@ -1414,12 +1412,9 @@
                     data-es="Tu deseo<br>te está esperando" data-en="Your wish<br>is waiting for you">Tu deseo<br>te
                     está esperando</h2>
                 <span class="rule wa au d1"></span>
-                <div class="wa au d2"
-                    style="display:flex;flex-direction:column;align-items:center;gap:1rem;margin-top:.4rem">
-                    <input id="wi" class="wi" type="text" maxlength="160" aria-label="Escribe tu deseo"
-                        placeholder="Escribe aquí lo que deseas..." />
-                    <button class="btn-s" id="ctaFinal" data-es="Comenzar ahora →" data-en="Start now →">Comenzar ahora
-                        →</button>
+                <div class="wa au d2" style="margin-top:1.2rem">
+                    <button class="btn-s" id="ctaFinal" data-es="Pedir mi deseo →" data-en="Make my wish →">Pedir mi
+                        deseo →</button>
                 </div>
                 <p class="fn wa au d3" style="margin-top:1.6rem"><a href="/terminos" data-es="Términos"
                         data-en="Terms">Términos</a> · <a href="/privacidad" data-es="Privacidad"
@@ -1436,6 +1431,32 @@
             <a href="/privacidad" data-es="Privacidad" data-en="Privacy">Privacidad</a>
             <a href="/reembolsos" data-es="Reembolsos" data-en="Refunds">Reembolsos</a>
             <a href="/contacto" data-es="Contacto" data-en="Contact">Contacto</a>
+        </div>
+        <div style="display:flex;justify-content:center;gap:1.2rem;margin:.9rem 0">
+            <a href="https://www.tiktok.com/@fontanadigital.ai" target="_blank" rel="noopener" aria-label="TikTok"
+                style="color:var(--grey);transition:color .2s" onmouseover="this.style.color='var(--gold)'"
+                onmouseout="this.style.color='var(--grey)'">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1-.06z" />
+                </svg>
+            </a>
+            <a href="https://www.instagram.com/fontanadigital.ai" target="_blank" rel="noopener" aria-label="Instagram"
+                style="color:var(--grey);transition:color .2s" onmouseover="this.style.color='var(--gold)'"
+                onmouseout="this.style.color='var(--grey)'">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z" />
+                </svg>
+            </a>
+            <a href="https://www.youtube.com/@fontanadigital" target="_blank" rel="noopener" aria-label="YouTube"
+                style="color:var(--grey);transition:color .2s" onmouseover="this.style.color='var(--gold)'"
+                onmouseout="this.style.color='var(--grey)'">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                </svg>
+            </a>
         </div>
         <p class="ff2"
             data-es="Fontana es un servicio de inspiración personal apoyado en IA. No garantiza resultados. +18 años. © 2025 Fontana."
@@ -1517,8 +1538,8 @@
             var W, H, mouse = { x: -9999, y: -9999 }, parts = [];
             function rsz() { W = cv.width = window.innerWidth; H = cv.height = window.innerHeight; }
             function mkP() {
-                var a = Math.random() * Math.PI * 2, sp = .07 + Math.random() * .17;
-                return { x: Math.random() * W, y: Math.random() * H, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: .5 + Math.random() * 1.6, al: .1 + Math.random() * .5, t: Math.random() * Math.PI * 2, ts: .011 + Math.random() * .024 };
+                var a = Math.random() * Math.PI * 2, sp = .05 + Math.random() * .13;
+                return { x: Math.random() * W, y: Math.random() * H, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1.2 + Math.random() * 2.8, al: .35 + Math.random() * .55, t: Math.random() * Math.PI * 2, ts: .009 + Math.random() * .018 };
             }
             function tgt() {
                 var s8 = document.getElementById('s8');
