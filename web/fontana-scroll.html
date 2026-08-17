@@ -4,6 +4,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://checkout.wompi.co/widget.js"></script>
+    <link rel="stylesheet" href="fontana.css" />
     <title>Fontana — Pide tu deseo. La IA trabaja por él.</title>
     <meta name="description"
         content="Entrega tu moneda con fe. Fontana activa un sistema de IA que trabaja 30 días por tu deseo." />
@@ -1107,8 +1110,8 @@
                     Fontana es el ritual de siempre — una moneda, un deseo, una intención — acompañado de IA que trabaja
                     tu deseo 24 horas al día, durante 30 días.</p>
                 <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap" class="wa au d3">
-                    <button class="btn-s" onclick="document.getElementById('s10').scrollIntoView({behavior:'smooth'})"
-                        data-es="Pedir mi deseo desde 1 USD" data-en="Make my wish from $1 USD">Pedir mi deseo desde 1
+                    <button class="btn-s" onclick="openModal()" data-es="Pedir mi deseo desde 1 USD"
+                        data-en="Make my wish from $1 USD">Pedir mi deseo desde 1
                         USD</button>
                     <a href="#s4" class="btn-ol"><span data-es="Ver cómo funciona" data-en="See how it works">Ver cómo
                             funciona</span></a>
@@ -1300,9 +1303,8 @@
                     </ul>
                     <p class="ou" data-es="Ciclos abiertos este mes · Cupos limitados"
                         data-en="Open cycles this month · Limited spots">Ciclos abiertos · Cupos limitados</p>
-                    <button class="btn-s" style="width:100%"
-                        onclick="document.getElementById('s10').scrollIntoView({behavior:'smooth'})"
-                        data-es="Pedir mi deseo" data-en="Make my wish">Pedir mi deseo</button>
+                    <button class="btn-s" style="width:100%" onclick="openModal()" data-es="Pedir mi deseo"
+                        data-en="Make my wish">Pedir mi deseo</button>
                 </div>
                 <div class="ow">
                     <p data-es="¿Por qué empieza en 1 dólar? Porque el monto no es el punto — el gesto sí. Algunas personas eligen dar más, como ofrenda más grande a su propio compromiso. Tú decides cuánta fe le pones."
@@ -1332,9 +1334,8 @@
                     data-en="A public faith ranking. Choose your nickname when you contribute. Every coin that falls is a wish in motion.">
                     Un ranking público de fe. Elige tu apodo al contribuir. Cada moneda que cae, es un deseo en marcha.
                 </p>
-                <button class="btn-s wa au d3"
-                    onclick="document.getElementById('s10').scrollIntoView({behavior:'smooth'})"
-                    data-es="Lanzar mi moneda →" data-en="Toss my coin →">Lanzar mi moneda →</button>
+                <button class="btn-s wa au d3" onclick="openModal()" data-es="Lanzar mi moneda →"
+                    data-en="Toss my coin →">Lanzar mi moneda →</button>
             </div>
         </section>
         <!-- TESTIMONY -->
@@ -1703,20 +1704,112 @@
                 });
             });
 
-            /* ── CTA shake if empty ──────────────────────────────────── */
+            /* ── CTA final → openModal ───────────────────────────────── */
             document.getElementById('ctaFinal').addEventListener('click', function () {
-                var inp = document.getElementById('wi');
-                if (!inp.value.trim()) {
-                    inp.focus();
-                    inp.animate && inp.animate(
-                        [{ transform: 'translateX(-7px)' }, { transform: 'translateX(7px)' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' }, { transform: 'translateX(0)' }],
-                        { duration: 350, easing: 'ease-out' }
-                    );
-                }
+                openModal();
             });
 
         })();
     </script>
+    <!-- ===== MODAL (idéntico al de index.html) ===== -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal()" aria-label="Cerrar">×</button>
+            <div id="step-auth">
+                <h3 data-i18n="modal.auth.title">Identifícate</h3>
+                <p class="sub" data-i18n="modal.auth.sub">Para que tu deseo sea único y solo tuyo.</p>
+                <button class="google-btn" onclick="signInWithGoogle()" id="googleLoginBtn">
+                    <svg width="18" height="18" viewBox="0 0 18 18">
+                        <path fill="#4285F4"
+                            d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.12-.85 2.07-1.8 2.7v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.6z" />
+                        <path fill="#34A853"
+                            d="M9 18c2.43 0 4.47-.8 5.96-2.2l-2.92-2.26c-.81.54-1.84.87-3.04.87-2.34 0-4.32-1.58-5.03-3.71H.96v2.33A8.997 8.997 0 0 0 9 18z" />
+                        <path fill="#FBBC05"
+                            d="M3.97 10.7A5.41 5.41 0 0 1 3.68 9c0-.59.1-1.16.29-1.7V4.97H.96A8.997 8.997 0 0 0 0 9c0 1.45.35 2.83.96 4.03l3.01-2.33z" />
+                        <path fill="#EA4335"
+                            d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59C13.46.89 11.43 0 9 0A8.997 8.997 0 0 0 .96 4.97l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z" />
+                    </svg>
+                    <span data-i18n="modal.auth.google">Continuar con Google</span>
+                </button>
+                <p class="auth-note"><span data-i18n="modal.auth.note">Al continuar, aceptas nuestros</span> <a
+                        href="/terminos" class="link-underline" data-i18n="modal.auth.terms">Términos</a> <span
+                        data-i18n="modal.auth.and">y</span> <a href="/privacidad" class="link-underline"
+                        data-i18n="modal.auth.privacy">Política de Privacidad</a>.</p>
+            </div>
+            <div id="step-wish" style="display:none">
+                <h3 data-i18n="modal.wish.title">Tu deseo</h3>
+                <p class="sub" data-i18n="modal.wish.sub">Escríbelo como lo sientes. La IA lo va a leer con cuidado.</p>
+                <div class="field">
+                    <label for="wishCategory" data-i18n="modal.wish.catLabel">¿Con qué se relaciona tu deseo?</label>
+                    <select id="wishCategory">
+                        <option value="love" data-i18n="cat.love">Amor y relaciones</option>
+                        <option value="money" data-i18n="cat.money">Dinero y trabajo</option>
+                        <option value="health" data-i18n="cat.health">Salud y bienestar</option>
+                        <option value="family" data-i18n="cat.family">Familia</option>
+                        <option value="growth" data-i18n="cat.growth">Crecimiento personal</option>
+                        <option value="other" data-i18n="cat.other">Otro</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="wishText" data-i18n="modal.wish.textLabel">Describe tu deseo</label>
+                    <textarea id="wishText" rows="5" maxlength="600" oninput="updateCount()"
+                        data-i18n-placeholder="modal.wish.textPlaceholder" placeholder="Quiero..."></textarea>
+                    <div class="char-count"><span id="count">0</span>/600</div>
+                </div>
+                <div class="field">
+                    <label for="wishEmail" data-i18n="modal.wish.emailLabel">Tu correo (a donde llegará tu
+                        acompañamiento)</label>
+                    <input type="email" id="wishEmail" data-i18n-placeholder="modal.wish.emailPlaceholder"
+                        placeholder="tucorreo@ejemplo.com">
+                </div>
+                <button class="btn-primary btn-full" onclick="goToPayment()" data-i18n="modal.wish.cta">Continuar a la
+                    contribución →</button>
+            </div>
+            <div id="step-payment" style="display:none">
+                <h3 data-i18n="modal.payment.title">Tu contribución</h3>
+                <p class="sub" data-i18n="modal.payment.sub">El gesto que activa tu deseo en el sistema.</p>
+                <div class="field">
+                    <label for="amount" data-i18n="modal.payment.amountLabel">Monto (USD, mínimo 1)</label>
+                    <input type="number" id="amount" min="1" value="3" step="1">
+                </div>
+                <div class="field">
+                    <label for="donorAlias" data-i18n="modal.payment.aliasLabel">Elige tu apodo para el ranking de
+                        donadores</label>
+                    <input type="text" id="donorAlias" maxlength="24"
+                        data-i18n-placeholder="modal.payment.aliasPlaceholder" placeholder="Ej. Viajero777">
+                    <p class="field-hint" data-i18n="modal.payment.aliasNote">Este apodo es público y aparece en el
+                        ranking. No uses tu nombre real si prefieres mantenerlo privado.</p>
+                </div>
+                <p class="modal-note"><span data-i18n="modal.payment.stripeNote">Serás redirigido a Wompi para completar
+                        el
+                        pago de forma segura.</span></p>
+                <button class="btn-primary btn-full" onclick="simulatePayment()" data-i18n="modal.payment.cta">Ir a
+                    pagar
+                    →</button>
+            </div>
+            <div id="step-processing" class="step-processing" style="display:none">
+                <div class="coin coin--modal" aria-hidden="true"></div>
+                <h3 data-i18n="modal.processing.title">Tu moneda cae en la fuente...</h3>
+                <p class="sub" data-i18n="modal.processing.sub">Procesando tu contribución</p>
+            </div>
+            <div id="step-confirmed" style="display:none">
+                <h3 data-i18n="modal.confirmed.title">Tu deseo ya está en marcha 🪙</h3>
+                <p class="sub" data-i18n="modal.confirmed.sub">Esto es lo que recibirás en tu correo en los próximos
+                    minutos:</p>
+                <div class="email-preview">
+                    <p class="email-meta" data-i18n="modal.confirmed.from">De: La Fuente — Fontana</p>
+                    <p class="email-subject" data-i18n="modal.confirmed.subject">Asunto: Tu deseo ya está en marcha 🪙
+                    </p>
+                    <p id="previewEmailBody" class="email-body"></p>
+                    <p class="email-footer" data-i18n="modal.confirmed.footer">La Fuente seguirá trabajando en tu deseo
+                        durante las próximas 720 horas. — Fontana</p>
+                </div>
+                <button class="btn-primary btn-full" onclick="goToIdentityUrl()"
+                    data-i18n="modal.confirmed.cta">Continuar →</button>
+            </div>
+        </div>
+    </div>
+    <script src="fontana.js" defer></script>
 </body>
 
 </html>
