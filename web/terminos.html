@@ -5,57 +5,91 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Términos y Condiciones — Fontana</title>
+  <meta name="description"
+    content="Términos y condiciones del servicio Fontana. Lee los compromisos, limitaciones y derechos antes de usar la plataforma.">
   <link rel="icon" type="image/svg+xml" href="/assets/img/favicon.svg">
   <script>(function () { var t = localStorage.getItem('fontana_theme') || 'light'; var l = localStorage.getItem('fontana_lang') || 'es'; document.documentElement.setAttribute('data-theme', t); document.documentElement.setAttribute('lang', l); })();</script>
   <link rel="stylesheet" href="/css/theme-variables.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <style>
     body {
       background: var(--night, #0c1016);
       color: var(--ivory, #f4f1ea);
-      font-family: Inter, sans-serif;
-      max-width: 720px;
+      font-family: 'Inter', sans-serif;
+      max-width: 740px;
       margin: 0 auto;
-      padding: 80px 24px;
-      line-height: 1.7;
+      padding: 80px 24px 60px;
+      line-height: 1.75;
       transition: background .35s ease, color .35s ease;
+      font-size: 15px;
     }
 
     h1 {
-      font-family: Georgia, serif;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      font-weight: 500;
       color: var(--gold-bright, #e8c873);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+      letter-spacing: -.01em;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--ivory-dim, #c9c6bc);
+      margin-bottom: 28px;
+      font-style: italic;
     }
 
     h2 {
-      font-size: 19px;
-      margin-top: 36px;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.3rem;
+      font-weight: 500;
+      margin-top: 40px;
+      margin-bottom: 10px;
       color: var(--ivory, #f4f1ea);
     }
 
     p,
     li {
       color: var(--ivory-dim, #c9c6bc);
-      font-size: 15px;
+      margin-bottom: 10px;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
     }
 
     a {
       color: var(--gold-bright, #e8c873);
     }
 
+    a:hover {
+      text-decoration: underline;
+    }
+
     .note {
       background: var(--stone, #1a2029);
       border-left: 3px solid var(--gold, #c9a14a);
-      padding: 14px 18px;
+      padding: 16px 20px;
       font-size: 13.5px;
       color: var(--gold-bright, #e8c873);
-      margin: 24px 0;
+      margin: 28px 0;
+      border-radius: 0 4px 4px 0;
     }
 
     .download-link {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      margin-top: 10px;
+      margin-top: 12px;
       padding: 7px 14px;
       background: rgba(201, 161, 74, 0.12);
       border: 1px solid rgba(201, 161, 74, 0.35);
@@ -70,45 +104,145 @@
     .download-link:hover {
       background: rgba(201, 161, 74, 0.22);
       border-color: rgba(201, 161, 74, 0.6);
+      text-decoration: none;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border-soft, rgba(244, 241, 234, .1));
+      margin: 40px 0;
+    }
+
+    .footer-note {
+      margin-top: 48px;
+      font-size: 12.5px;
+      color: var(--ivory-faint, #8a8a82);
+      text-align: center;
     }
   </style>
 </head>
 
 <body>
   <h1>Términos y Condiciones</h1>
-  <p><em>Última actualización: 13 de julio de 2026</em></p>
+  <p class="meta">Última actualización: 20 de agosto de 2026 · Versión 2.0</p>
+
   <div class="note">
-    Esta es una versión web resumida. El documento legal completo y revisable está disponible en formato Word para tu
-    abogado:
+    Esta es la versión web del contrato. Si necesitas el documento Word completo para revisión legal, puedes descargarlo
+    aquí:
     <br>
     <a class="download-link" href="/assets/docs/terminos-y-condiciones.docx" download>
       ⬇ Descargar terminos-y-condiciones.docx
     </a>
   </div>
 
-  <h2>1. Qué es Fontana</h2>
-  <p>Fontana es un servicio de inspiración, ritual simbólico y acompañamiento personal apoyado en inteligencia
-    artificial. No es un servicio de adivinación, astrología, ni asesoría financiera, médica, legal o psicológica. No
-    garantizamos que tu deseo se cumplirá.</p>
+  <h2>1. Quiénes somos</h2>
+  <p>Fontana es una plataforma digital de acompañamiento personal impulsada por inteligencia artificial, operada por la
+    <strong>Fundación EMS</strong>. El servicio está disponible en <a
+      href="https://fontanadigital.dpdns.org">fontanadigital.dpdns.org</a> y a través de dominios asociados.</p>
+  <p>Contacto: <a href="mailto:fontanadigital.ai@gmail.com">fontanadigital.ai@gmail.com</a></p>
 
-  <h2>2. Un deseo por persona</h2>
-  <p>Debes iniciar sesión con una cuenta verificada (Google) y aceptas no crear múltiples cuentas para eludir el límite
-    de un deseo activo por persona.</p>
+  <h2>2. Qué es Fontana y qué no es</h2>
+  <p>Fontana es un <strong>servicio de acompañamiento simbólico y motivacional</strong> apoyado en modelos de
+    inteligencia artificial. Al usar Fontana, el usuario registra una intención personal ("deseo") y recibe durante 30
+    días una serie de comunicaciones personalizadas generadas por IA, diseñadas para fomentar la reflexión, la acción y
+    el enfoque.</p>
+  <p><strong>Fontana NO es:</strong></p>
+  <ul>
+    <li>Un servicio de adivinación, videncia, astrología ni esoterismo.</li>
+    <li>Un servicio de asesoría financiera, médica, psicológica o legal.</li>
+    <li>Una garantía de que el deseo registrado se hará realidad.</li>
+    <li>Un sustituto de atención profesional en salud mental o física.</li>
+  </ul>
+  <p>El uso del servicio es voluntario y el usuario asume plena conciencia de su naturaleza simbólica y motivacional.
+  </p>
 
-  <h2>3. Tu contribución</h2>
-  <p>La contribución mínima es de 1 USD. A cambio, recibes el ritual y el servicio de acompañamiento de 30 días descrito
-    en la sección "Cómo funciona" de nuestra página principal.</p>
+  <h2>3. Requisitos para usar el servicio</h2>
+  <ul>
+    <li>Tener mínimo 18 años de edad.</li>
+    <li>Iniciar sesión con una cuenta de Google válida y verificada.</li>
+    <li>Proporcionar una dirección de correo electrónico activa a la que tengas acceso.</li>
+    <li>Aceptar estos términos de forma explícita al completar el proceso de pago.</li>
+  </ul>
 
-  <h2>4. Reembolsos</h2>
-  <p>Puedes solicitar reembolso completo dentro de las 48 horas posteriores al pago y antes del segundo correo de
-    seguimiento. Ver nuestra <a href="/reembolsos">Política de Reembolsos</a> completa.</p>
+  <h2>4. Un deseo por persona</h2>
+  <p>Cada cuenta puede tener <strong>un (1) deseo activo a la vez</strong>. Al completar un ciclo de 30 días, o al
+    vencerse sin interacción, el usuario puede registrar un nuevo deseo.</p>
+  <p>No está permitido crear múltiples cuentas de Google para eludir este límite. La detección de abuso puede resultar
+    en la suspensión de todos los deseos asociados sin reembolso.</p>
 
-  <h2>5. Responsabilidad</h2>
-  <p>El contenido generado por IA puede contener imprecisiones. Eres el único responsable de las decisiones que tomes
-    basándote en las sugerencias recibidas.</p>
+  <h2>5. Contribución económica y proceso de pago</h2>
+  <p>El acceso al servicio requiere una <strong>contribución mínima de $1 USD</strong> (equivalente en pesos colombianos
+    al momento del cobro), procesada a través de <strong>Wompi</strong>, pasarela de pagos colombiana regulada.</p>
+  <ul>
+    <li>Los pagos se procesan en COP (pesos colombianos) al tipo de cambio vigente.</li>
+    <li>Wompi acepta tarjetas de crédito, débito, Nequi, Bancolombia y PSE.</li>
+    <li>Fontana nunca almacena datos de tarjetas. El procesamiento es exclusivo de Wompi.</li>
+    <li>La contribución se activa en el sistema solo después de recibir confirmación de pago exitoso de Wompi mediante
+      webhook verificado.</li>
+  </ul>
 
-  <h2>6. Contacto</h2>
-  <p>Para preguntas: <a href="mailto:fontanadigital.ai@gmail.com">fontanadigital.ai@gmail.com</a></p>
+  <h2>6. Qué incluye el servicio (ciclo de 30 días)</h2>
+  <p>Al confirmar el pago, el sistema activa un ciclo que incluye:</p>
+  <ul>
+    <li>Correo de bienvenida con la confirmación del deseo activado.</li>
+    <li>Hasta cuatro (4) correos de seguimiento personalizados, generados por IA, distribuidos durante el mes.</li>
+    <li>Correo de cierre al finalizar el ciclo de 30 días.</li>
+    <li>Posibilidad de completar un perfil de identidad opcional (nombre, edad, contexto) para personalizar mejor las
+      comunicaciones.</li>
+  </ul>
+  <p>El contenido generado por IA se basa en el texto del deseo ingresado y en el perfil de identidad opcional. Los
+    textos son generados por modelos de lenguaje de terceros (actualmente GLM de Z.ai) y pueden contener imprecisiones o
+    interpretaciones subjetivas.</p>
+
+  <h2>7. Reembolsos</h2>
+  <p>Puedes solicitar reembolso completo dentro de las <strong>48 horas posteriores al pago</strong> y <strong>antes de
+      recibir el segundo correo de seguimiento</strong>. Una vez entregado el segundo correo, el servicio se entiende
+    como parcialmente prestado y no aplica reembolso salvo en los casos de excepción descritos en nuestra <a
+      href="/reembolsos">Política de Reembolsos</a>.</p>
+  <p>Para solicitar un reembolso: <a href="mailto:fontanadigital.ai@gmail.com">fontanadigital.ai@gmail.com</a></p>
+
+  <h2>8. Propiedad intelectual del contenido</h2>
+  <p>El texto del deseo que el usuario ingresa es de su propiedad. Fontana utiliza dicho texto exclusivamente para
+    generar las comunicaciones del ciclo y no lo comparte públicamente sin autorización expresa. El contenido generado
+    por IA (correos, reflexiones) es propiedad de Fontana y se licencia al usuario para uso personal únicamente.</p>
+
+  <h2>9. Responsabilidad limitada</h2>
+  <p>Fontana no garantiza resultados específicos. El usuario acepta que:</p>
+  <ul>
+    <li>El contenido generado por IA es de carácter orientativo y no constituye consejo profesional de ningún tipo.</li>
+    <li>Las decisiones tomadas con base en las comunicaciones recibidas son responsabilidad exclusiva del usuario.</li>
+    <li>Fontana no es responsable por interrupciones del servicio derivadas de fallos en proveedores externos (Supabase,
+      Wompi, Z.ai, Resend).</li>
+    <li>La responsabilidad máxima de Fontana ante cualquier reclamación está limitada al valor de la contribución
+      pagada.</li>
+  </ul>
+
+  <h2>10. Contenido prohibido</h2>
+  <p>No está permitido ingresar como "deseo" contenido que:</p>
+  <ul>
+    <li>Incite a la violencia contra terceros.</li>
+    <li>Sea de naturaleza sexual explícita.</li>
+    <li>Busque causar daño a personas identificables.</li>
+    <li>Infrinja derechos de propiedad intelectual de terceros.</li>
+  </ul>
+  <p>Fontana se reserva el derecho de cancelar deseos con contenido inapropiado sin previo aviso y sin reembolso.</p>
+
+  <h2>11. Modificaciones al servicio</h2>
+  <p>Fontana puede modificar o descontinuar el servicio con previo aviso razonable. Los usuarios con ciclos activos al
+    momento de la descontinuación recibirán reembolso proporcional al tiempo no consumido.</p>
+
+  <h2>12. Ley aplicable y jurisdicción</h2>
+  <p>Estos términos se rigen por las leyes de la <strong>República de Colombia</strong>. Cualquier disputa será resuelta
+    preferiblemente mediante acuerdo directo; de no ser posible, ante los tribunales competentes de Colombia.</p>
+
+  <h2>13. Contacto</h2>
+  <p>Para preguntas, solicitudes o quejas: <a href="mailto:fontanadigital.ai@gmail.com">fontanadigital.ai@gmail.com</a>
+  </p>
+
+  <hr>
+  <p class="footer-note">Al completar tu pago en Fontana, declaras haber leído, entendido y aceptado estos Términos y
+    Condiciones en su versión vigente.</p>
+
   <script src="/assets/js/shared.js"></script>
 </body>
 
