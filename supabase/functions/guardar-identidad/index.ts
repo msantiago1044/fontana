@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const supabase = createClient(
+// Cliente con SERVICE_ROLE para poder leer/escribir wishes
+const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
@@ -16,6 +17,34 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // ── 1. Autenticar al usuario con el JWT del header ────────────────────
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const jwt = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+    if (!jwt) {
+      return new Response(
+        JSON.stringify({ error: "No autorizado: falta token de sesión" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Crear cliente temporal con el JWT del usuario para validar identidad
+    const supabaseUser = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: `Bearer ${jwt}` } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "No autorizado: sesión inválida o expirada" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── 2. Parsear body ───────────────────────────────────────────────────
     const { wishId, name, age, context, checkOnly } = await req.json();
 
     if (!wishId) {
@@ -25,18 +54,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── 3. checkOnly: verificar si ya tiene identidad (con guard de user_id) ──
     if (checkOnly) {
-      const { data: wish, error } = await supabase
+      const { data: wish, error } = await supabaseAdmin
         .from("wishes")
         .select("identity_name, identity_context")
         .eq("id", wishId)
+        .eq("user_id", user.id)   // ← GUARD: solo puede consultar sus propios wishes
         .maybeSingle();
 
       if (error) throw error;
 
       if (!wish) {
         return new Response(
-          JSON.stringify({ error: "Deseo no encontrado" }),
+          JSON.stringify({ error: "Deseo no encontrado o no pertenece a tu cuenta" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -49,18 +80,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verificar si ya está lleno
-    const { data: existingWish, error: checkError } = await supabase
+    // ── 4. Verificar que el wish pertenece al usuario autenticado ─────────
+    const { data: existingWish, error: checkError } = await supabaseAdmin
       .from("wishes")
       .select("identity_name, identity_context")
       .eq("id", wishId)
+      .eq("user_id", user.id)   // ← GUARD: solo puede modificar sus propios wishes
       .maybeSingle();
 
     if (checkError) throw checkError;
 
     if (!existingWish) {
       return new Response(
-        JSON.stringify({ error: "Deseo no encontrado" }),
+        JSON.stringify({ error: "Deseo no encontrado o no pertenece a tu cuenta" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -72,8 +104,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Actualizar el deseo con los datos de identidad
-    const { data: wish, error } = await supabase
+    // ── 5. Actualizar el deseo con los datos de identidad ─────────────────
+    const { data: wish, error } = await supabaseAdmin
       .from("wishes")
       .update({
         identity_name: name || null,
@@ -81,12 +113,13 @@ Deno.serve(async (req) => {
         identity_context: context || null,
       })
       .eq("id", wishId)
+      .eq("user_id", user.id)   // ← doble guard en el UPDATE
       .select("*, profiles(email)")
       .maybeSingle();
 
     if (error) throw error;
 
-    // Enviar notificación a Telegram (el segundo mensaje)
+    // ── 6. Notificar a Telegram ───────────────────────────────────────────
     await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/notify-telegram`, {
       method: "POST",
       headers: {
@@ -110,8 +143,10 @@ Deno.serve(async (req) => {
     );
 
   } catch (e) {
+    // No exponer detalles internos en producción
+    console.error("[guardar-identidad] Error:", e);
     return new Response(
-      JSON.stringify({ error: String(e) }),
+      JSON.stringify({ error: "Error interno del servidor" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
