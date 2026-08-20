@@ -1,5 +1,43 @@
 {
   "outputDirectory": "web",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/como-funciona",
+      "destination": "/como-funciona.html"
+    },
+    {
+      "source": "/roadmap",
+      "destination": "/roadmap.html"
+    },
+    {
+      "source": "/identidad",
+      "destination": "/identidad.html"
+    },
+    {
+      "source": "/gracias",
+      "destination": "/gracias.html"
+    },
+    {
+      "source": "/contacto",
+      "destination": "/contacto.html"
+    },
+    {
+      "source": "/privacidad",
+      "destination": "/privacidad.html"
+    },
+    {
+      "source": "/reembolsos",
+      "destination": "/reembolsos.html"
+    },
+    {
+      "source": "/terminos",
+      "destination": "/terminos.html"
+    }
+  ]
 }

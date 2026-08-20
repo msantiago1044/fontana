@@ -1,82 +1,288 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Política de Privacidad — Fontana</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="description"
+    content="Política de privacidad de Fontana. Qué datos recopilamos, cómo los usamos y cómo los protegemos.">
+  <link rel="icon" type="image/svg+xml" href="/assets/img/favicon.svg">
   <script>(function () { var t = localStorage.getItem('fontana_theme') || 'light'; var l = localStorage.getItem('fontana_lang') || 'es'; document.documentElement.setAttribute('data-theme', t); document.documentElement.setAttribute('lang', l); })();</script>
-  <link rel="stylesheet" href="/theme-variables.css">
+  <link rel="stylesheet" href="/css/theme-variables.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <style>
     body {
       background: var(--night, #0c1016);
       color: var(--ivory, #f4f1ea);
-      font-family: Inter, sans-serif;
-      max-width: 720px;
+      font-family: 'Inter', sans-serif;
+      max-width: 740px;
       margin: 0 auto;
-      padding: 80px 24px;
-      line-height: 1.7;
+      padding: 80px 24px 60px;
+      line-height: 1.75;
       transition: background .35s ease, color .35s ease;
+      font-size: 15px;
     }
 
     h1 {
-      font-family: Georgia, serif;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      font-weight: 500;
       color: var(--gold-bright, #e8c873);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+      letter-spacing: -.01em;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--ivory-dim, #c9c6bc);
+      margin-bottom: 28px;
+      font-style: italic;
     }
 
     h2 {
-      font-size: 19px;
-      margin-top: 36px;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.3rem;
+      font-weight: 500;
+      margin-top: 40px;
+      margin-bottom: 10px;
       color: var(--ivory, #f4f1ea);
     }
 
     p,
     li {
       color: var(--ivory-dim, #c9c6bc);
-      font-size: 15px;
+      margin-bottom: 10px;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
     }
 
     a {
       color: var(--gold-bright, #e8c873);
     }
 
+    a:hover {
+      text-decoration: underline;
+    }
+
     .note {
       background: var(--stone, #1a2029);
       border-left: 3px solid var(--gold, #c9a14a);
-      padding: 14px 18px;
+      padding: 16px 20px;
       font-size: 13.5px;
       color: var(--gold-bright, #e8c873);
-      margin: 24px 0;
+      margin: 28px 0;
+      border-radius: 0 4px 4px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      background: var(--stone, #1a2029);
+      color: var(--gold-bright, #e8c873);
+      font-weight: 600;
+      border: 1px solid rgba(201, 161, 74, 0.15);
+    }
+
+    td {
+      padding: 10px 12px;
+      color: var(--ivory-dim, #c9c6bc);
+      border: 1px solid rgba(244, 241, 234, 0.07);
+      vertical-align: top;
+    }
+
+    tr:nth-child(even) td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border-soft, rgba(244, 241, 234, .1));
+      margin: 40px 0;
+    }
+
+    .footer-note {
+      margin-top: 48px;
+      font-size: 12.5px;
+      color: var(--ivory-faint, #8a8a82);
+      text-align: center;
     }
   </style>
 </head>
 
 <body>
   <h1>Política de Privacidad</h1>
-  <p><em>Última actualización: 13 de julio de 2026</em></p>
-  <div class="note">Versión web resumida. Documento legal completo: <code>politica-de-privacidad.docx</code>.</div>
+  <p class="meta">Última actualización: 20 de agosto de 2026 · Versión 2.0</p>
 
-  <h2>1. Qué datos recopilamos</h2>
-  <p>Nombre, correo y foto de tu cuenta de Google; el texto de tu deseo; confirmación de pago (sin datos completos de
-    tarjeta); datos técnicos básicos para evitar deseos duplicados.</p>
 
-  <h2>2. Para qué los usamos</h2>
-  <p>Para activar tu deseo, generar tus correos de acompañamiento mediante un proveedor de inteligencia artificial (Z.ai
-    / GLM), y enviarte esos correos mediante nuestro proveedor de email.</p>
 
-  <h2>3. Con quién los compartimos</h2>
-  <p>Wompi (pagos), Z.ai/GLM (generación de contenido IA a partir de tu deseo), nuestro proveedor de email, y Supabase
-    (base de datos y autenticación). No vendemos tus datos.</p>
+  <h2>1. Quién trata tus datos</h2>
+  <p><strong>Responsable:</strong> Fontana, operado por la Fundación EMS.<br>
+    <strong>Contacto:</strong> <a href="mailto:fontanadigital.ai@gmail.com">fontanadigital.ai@gmail.com</a><br>
+    <strong>Plataforma:</strong> <a href="https://fontanadigital.dpdns.org">fontanadigital.dpdns.org</a>
+  </p>
 
-  <h2>4. Tus derechos</h2>
-  <p>Puedes solicitar acceso, corrección o eliminación de tus datos escribiendo a <a
-      href="mailto:fontanadigital.ai@gmail.com">fontanadigital.ai@gmail.com</a>.</p>
+  <h2>2. Qué datos recopilamos y por qué</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Dato</th>
+        <th>Origen</th>
+        <th>Para qué se usa</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Correo electrónico, nombre y foto de perfil</td>
+        <td>Google OAuth (inicio de sesión)</td>
+        <td>Identificarte, enviarte los correos del ciclo y personalizar la experiencia</td>
+      </tr>
+      <tr>
+        <td>Texto del deseo</td>
+        <td>Formulario en la plataforma</td>
+        <td>Generar el contenido de IA personalizado del ciclo de 30 días</td>
+      </tr>
+      <tr>
+        <td>Nombre, edad y contexto adicional</td>
+        <td>Formulario de identidad (opcional)</td>
+        <td>Personalizar aún más las comunicaciones de IA</td>
+      </tr>
+      <tr>
+        <td>ID de transacción y monto en USD</td>
+        <td>Wompi (confirmación de pago)</td>
+        <td>Verificar el pago y activar el ciclo</td>
+      </tr>
+      <tr>
+        <td>Datos técnicos (IP, agente de navegador)</td>
+        <td>Infraestructura de Supabase</td>
+        <td>Seguridad, detección de abusos y auditoría</td>
+      </tr>
+    </tbody>
+  </table>
 
-  <h2>5. Menores de edad</h2>
-  <p>Fontana no está dirigido a menores de 18 años.</p>
-  <script src="/shared.js"></script>
+  <h2>3. Qué NO recopilamos</h2>
+  <ul>
+    <li>Datos completos de tarjeta de crédito o débito (son procesados exclusivamente por Wompi).</li>
+    <li>Contraseñas (usamos Google OAuth; nunca creamos contraseñas propias).</li>
+    <li>Datos de geolocalización en tiempo real.</li>
+    <li>Información biométrica.</li>
+  </ul>
+
+  <h2>4. Con quién compartimos tus datos</h2>
+  <p>Fontana comparte datos con los siguientes proveedores de servicio, únicamente en la medida necesaria para prestar
+    el servicio:</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Proveedor</th>
+        <th>Función</th>
+        <th>Qué datos recibe</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Supabase</strong> (EE.UU.)</td>
+        <td>Base de datos y autenticación</td>
+        <td>Todos los datos de la cuenta y deseo</td>
+      </tr>
+      <tr>
+        <td><strong>Google OAuth</strong></td>
+        <td>Inicio de sesión</td>
+        <td>Correo, nombre y foto de tu cuenta de Google</td>
+      </tr>
+      <tr>
+        <td><strong>Wompi</strong> (Colombia)</td>
+        <td>Pasarela de pagos</td>
+        <td>Referencia del pago y monto; nunca el texto del deseo</td>
+      </tr>
+      <tr>
+        <td><strong>Z.ai / GLM</strong> (modelo de IA)</td>
+        <td>Generación de contenido personalizado</td>
+        <td>Texto del deseo y contexto de identidad opcional</td>
+      </tr>
+      <tr>
+        <td><strong>Resend</strong> (EE.UU.)</td>
+        <td>Envío de correos transaccionales</td>
+        <td>Correo electrónico y contenido de los mensajes del ciclo</td>
+      </tr>
+    </tbody>
+  </table>
+  <p><strong>No vendemos, alquilamos ni cedemos tus datos a terceros con fines comerciales o publicitarios.</strong></p>
+
+  <h2>5. IA y generación de contenido</h2>
+  <p>El texto de tu deseo y tu contexto de identidad son enviados al modelo de lenguaje GLM (Z.ai) para generar los
+    correos personalizados del ciclo. Al aceptar estos términos, autorizas expresamente este procesamiento.</p>
+  <p>El contenido generado por IA es de carácter orientativo y no constituye consejo profesional de ningún tipo. Z.ai
+    procesa los datos según su propia política de privacidad, disponible en su sitio web.</p>
+
+  <h2>6. Cuánto tiempo conservamos tus datos</h2>
+  <ul>
+    <li><strong>Datos del deseo y ciclo:</strong> Se conservan de forma indefinida para efectos de auditoría y soporte,
+      a menos que solicites su eliminación.</li>
+    <li><strong>Datos de sesión:</strong> Se gestionan según la política de tokens de Supabase Auth (sesiones expiran
+      automáticamente).</li>
+    <li><strong>Historial de pagos:</strong> Se conserva por obligación legal tributaria por un mínimo de 5 años.</li>
+  </ul>
+
+  <h2>7. Tus derechos</h2>
+  <p>Tienes derecho a:</p>
+  <ul>
+    <li><strong>Acceder</strong> a los datos que tenemos sobre ti.</li>
+    <li><strong>Rectificar</strong> datos incorrectos.</li>
+    <li><strong>Eliminar</strong> tu cuenta y datos asociados (excepto los requeridos por ley).</li>
+    <li><strong>Portabilidad:</strong> recibir una copia de tus datos en formato legible.</li>
+    <li><strong>Oposición:</strong> retirar el consentimiento para el procesamiento por IA (lo que implica que no
+      podemos prestar el servicio).</li>
+  </ul>
+  <p>Para ejercer cualquiera de estos derechos: <a
+      href="mailto:fontanadigital.ai@gmail.com">fontanadigital.ai@gmail.com</a>. Respondemos en un plazo máximo de 15
+    días hábiles.</p>
+
+  <h2>8. Cookies y almacenamiento local</h2>
+  <p>Fontana usa <strong>localStorage</strong> del navegador para guardar tus preferencias de tema (claro/oscuro) e
+    idioma. No usamos cookies de rastreo de terceros ni publicidad comportamental.</p>
+
+  <h2>9. Seguridad</h2>
+  <p>Aplicamos las siguientes medidas de seguridad:</p>
+  <ul>
+    <li>Comunicaciones cifradas con TLS/HTTPS en todos los endpoints.</li>
+    <li>Autenticación mediante JWT firmados (Supabase Auth).</li>
+    <li>Validación de firmas HMAC-SHA256 en los webhooks de pago.</li>
+    <li>Claves de administración nunca expuestas en el frontend.</li>
+    <li>Acceso a datos por usuario estrictamente restringido mediante políticas de Row-Level Security en la base de
+      datos.</li>
+  </ul>
+
+  <h2>10. Menores de edad</h2>
+  <p>Fontana no está dirigido a personas menores de 18 años. Si detectamos que un menor ha usado el servicio,
+    eliminaremos su cuenta y datos sin reclamación de reembolso.</p>
+
+  <h2>11. Contacto y reclamaciones</h2>
+  <p>Para cualquier pregunta sobre esta política o para ejercer tus derechos: <a
+      href="mailto:fontanadigital.ai@gmail.com">fontanadigital.ai@gmail.com</a></p>
+
+  <hr>
+  <p class="footer-note">Esta política puede actualizarse periódicamente. La versión vigente siempre estará disponible
+    en esta página. El uso continuado del servicio tras una actualización constituye aceptación de la nueva versión.</p>
+
+  <script src="/assets/js/shared.js"></script>
 </body>
 
 </html>

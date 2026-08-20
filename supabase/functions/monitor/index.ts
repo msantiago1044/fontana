@@ -211,6 +211,15 @@ async function alertRecovered(s: ServiceResult) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
+  // ── Guard: solo cron / admin con service_role key ───────────────────────
+  const callerKey = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  if (callerKey !== SUPA_KEY) {
+    return new Response(JSON.stringify({ error: "No autorizado" }), {
+      status: 401,
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
     const silent = body.silent === true; // cron puede pedir modo silencioso
@@ -303,7 +312,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("[monitor] Error general:", e);
     return new Response(
-      JSON.stringify({ error: String(e) }),
+      JSON.stringify({ error: "Error interno del servidor" }),
       { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
     );
   }

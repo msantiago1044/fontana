@@ -24,6 +24,16 @@ const cors = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
+  // ── Guard: esta función es solo para cron / admin ─────────────────────────
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const callerKey = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (callerKey !== SUPA_KEY) {
+    return new Response(JSON.stringify({ error: "No autorizado" }), {
+      status: 401,
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
+  }
+
   const results: { wishId: string; email: string; status: string; error?: string }[] = [];
 
   try {
@@ -145,7 +155,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("[close-cycle] Error general:", e);
     return new Response(
-      JSON.stringify({ error: String(e), results }),
+      JSON.stringify({ error: "Error interno del servidor", results }),
       { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
     );
   }

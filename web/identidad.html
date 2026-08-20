@@ -1,19 +1,19 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fontana — Completar Perfil</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="/assets/img/favicon.svg">
     <script>(function () { var t = localStorage.getItem('fontana_theme') || 'light'; var l = localStorage.getItem('fontana_lang') || 'es'; document.documentElement.setAttribute('data-theme', t); document.documentElement.setAttribute('lang', l); })();</script>
-    <link rel="stylesheet" href="/theme-variables.css">
+    <link rel="stylesheet" href="/css/theme-variables.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="fontana.css">
+    <link rel="stylesheet" href="/css/fontana.css">
     <style>
         body {
             min-height: 100vh;
@@ -132,9 +132,13 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>
         const SUPABASE_URL = 'https://cbvqwdrbwogsmcglsvzg.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_CAqF53kRDfzET56lLdKZIQ_UlnG-r5A';
+
+        // Cliente de Supabase para leer la sesión activa
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Tema e idioma ya aplicados en el <head> para evitar FOUC
         const savedTheme = localStorage.getItem('fontana_theme') || 'light';
@@ -161,6 +165,7 @@
                 successSub: "Gracias. La inteligencia artificial incorporará este contexto a partir de tu siguiente paso de acompañamiento.",
                 btnHome: "Regresar a Fontana",
                 noWish: "No se encontró un deseo válido para asociar. Regresa a Fontana e inicia el proceso.",
+                noSession: "Tu sesión ha expirado. Inicia sesión nuevamente.",
                 errorSave: "Hubo un error al guardar tu información, pero tu deseo sigue activo de todas formas."
             },
             en: {
@@ -178,6 +183,7 @@
                 successSub: "Thank you. The AI will incorporate this context starting with your next guidance step.",
                 btnHome: "Back to Fontana",
                 noWish: "No valid wish ID was found. Please return to Fontana and start the process.",
+                noSession: "Your session has expired. Please log in again.",
                 errorSave: "There was an error saving your details, but your wish is active anyway."
             }
         };
@@ -210,6 +216,15 @@
                 alert(t.noWish);
                 return;
             }
+
+            // Obtener sesión activa y su JWT
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session || !session.access_token) {
+                alert(t.noSession);
+                window.location.href = '/';
+                return;
+            }
+
             const name = document.getElementById('identityName').value.trim();
             const age = document.getElementById('identityAge').value.trim();
             const context = document.getElementById('identityContext').value.trim();
@@ -223,7 +238,8 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                        // Pasamos el JWT del usuario autenticado, no la anon key
+                        'Authorization': 'Bearer ' + session.access_token,
                         'apikey': SUPABASE_ANON_KEY
                     },
                     body: JSON.stringify({ wishId, name, age, context })
@@ -243,11 +259,10 @@
         }
 
         function goHome() {
-            // Redirigir a la landing page principal
             window.location.href = '/';
         }
     </script>
-    <script src="/shared.js"></script>
+    <script src="/assets/js/shared.js"></script>
 </body>
 
 </html>

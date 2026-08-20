@@ -1,78 +1,291 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Política de Reembolsos — Fontana</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="description"
+    content="Política de reembolsos de Fontana. Condiciones, plazos y cómo solicitar la devolución de tu contribución.">
+  <link rel="icon" type="image/svg+xml" href="/assets/img/favicon.svg">
   <script>(function () { var t = localStorage.getItem('fontana_theme') || 'light'; var l = localStorage.getItem('fontana_lang') || 'es'; document.documentElement.setAttribute('data-theme', t); document.documentElement.setAttribute('lang', l); })();</script>
-  <link rel="stylesheet" href="/theme-variables.css">
+  <link rel="stylesheet" href="/css/theme-variables.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <style>
     body {
       background: var(--night, #0c1016);
       color: var(--ivory, #f4f1ea);
-      font-family: Inter, sans-serif;
-      max-width: 720px;
+      font-family: 'Inter', sans-serif;
+      max-width: 740px;
       margin: 0 auto;
-      padding: 80px 24px;
-      line-height: 1.7;
+      padding: 80px 24px 60px;
+      line-height: 1.75;
       transition: background .35s ease, color .35s ease;
+      font-size: 15px;
     }
 
     h1 {
-      font-family: Georgia, serif;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      font-weight: 500;
       color: var(--gold-bright, #e8c873);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+      letter-spacing: -.01em;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--ivory-dim, #c9c6bc);
+      margin-bottom: 28px;
+      font-style: italic;
     }
 
     h2 {
-      font-size: 19px;
-      margin-top: 36px;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.3rem;
+      font-weight: 500;
+      margin-top: 40px;
+      margin-bottom: 10px;
       color: var(--ivory, #f4f1ea);
     }
 
     p,
     li {
       color: var(--ivory-dim, #c9c6bc);
-      font-size: 15px;
+      margin-bottom: 10px;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
     }
 
     a {
       color: var(--gold-bright, #e8c873);
     }
 
+    a:hover {
+      text-decoration: underline;
+    }
+
     .note {
       background: var(--stone, #1a2029);
       border-left: 3px solid var(--gold, #c9a14a);
-      padding: 14px 18px;
+      padding: 16px 20px;
       font-size: 13.5px;
       color: var(--gold-bright, #e8c873);
+      margin: 28px 0;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
       margin: 24px 0;
+      position: relative;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 17px;
+      top: 6px;
+      bottom: 6px;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--gold, #c9a14a), rgba(201, 161, 74, 0.2));
+    }
+
+    .tl-item {
+      display: flex;
+      gap: 18px;
+      padding-bottom: 28px;
+      position: relative;
+    }
+
+    .tl-dot {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--gold, #c9a14a);
+      background: var(--night, #0c1016);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gold-bright, #e8c873);
+      z-index: 1;
+    }
+
+    .tl-dot.ok {
+      background: rgba(201, 161, 74, 0.12);
+    }
+
+    .tl-dot.no {
+      border-color: rgba(244, 241, 234, 0.2);
+      color: var(--ivory-faint, #8a8a82);
+    }
+
+    .tl-body {
+      padding-top: 5px;
+    }
+
+    .tl-body strong {
+      color: var(--ivory, #f4f1ea);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .tl-body span {
+      font-size: 14px;
+      color: var(--ivory-dim, #c9c6bc);
+    }
+
+    .alert-box {
+      background: rgba(201, 161, 74, 0.07);
+      border: 1px solid rgba(201, 161, 74, 0.25);
+      border-radius: 6px;
+      padding: 18px 20px;
+      margin: 28px 0;
+    }
+
+    .alert-box p {
+      margin: 0;
+      color: var(--ivory-dim, #c9c6bc);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .alert-box strong {
+      color: var(--gold-bright, #e8c873);
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border-soft, rgba(244, 241, 234, .1));
+      margin: 40px 0;
+    }
+
+    .footer-note {
+      margin-top: 48px;
+      font-size: 12.5px;
+      color: var(--ivory-faint, #8a8a82);
+      text-align: center;
     }
   </style>
 </head>
 
 <body>
   <h1>Política de Reembolsos</h1>
-  <p><em>Última actualización: 13 de julio de 2026</em></p>
-  <div class="note">Versión web resumida. Documento legal completo: <code>politica-de-reembolsos.docx</code>.</div>
+  <p class="meta">Última actualización: 20 de agosto de 2026 · Versión 2.0</p>
 
-  <h2>1. Ventana de reembolso completo</h2>
-  <p>48 horas desde el pago, y antes de recibir el segundo correo de seguimiento sobre tu deseo. Escribe a <a
-      href="mailto:fontanadigital.ai@gmail.com">fontanadigital.ai@gmail.com</a>.</p>
 
-  <h2>2. Después de ese plazo</h2>
-  <p>No ofrecemos reembolsos, porque el servicio principal —el ritual y tu primer paso de acompañamiento— ya fue
-    entregado.</p>
 
-  <h2>3. Excepciones</h2>
-  <p>Error técnico comprobable, cobro duplicado, o casos evaluados individualmente por nuestro equipo.</p>
+  <h2>Resumen en 30 segundos</h2>
+  <p>Tienes <strong>48 horas desde el pago</strong> para pedir reembolso completo, siempre que no hayamos enviado aún el
+    segundo correo de seguimiento. Después de ese punto, el servicio ya fue entregado parcialmente y no aplica
+    reembolso, salvo excepciones. Escríbenos siempre a nosotros antes de hacer una disputa con tu banco.</p>
 
-  <h2>4. Antes de una disputa con tu banco</h2>
-  <p>Escríbenos primero. Resolvemos más rápido que un contracargo, y evitas que tu cuenta sea suspendida por actividad
-    sospechosa.</p>
-  <script src="/shared.js"></script>
+  <h2>1. Línea de tiempo del derecho a reembolso</h2>
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-dot ok">✓</div>
+      <div class="tl-body">
+        <strong>Pago confirmado (hora 0)</strong>
+        <span>El ciclo inicia. Recibes el correo de bienvenida.</span>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot ok">✓</div>
+      <div class="tl-body">
+        <strong>Dentro de las primeras 48 horas</strong>
+        <span>Puedes pedir reembolso completo si aún no has recibido el 2.º correo de seguimiento. Escríbenos a <a
+            href="mailto:fontanadigital.ai@gmail.com">fontanadigital.ai@gmail.com</a>.</span>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot no">✗</div>
+      <div class="tl-body">
+        <strong>Después del 2.º correo de seguimiento</strong>
+        <span>El servicio se considera parcialmente entregado. No aplica reembolso general (solo excepciones).</span>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot no">✗</div>
+      <div class="tl-body">
+        <strong>Día 30 — cierre del ciclo</strong>
+        <span>Servicio completamente entregado. No aplica reembolso.</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>2. Cómo solicitar un reembolso</h2>
+  <ol style="padding-left:20px; color: var(--ivory-dim, #c9c6bc);">
+    <li>Envía un correo a <a href="mailto:fontanadigital.ai@gmail.com">fontanadigital.ai@gmail.com</a> con el asunto:
+      <strong>"Solicitud de reembolso"</strong>.
+    </li>
+    <li>Incluye el correo con el que te registraste y la referencia de tu pago (la encuentras en el correo de
+      confirmación de Wompi).</li>
+    <li>Confirmamos la recepción de tu solicitud en menos de 24 horas hábiles.</li>
+    <li>El reembolso se procesa a través de Wompi en un plazo de <strong>3 a 10 días hábiles</strong>, dependiendo de tu
+      entidad bancaria.</li>
+  </ol>
+
+  <h2>3. Casos de excepción con derecho a reembolso completo</h2>
+  <p>Independientemente del momento del ciclo, tienes derecho a reembolso completo si:</p>
+  <ul>
+    <li><strong>Cobro duplicado:</strong> Tu tarjeta fue cobrada más de una vez por el mismo deseo.</li>
+    <li><strong>Error técnico comprobable:</strong> El sistema confirmó tu pago pero nunca activó el ciclo ni envió el
+      correo de bienvenida.</li>
+    <li><strong>Fraude:</strong> Detectas que alguien usó tu información de pago sin autorización. En este caso, también
+      debes notificar a tu banco.</li>
+    <li><strong>Servicio no prestado:</strong> Fontana no entregó ninguna comunicación durante los primeros 7 días del
+      ciclo por falla de la plataforma.</li>
+  </ul>
+
+  <h2>4. Qué NO cubre esta política</h2>
+  <ul>
+    <li>Insatisfacción con el contenido generado por IA (el servicio es de carácter motivacional y subjetivo).</li>
+    <li>El deseo "no se cumplió". Fontana no garantiza resultados específicos.</li>
+    <li>Solicitudes realizadas fuera del plazo de 48 horas sin que aplique una excepción.</li>
+    <li>Cuentas suspendidas por uso abusivo de la plataforma (múltiples cuentas, contenido prohibido).</li>
+  </ul>
+
+  <h2>5. Reembolsos parciales</h2>
+  <p>En casos evaluados individualmente (ej. servicio interrumpido después del primer correo pero antes del cierre del
+    ciclo), Fontana puede ofrecer un reembolso proporcional al tiempo no consumido. Esto queda a criterio del equipo de
+    Fontana.</p>
+
+  <h2>6. Antes de hacer una disputa con tu banco (contracargo)</h2>
+  <div class="alert-box">
+    <p>Te pedimos que <strong>nos escribas primero</strong> antes de iniciar un contracargo con tu entidad bancaria.
+      Resolvemos más rápido y de forma más favorable para ti que un proceso de disputa bancaria, que puede tardar
+      semanas. <br><br>Las disputas bancarias fraudulentas o injustificadas pueden resultar en la suspensión permanente
+      de la cuenta sin posibilidad de reembolso.</p>
+  </div>
+
+  <h2>7. Descontinuación del servicio</h2>
+  <p>Si Fontana decide descontinuar el servicio de forma permanente, los usuarios con ciclos activos y pagados recibirán
+    reembolso proporcional al tiempo del ciclo no consumido, sin necesidad de solicitarlo.</p>
+
+  <h2>8. Contacto para reembolsos</h2>
+  <p><a href="mailto:fontanadigital.ai@gmail.com">fontanadigital.ai@gmail.com</a> — Respondemos en menos de 24 horas
+    hábiles.</p>
+
+  <hr>
+  <p class="footer-note">Esta política aplica para todas las contribuciones realizadas a través de Wompi en Fontana. Los
+    reembolsos están sujetos a los tiempos de procesamiento de Wompi y de la entidad bancaria del usuario.</p>
+
+  <script src="/assets/js/shared.js"></script>
 </body>
 
 </html>
