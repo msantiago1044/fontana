@@ -50,13 +50,40 @@
       color: var(--gold-bright, #e8c873);
       margin: 24px 0;
     }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      padding: 7px 14px;
+      background: rgba(201, 161, 74, 0.12);
+      border: 1px solid rgba(201, 161, 74, 0.35);
+      border-radius: 4px;
+      color: var(--gold-bright, #e8c873);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background .2s, border-color .2s;
+    }
+
+    .download-link:hover {
+      background: rgba(201, 161, 74, 0.22);
+      border-color: rgba(201, 161, 74, 0.6);
+    }
   </style>
 </head>
 
 <body>
   <h1>Política de Reembolsos</h1>
   <p><em>Última actualización: 13 de julio de 2026</em></p>
-  <div class="note">Versión web resumida. Documento legal completo: <code>politica-de-reembolsos.docx</code>.</div>
+  <div class="note">
+    Versión web resumida. Documento legal completo:
+    <br>
+    <a class="download-link" href="/assets/docs/politica-de-reembolsos.docx" download>
+      ⬇ Descargar politica-de-reembolsos.docx
+    </a>
+  </div>
 
   <h2>1. Ventana de reembolso completo</h2>
   <p>48 horas desde el pago, y antes de recibir el segundo correo de seguimiento sobre tu deseo. Escribe a <a
