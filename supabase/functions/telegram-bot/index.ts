@@ -131,9 +131,23 @@ async function handleDeseo(shortId: string) {
     ? Math.max(0, Math.floor((Date.now() - new Date(wish.cycle_started_at).getTime()) / 86400000))
     : 0;
 
+  // Obtener métricas acumuladas de tokens y cómputo si existen
+  const { data: metrics } = await supabase
+    .from("wishes_token_metrics")
+    .select("*")
+    .eq("wish_id", wish.id)
+    .maybeSingle();
+
+  const totalTokens = metrics?.total_tokens_consumed ?? (wish.plan_tokens ?? 0);
+  const totalMs = metrics?.total_duration_ms ?? (wish.plan_generation_ms ?? 0);
+
   let msg = `🔍 <b>Detalle del deseo</b>\n\n`;
   msg += `🆔 <code>${wish.id}</code>\n`;
   msg += `📊 Estado: <b>${wish.status}</b>\n`;
+  msg += `📋 Plan 30D: <b>${wish.plan_status || "pendiente"}</b>\n`;
+  if (totalTokens > 0) {
+    msg += `⚡ Cómputo: <b>${Number(totalTokens).toLocaleString()} tokens</b> (${(Number(totalMs) / 1000).toFixed(1)}s)\n`;
+  }
   msg += `📧 Email: ${wish.contact_email}\n`;
   msg += `📂 Categoría: ${wish.category}\n`;
   msg += `💵 Monto: $${wish.amount_usd} USD\n`;
@@ -157,10 +171,21 @@ async function handleDeseo(shortId: string) {
     msg += `\n📝 <b>Notas internas:</b>\n${wish.internal_notes}\n`;
   }
 
-  await sendTelegram(msg, {
-    inline_keyboard: [[
+  const buttons: Array<Array<{ text: string; callback_data: string }>> = [
+    [
       { text: "✉️ Responder", callback_data: `reply:${wish.id}` },
-    ]],
+      { text: "📋 Ver Plan", callback_data: `plan:${wish.id}` },
+    ],
+    [
+      { text: "⚡ Consumo", callback_data: `consumo:${wish.id}` },
+      ...(wish.plan_status === "pending_review"
+        ? [{ text: "✅ Aprobar Plan", callback_data: `approve_plan:${wish.id}` }]
+        : []),
+    ],
+  ];
+
+  await sendTelegram(msg, {
+    inline_keyboard: buttons,
   });
 }
 
@@ -342,6 +367,245 @@ async function handleRespuesta(args: string) {
   }
 }
 
+// ── Comando /consumo [ID] ──────────────────────────────────────────────────────
+async function handleConsumo(shortId: string) {
+  if (!shortId) {
+    await sendTelegram("⚠️ Uso: <code>/consumo [ID]</code>\nEjemplo: <code>/consumo a1b2c3d4</code>");
+    return;
+  }
+
+  const wish = await findWishByShortId(shortId);
+  if (wish === "ambiguous") {
+    await sendTelegram("⚠️ ID ambiguo. Usa más caracteres.");
+    return;
+  }
+  if (!wish) {
+    await sendTelegram(`❌ No encontré ningún deseo con ID <code>${shortId}</code>`);
+    return;
+  }
+
+  const { data: metrics } = await supabase
+    .from("wishes_token_metrics")
+    .select("*")
+    .eq("wish_id", wish.id)
+    .maybeSingle();
+
+  const totalMs = Number(metrics?.total_duration_ms ?? wish.plan_generation_ms ?? 0);
+  const totalSec = metrics?.total_seconds_worked ?? (totalMs / 1000).toFixed(2);
+  const totalMin = metrics?.total_minutes_worked ?? (totalMs / 60000).toFixed(2);
+  const promptTokens = Number(metrics?.total_prompt_tokens ?? 0);
+  const completionTokens = Number(metrics?.total_completion_tokens ?? 0);
+  const totalTokens = Number(metrics?.total_tokens_consumed ?? (wish.plan_tokens ?? 0));
+  const costUsd = Number(metrics?.estimated_cost_usd ?? (totalTokens * 0.0000004)).toFixed(4);
+  const costCop = Math.round(Number(costUsd) * 4200).toLocaleString("es-CO");
+  const daysRecorded = metrics?.days_recorded ?? 0;
+
+  let msg = `⚡ <b>Métricas de Cómputo y Tokens</b>\n\n`;
+  msg += `🆔 <code>${(wish.id as string).slice(0, 8)}</code> · ${wish.contact_email}\n`;
+  msg += `📊 Estado: <b>${wish.status}</b> | Plan: <b>${wish.plan_status || "pendiente"}</b>\n`;
+  msg += `📅 Días de trabajo registrados: <b>${daysRecorded}/30</b>\n\n`;
+  msg += `⏱ <b>Tiempo de ejecución:</b>\n`;
+  msg += `  • Milisegundos: <b>${totalMs.toLocaleString()} ms</b>\n`;
+  msg += `  • Segundos: <b>${totalSec} s</b> (${totalMin} min)\n\n`;
+  msg += `🪙 <b>Consumo de Tokens:</b>\n`;
+  msg += `  • Prompt: <b>${promptTokens.toLocaleString()}</b>\n`;
+  msg += `  • Completion: <b>${completionTokens.toLocaleString()}</b>\n`;
+  msg += `  • Total acumulado: <b>${totalTokens.toLocaleString()} tokens</b>\n\n`;
+  msg += `💵 <b>Costo estimado de cómputo:</b>\n`;
+  msg += `  • <b>$${costUsd} USD</b> (~$${costCop} COP)\n`;
+
+  await sendTelegram(msg);
+}
+
+// ── Comando /plan [ID] ────────────────────────────────────────────────────────
+async function handlePlan(shortId: string) {
+  if (!shortId) {
+    await sendTelegram("⚠️ Uso: <code>/plan [ID]</code>\nEjemplo: <code>/plan a1b2c3d4</code>");
+    return;
+  }
+
+  const wish = await findWishByShortId(shortId);
+  if (wish === "ambiguous") {
+    await sendTelegram("⚠️ ID ambiguo. Usa más caracteres.");
+    return;
+  }
+  if (!wish) {
+    await sendTelegram(`❌ No encontré ningún deseo con ID <code>${shortId}</code>`);
+    return;
+  }
+
+  if (!wish.plan_30d) {
+    await sendTelegram(
+      `📋 <b>Plan de 30 días — Fontana</b>\n\n` +
+      `🆔 <code>${(wish.id as string).slice(0, 8)}</code> · ${wish.contact_email}\n` +
+      `⚠️ <i>Aún no se ha generado un plan para este deseo.</i>\n\n` +
+      `Ejecuta en consola:\n<code>python fontana_engine.py plan ${wish.id.slice(0, 8)}</code>`
+    );
+    return;
+  }
+
+  const plan = typeof wish.plan_30d === "string" ? JSON.parse(wish.plan_30d) : wish.plan_30d;
+  const statusIcon = wish.plan_status === "approved" ? "✅ APROBADO" : "⏳ PENDIENTE DE REVISIÓN";
+
+  let msg = `📋 <b>Plan Maestro de 30 Días</b>\n`;
+  msg += `🆔 <code>${(wish.id as string).slice(0, 8)}</code> · ${statusIcon}\n`;
+  msg += `📧 ${wish.contact_email}\n`;
+  if (wish.plan_generation_ms) {
+    msg += `⏱ Generado en: ${wish.plan_generation_ms} ms · 🪙 ${wish.plan_tokens ?? 0} tokens\n`;
+  }
+  if (wish.plan_approved_at) {
+    msg += `✅ Aprobado el: ${fmtDate(wish.plan_approved_at)}\n`;
+  }
+  msg += `\n🎯 <b>Diagnóstico / Visión:</b>\n${plan.diagnosis || plan.summary || "Acompañamiento personalizado de 30 días."}\n\n`;
+
+  if (plan.weekly_goals && Array.isArray(plan.weekly_goals)) {
+    msg += `📅 <b>Hitos Semanales:</b>\n`;
+    for (const g of plan.weekly_goals) {
+      msg += `  • <b>Semana ${g.week}:</b> ${g.goal || g.title || g.focus}\n`;
+    }
+    msg += `\n`;
+  } else if (plan.weeks && typeof plan.weeks === "object") {
+    msg += `📅 <b>Hitos Semanales:</b>\n`;
+    for (const [k, v] of Object.entries(plan.weeks)) {
+      const desc = typeof v === "string" ? v : ((v as Record<string, unknown>).focus || (v as Record<string, unknown>).goal);
+      msg += `  • <b>${k}:</b> ${desc}\n`;
+    }
+    msg += `\n`;
+  }
+
+  const buttons: Array<Array<{ text: string; callback_data: string }>> = [];
+  const row: Array<{ text: string; callback_data: string }> = [];
+
+  if (wish.plan_status === "pending_review") {
+    row.push({ text: "✅ Aprobar Plan", callback_data: `approve_plan:${wish.id}` });
+  }
+  row.push({ text: "⚡ Consumo", callback_data: `consumo:${wish.id}` });
+  row.push({ text: "📅 Trabajo", callback_data: `trabajo:${wish.id}` });
+  buttons.push(row);
+
+  await sendTelegram(msg, { inline_keyboard: buttons });
+}
+
+// ── Comando /aprobar [ID] ─────────────────────────────────────────────────────
+async function handleAprobar(shortId: string) {
+  if (!shortId) {
+    await sendTelegram("⚠️ Uso: <code>/aprobar [ID]</code>\nEjemplo: <code>/aprobar a1b2c3d4</code>");
+    return;
+  }
+
+  const wish = await findWishByShortId(shortId);
+  if (wish === "ambiguous") {
+    await sendTelegram("⚠️ ID ambiguo. Usa más caracteres.");
+    return;
+  }
+  if (!wish) {
+    await sendTelegram(`❌ No encontré ningún deseo con ID <code>${shortId}</code>`);
+    return;
+  }
+
+  const nowIso = new Date().toISOString();
+  const { error } = await supabase
+    .from("wishes")
+    .update({
+      plan_status: "approved",
+      plan_approved_at: nowIso,
+    })
+    .eq("id", wish.id);
+
+  if (error) {
+    await sendTelegram(`❌ Error al aprobar plan: ${error.message}`);
+  } else {
+    await sendTelegram(
+      `✅ <b>Plan de 30 días aprobado</b>\n\n` +
+      `🆔 <code>${(wish.id as string).slice(0, 8)}</code>\n` +
+      `📧 ${wish.contact_email}\n` +
+      `📅 Aprobado el: ${fmtDate(nowIso)}\n\n` +
+      `El motor <code>fontana_engine.py</code> puede proceder con las sesiones diarias 1 a 30.`
+    );
+  }
+}
+
+// ── Comando /trabajo [ID] ─────────────────────────────────────────────────────
+async function handleTrabajo(shortId: string) {
+  if (!shortId) {
+    await sendTelegram("⚠️ Uso: <code>/trabajo [ID]</code>\nEjemplo: <code>/trabajo a1b2c3d4</code>");
+    return;
+  }
+
+  const wish = await findWishByShortId(shortId);
+  if (wish === "ambiguous") {
+    await sendTelegram("⚠️ ID ambiguo. Usa más caracteres.");
+    return;
+  }
+  if (!wish) {
+    await sendTelegram(`❌ No encontré ningún deseo con ID <code>${shortId}</code>`);
+    return;
+  }
+
+  const { data: days } = await supabase
+    .from("ai_daily_work")
+    .select("day_number, focus_goal, daily_result, tomorrow_handoff, session_duration_ms, total_tokens, created_at")
+    .eq("wish_id", wish.id)
+    .order("day_number", { ascending: true });
+
+  if (!days || days.length === 0) {
+    await sendTelegram(
+      `📅 <b>Sesiones diarias de trabajo</b>\n\n` +
+      `🆔 <code>${(wish.id as string).slice(0, 8)}</code> · ${wish.contact_email}\n` +
+      `⚠️ <i>No hay sesiones registradas aún en <code>ai_daily_work</code>.</i>\n\n` +
+      `Ejecuta en consola:\n<code>python fontana_engine.py daily ${wish.id.slice(0, 8)} --day 1</code>`
+    );
+    return;
+  }
+
+  let msg = `📅 <b>Trabajo Diario de IA (${days.length}/30 sesiones)</b>\n`;
+  msg += `🆔 <code>${(wish.id as string).slice(0, 8)}</code> · ${wish.contact_email}\n\n`;
+
+  const recent = days.slice(-5);
+  for (const d of recent) {
+    msg += `<b>Día ${d.day_number}/30</b> · ⏱ ${d.session_duration_ms} ms · 🪙 ${d.total_tokens} tokens\n`;
+    msg += `🎯 <b>Foco:</b> ${d.focus_goal}\n`;
+    msg += `📋 <b>Resultado:</b> ${(d.daily_result as string).slice(0, 120)}${(d.daily_result as string).length > 120 ? "…" : ""}\n`;
+    msg += `🔄 <b>Handoff:</b> ${(d.tomorrow_handoff as string).slice(0, 120)}${(d.tomorrow_handoff as string).length > 120 ? "…" : ""}\n\n`;
+  }
+
+  if (days.length > 5) {
+    msg += `<i>Mostrando las últimas 5 de ${days.length} sesiones.</i>\n`;
+  }
+
+  await sendTelegram(msg);
+}
+
+// ── Comando /pendientes — planes pendientes de revisión ───────────────────────
+async function handlePendientes() {
+  const { data: pending } = await supabase
+    .from("wishes")
+    .select("id, contact_email, donor_alias, category, wish_text, plan_status, plan_generation_ms, plan_tokens, created_at")
+    .in("status", ["active", "pending_payment"])
+    .eq("plan_status", "pending_review")
+    .order("created_at", { ascending: true });
+
+  if (!pending || pending.length === 0) {
+    await sendTelegram("🟢 No hay planes pendientes de revisión.");
+    return;
+  }
+
+  let msg = `📋 <b>Planes pendientes de revisión humana</b> (${pending.length})\n\n`;
+  for (const [i, w] of pending.entries()) {
+    const nombre = w.donor_alias || w.contact_email;
+    msg += `⏳ <b>#${i + 1}</b> · 👤 ${nombre}\n`;
+    msg += `📂 ${w.category}\n`;
+    msg += `💬 ${(w.wish_text as string).slice(0, 60)}…\n`;
+    if (w.plan_generation_ms) {
+      msg += `⏱ ${w.plan_generation_ms} ms · 🪙 ${w.plan_tokens ?? 0} tokens\n`;
+    }
+    msg += `🆔 <code>${(w.id as string).slice(0, 8)}</code>\n`;
+    msg += `👉 /plan ${(w.id as string).slice(0, 8)} | /aprobar ${(w.id as string).slice(0, 8)}\n\n`;
+  }
+
+  await sendTelegram(msg);
+}
+
 // ── Comando /alerta48 — verificar deseos sin actividad (manual o cron) ────────
 async function handleAlerta48() {
   const { data: stale } = await supabase
@@ -443,7 +707,12 @@ async function handleHelp() {
   const msg =
     `🪙 <b>Fontana Bot — Comandos</b>\n\n` +
     `📋 /cola — Lista deseos activos\n` +
+    `⏳ /pendientes — Planes 30D pendientes de revisión\n` +
     `🔍 /deseo [ID] — Detalle completo de un deseo\n` +
+    `📋 /plan [ID] — Ver plan maestro de 30 días\n` +
+    `✅ /aprobar [ID] — Aprobar plan de 30 días\n` +
+    `📅 /trabajo [ID] — Ver sesiones diarias y handoffs\n` +
+    `⚡ /consumo [ID] — Métricas de tokens, tiempo y costos\n` +
     `📊 /stats — Estadísticas generales\n` +
     `✉️ /enviado [ID] — Registra correo manual enviado\n` +
     `📝 /nota [ID] [texto] — Guardar nota interna\n` +
@@ -550,14 +819,12 @@ async function checkSendEmail(): Promise<CheckResult> {
 }
 
 async function checkAiThread(): Promise<CheckResult> {
-  return probeComponent("ai-thread", async () => {
-    const res = await fetch(`${SUPA_URL}/functions/v1/ai-thread`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPA_KEY}` },
-      body: JSON.stringify({ type: "__health_check__" }),
-      signal: AbortSignal.timeout(8000),
-    });
-    if (res.status === 0) throw new Error("Sin respuesta");
+  return probeComponent("ai-engine-db", async () => {
+    const { error } = await supabase.from("ai_daily_work").select("id", { count: "exact", head: true });
+    if (error) {
+      const { error: err2 } = await supabase.from("ai_thread").select("id", { count: "exact", head: true });
+      if (err2) throw new Error(err2.message);
+    }
   });
 }
 
@@ -737,6 +1004,56 @@ Deno.serve(async (req) => {
         );
       }
 
+      if (data.startsWith("approve_plan:")) {
+        const wishId = data.replace("approve_plan:", "");
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ callback_query_id: cb.id, text: "Aprobando plan..." }),
+        });
+        await handleAprobar(wishId);
+      }
+
+      if (data.startsWith("plan:")) {
+        const wishId = data.replace("plan:", "");
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ callback_query_id: cb.id }),
+        });
+        await handlePlan(wishId);
+      }
+
+      if (data.startsWith("consumo:")) {
+        const wishId = data.replace("consumo:", "");
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ callback_query_id: cb.id }),
+        });
+        await handleConsumo(wishId);
+      }
+
+      if (data.startsWith("trabajo:")) {
+        const wishId = data.replace("trabajo:", "");
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ callback_query_id: cb.id }),
+        });
+        await handleTrabajo(wishId);
+      }
+
+      if (data.startsWith("detail:")) {
+        const wishId = data.replace("detail:", "");
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ callback_query_id: cb.id }),
+        });
+        await handleDeseo(wishId);
+      }
+
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
@@ -758,6 +1075,11 @@ Deno.serve(async (req) => {
       // ── Comandos ──────────────────────────────────────────────────────
       if (text === "/cola" || text === "/cola@fontana_wish_bot") {
         await handleCola();
+        return okResponse();
+      }
+
+      if (text === "/pendientes" || text === "/pendientes@fontana_wish_bot") {
+        await handlePendientes();
         return okResponse();
       }
 
@@ -789,6 +1111,30 @@ Deno.serve(async (req) => {
       if (text.startsWith("/deseo ") || text.startsWith("/deseo@fontana_wish_bot ")) {
         const shortId = text.replace(/^\/deseo(@fontana_wish_bot)?\s*/, "").trim();
         await handleDeseo(shortId);
+        return okResponse();
+      }
+
+      if (text.startsWith("/plan ") || text.startsWith("/plan@fontana_wish_bot ")) {
+        const shortId = text.replace(/^\/plan(@fontana_wish_bot)?\s*/, "").trim();
+        await handlePlan(shortId);
+        return okResponse();
+      }
+
+      if (text.startsWith("/aprobar ") || text.startsWith("/aprobar@fontana_wish_bot ")) {
+        const shortId = text.replace(/^\/aprobar(@fontana_wish_bot)?\s*/, "").trim();
+        await handleAprobar(shortId);
+        return okResponse();
+      }
+
+      if (text.startsWith("/trabajo ") || text.startsWith("/trabajo@fontana_wish_bot ")) {
+        const shortId = text.replace(/^\/trabajo(@fontana_wish_bot)?\s*/, "").trim();
+        await handleTrabajo(shortId);
+        return okResponse();
+      }
+
+      if (text.startsWith("/consumo ") || text.startsWith("/consumo@fontana_wish_bot ")) {
+        const shortId = text.replace(/^\/consumo(@fontana_wish_bot)?\s*/, "").trim();
+        await handleConsumo(shortId);
         return okResponse();
       }
 

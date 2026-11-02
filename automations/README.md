@@ -125,3 +125,36 @@ webhook; B y C corren solos por reloj.
 Con este stack, el costo fijo mensual para empezar puede ser cercano a
 $0-10 USD, escalando solo con el uso real (correos e IA), que es
 exactamente lo que pediste.
+
+---
+
+## Evolución: Transición de n8n a Antigravity CLI y `fontana_engine.py` (Human-In-The-Loop)
+
+Para garantizar un control artesanal y directo, el flujo de automatización evolucionó de flujos visuales en n8n hacia una arquitectura autónoma basada en **Google Antigravity CLI** y el script de motor **`fontana_engine.py`** respaldado por PostgreSQL/Supabase y Telegram Bot.
+
+### ¿Por qué esta evolución?
+1. **Human-In-The-Loop Estricto:** Ningún deseo entra en ejecución ciega. La IA genera un **Plan Maestro de 30 Días** (`plan_30d`) con diagnóstico y metas semanales, pero permanece en estado `pending_review` hasta que el operador humano lo aprueba vía Telegram (`/aprobar` o botón inline `[ ✅ Aprobar Plan ]`) o consola CLI.
+2. **Handoff Continuo de 30 Días:** En lugar de prompts aislados semanales, la tabla `ai_daily_work` registra las sesiones día a día (1 a 30). Cada jornada genera un `tomorrow_handoff` estructurado que alimenta a la jornada siguiente, manteniendo memoria acumulativa sin sobrecargar la ventana de contexto.
+3. **Contabilidad de Cómputo y Tokens:** Cada llamada mide milisegundos reales de ejecución (`session_duration_ms`) y tokens consumidos (`prompt_tokens`, `completion_tokens`, `total_tokens`), con agregación en la vista `public.wishes_token_metrics` y cálculo de costo financiero en USD y COP.
+4. **Cero Dependencias Forzosas:** `fontana_engine.py` funciona con la biblioteca estándar de Python 3 (mediante `urllib` nativo) con soporte para Gemini API, Supabase REST y Telegram.
+
+### Comandos del CLI `fontana_engine.py`
+
+| Comando | Descripción |
+|---|---|
+| `python fontana_engine.py demo` | Ejecuta una simulación completa autocontenida de punta a punta (plan, aprobación, días 1 y 2 con handoff y balance de tokens). |
+| `python fontana_engine.py plan <wish_id>` | Genera el Plan Maestro de 30 Días para el deseo y notifica a Telegram. |
+| `python fontana_engine.py approve <wish_id>` | Aprueba el plan como operador humano. |
+| `python fontana_engine.py daily <wish_id> [--day N]` | Ejecuta la sesión diaria de trabajo (1 a 30) encadenando el handoff previo. |
+| `python fontana_engine.py balance <wish_id>` | Muestra el reporte de milisegundos trabajados, tokens y costo en USD / COP. |
+| `python fontana_engine.py daemon [--interval 3600]` | Servicio en segundo plano para escaneo periódico de deseos activos. |
+
+### Nuevos Comandos en Telegram Bot
+
+El bot de Telegram (`telegram-bot/index.ts`) ahora incluye:
+- `📋 /plan [ID]` — Muestra el diagnóstico y las metas semanales del plan de 30 días, con botón de aprobación directa.
+- `✅ /aprobar [ID]` — Aprueba el plan maestro para activar la ejecución de las sesiones diarias.
+- `⏳ /pendientes` — Lista deseos cuyo plan está en espera de revisión humana.
+- `📅 /trabajo [ID]` — Consulta las sesiones diarias registradas en `ai_daily_work` con duración y handoff.
+- `⚡ /consumo [ID]` — Consulta el consumo acumulado de milisegundos, tokens y costo estimado en USD y COP.
+

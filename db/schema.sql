@@ -68,6 +68,13 @@ create table if not exists public.wishes (
   followup_finished_at timestamptz,
   closing_notes text,                  -- tu propia nota sobre cómo quedó el deseo al cerrar
 
+  -- ---- plan de 30 días y métricas de ejecución (motor Antigravity / Fontana Engine) ----
+  plan_30d jsonb,
+  plan_status text default 'pending_review',
+  plan_approved_at timestamptz,
+  plan_generation_ms int,
+  plan_tokens int,
+
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -161,11 +168,39 @@ create table if not exists public.ai_thread (
   response_text text,
   -- opcional: para qué fue este turno (tu propia nota de contexto)
   purpose text,                        -- ej: "primer paso", "seguimiento semana 2", "investigación inicial"
+  duration_ms int,                     -- duración en ms de la llamada de IA
+  tokens int,                          -- tokens totales consumidos en este turno
   created_at timestamptz default now(),
   unique (wish_id, turn_number)
 );
 
 comment on table public.ai_thread is 'Hilo completo de prompts/respuestas por deseo, en orden. turn_number es correlativo dentro de cada wish_id.';
+
+-- ------------------------------------------------------------
+-- TABLA: ai_daily_work
+-- Registro diario de ejecuciones de IA para cada uno de los 30 días
+-- con handoff continuo (motor Antigravity CLI / Fontana Engine).
+-- ------------------------------------------------------------
+create table if not exists public.ai_daily_work (
+  id uuid primary key default uuid_generate_v4(),
+  wish_id uuid not null references public.wishes(id) on delete cascade,
+  day_number int not null check (day_number between 1 and 30),
+  focus_goal text not null,
+  daily_result text not null,
+  tomorrow_handoff text not null,
+  human_override_notes text,
+  session_duration_ms int not null,
+  prompt_tokens int not null default 0,
+  completion_tokens int not null default 0,
+  total_tokens int not null default 0,
+  status text default 'completed',
+  created_at timestamptz default now(),
+  unique (wish_id, day_number)
+);
+
+comment on table public.ai_daily_work is 'Registro diario de ejecuciones de IA para cada uno de los 30 días con handoff continuo.';
+comment on column public.ai_daily_work.tomorrow_handoff is 'Contexto e instrucción de entrega preparada para la sesión del día siguiente.';
+comment on column public.ai_daily_work.session_duration_ms is 'Duración exacta de la sesión diaria en milisegundos.';
 
 -- Función que calcula automáticamente el siguiente turn_number,
 -- así nunca tienes que contarlo a mano ni puedes chocar con otro.
@@ -213,6 +248,7 @@ comment on table public.email_log is 'Registro manual de cada correo real enviad
 alter table public.profiles enable row level security;
 alter table public.wishes enable row level security;
 alter table public.ai_thread enable row level security;
+alter table public.ai_daily_work enable row level security;
 alter table public.email_log enable row level security;
 
 create policy "Los usuarios ven su propio perfil"
@@ -227,9 +263,14 @@ create policy "Los usuarios crean su propio deseo"
   on public.wishes for insert
   with check (auth.uid() = user_id);
 
--- ai_thread y email_log NO tienen policy de usuario: son de uso
+-- ai_thread, ai_daily_work y email_log NO tienen policy de usuario: son de uso
 -- exclusivamente tuyo (operador), vía el Table Editor de Supabase
 -- o la API con la service_role key. El usuario nunca los ve.
+create policy "service_role has full access to ai_daily_work"
+  on public.ai_daily_work
+  for all
+  using (true)
+  with check (true);
 
 -- ------------------------------------------------------------
 -- VISTAS DE AYUDA PARA TU OPERACIÓN MANUAL DIARIA
@@ -273,6 +314,38 @@ where status = 'active'
   and followup_finished_manual = false;
 
 comment on view public.wishes_overdue_for_closing is 'Deseos que ya cumplieron 30 días y todavía no marcaste como cerrados. Revisa esta vista primero cada día.';
+
+-- ------------------------------------------------------------
+-- VISTA: wishes_token_metrics
+-- Métricas de ejecución, duración y consumo de tokens acumulados
+-- por deseo (plan de 30 días + sesiones diarias).
+-- ------------------------------------------------------------
+create or replace view public.wishes_token_metrics as
+select
+  w.id as wish_id,
+  w.contact_email,
+  w.status,
+  w.plan_status,
+  count(d.id)::int as days_recorded,
+  (coalesce(sum(d.session_duration_ms), 0) + coalesce(w.plan_generation_ms, 0))::bigint as total_duration_ms,
+  round((coalesce(sum(d.session_duration_ms), 0) + coalesce(w.plan_generation_ms, 0))::numeric / 1000.0, 2) as total_seconds_worked,
+  round((coalesce(sum(d.session_duration_ms), 0) + coalesce(w.plan_generation_ms, 0))::numeric / 60000.0, 2) as total_minutes_worked,
+  coalesce(sum(d.prompt_tokens), 0)::int as total_prompt_tokens,
+  coalesce(sum(d.completion_tokens), 0)::int as total_completion_tokens,
+  (coalesce(sum(d.total_tokens), 0) + coalesce(w.plan_tokens, 0))::bigint as total_tokens_consumed,
+  round(
+    (
+      (coalesce(sum(d.prompt_tokens), 0)::numeric * 0.00000015) +
+      (coalesce(sum(d.completion_tokens), 0)::numeric * 0.00000060) +
+      (coalesce(w.plan_tokens, 0)::numeric * 0.00000030)
+    ),
+    4
+  ) as estimated_cost_usd
+from public.wishes w
+left join public.ai_daily_work d on d.wish_id = w.id
+group by w.id, w.contact_email, w.status, w.plan_status, w.plan_generation_ms, w.plan_tokens;
+
+comment on view public.wishes_token_metrics is 'Métricas agregadas de duración, tokens y costos estimados por deseo.';
 
 -- ============================================================
 -- MIGRACIÓN — solo ejecuta esto si ya tenías el schema viejo

@@ -132,6 +132,37 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── F) Notificar plan de 30 días listo para revisión humana ────────────
+    if (body.type === "plan_ready_for_review") {
+      const { wishId, email, diagnosis, weeklyGoals, durationMs, tokens } = body;
+
+      let msg =
+        `📋 <b>Plan de 30 Días Listo para Revisión</b>\n\n` +
+        `👤 <b>Correo:</b> ${email || "—"}\n` +
+        `🆔 <code>${wishId}</code>\n` +
+        (durationMs ? `⏱ <b>Generación:</b> ${durationMs} ms\n` : "") +
+        (tokens ? `🪙 <b>Tokens:</b> ${Number(tokens).toLocaleString()}\n` : "") +
+        `\n🎯 <b>Diagnóstico:</b>\n${diagnosis || "Plan estructurado generado por motor de IA."}\n\n`;
+
+      if (weeklyGoals && Array.isArray(weeklyGoals)) {
+        msg += `📅 <b>Metas Semanales:</b>\n`;
+        for (const g of weeklyGoals) {
+          msg += `  • <b>Semana ${g.week || ""}:</b> ${g.goal || g.focus || g.title}\n`;
+        }
+      }
+
+      await sendTelegram(msg, {
+        inline_keyboard: [[
+          { text: "✅ Aprobar Plan", callback_data: `approve_plan:${wishId}` },
+          { text: "🔍 Ver Detalle", callback_data: `detail:${wishId}` },
+        ]],
+      });
+
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
     // ── D) Callback del botón "Responder" (legacy, redirige al flujo del bot)
     if (body.callback_query) {
       const cb = body.callback_query;
@@ -156,6 +187,30 @@ Deno.serve(async (req) => {
         await sendTelegram(
           `✉️ <b>Respondiendo al deseo</b> <code>${wishId.slice(0, 8)}…</code>\n\n` +
           `Escribe el <b>asunto</b> del correo:`
+        );
+      }
+
+      if (data.startsWith("approve_plan:")) {
+        const wishId = data.replace("approve_plan:", "");
+
+        await supabase
+          .from("wishes")
+          .update({
+            plan_status: "approved",
+            plan_approved_at: new Date().toISOString(),
+          })
+          .eq("id", wishId);
+
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ callback_query_id: cb.id, text: "Plan aprobado" }),
+        });
+
+        await sendTelegram(
+          `✅ <b>Plan de 30 días aprobado</b>\n` +
+          `🆔 <code>${wishId.slice(0, 8)}…</code>\n` +
+          `El motor Fontana continuará con la ejecución diaria de 30 días.`
         );
       }
 
