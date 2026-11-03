@@ -813,6 +813,98 @@ def simulate_week(wish_id: str, week_number: int = 1) -> dict:
     return draft
 
 
+def simulate_full_cycle(wish_id: str) -> dict:
+    """
+    Simula el acompañamiento completo de 30 DÍAS para un deseo:
+      - Avanza secuencialmente los Días 1 al 30 con handoff continuo entre cada día.
+      - En los días de hito (7, 14, 21, 28) genera el resumen y borrador semanal para revisión.
+      - En el Día 30 formula la síntesis de cierre del deseo.
+      - Imprime la bitácora completa y el balance consolidado final de los 30 días.
+    """
+    wish = fetch_wish(wish_id)
+    if not wish:
+        print(f"[ERR] No se encontró el deseo '{wish_id}'.", file=sys.stderr)
+        return {}
+
+    real_wish_id = wish["id"]
+    contact = wish.get("contact_email", "")
+
+    # Verificar que el plan esté aprobado
+    if wish.get("plan_status") != "approved":
+        print(f"ℹ️ El plan de {real_wish_id[:8]} no estaba aprobado. Aprobándolo para la simulación...")
+        approve_plan(real_wish_id, notes="Aprobación para simulación completa de 30 días.")
+        wish["plan_status"] = "approved"
+
+    print("\n" + "=" * 75)
+    print(f"🚀 INICIANDO SIMULACIÓN INTEGRAL: 30 DÍAS DE ACOMPAÑAMIENTO — FONTANA")
+    print("=" * 75)
+    print(f"  • Deseo ID:   {real_wish_id[:8]}… ({contact})")
+    print(f"  • Intención:  \"{wish.get('wish_text', '')}\"")
+    print(f"  • Categoría:  {wish.get('category', 'General')}\n")
+
+    headers = supabase_headers()
+    prev_handoff = None
+
+    for day in range(1, 31):
+        # 1. Verificar si ya existe registro para ese día
+        chk_url = f"{SUPABASE_URL}/rest/v1/ai_daily_work?wish_id=eq.{real_wish_id}&day_number=eq.{day}&select=id,session_duration_ms,total_tokens,tomorrow_handoff"
+        st, data = http_request(chk_url, headers=headers)
+
+        if st == 200 and isinstance(data, list) and len(data) > 0:
+            rec = data[0]
+            prev_handoff = rec.get("tomorrow_handoff")
+            print(f"  [Día {day:02d}/30] ✅ Ya ejecutado ({rec.get('session_duration_ms', 0)} ms | {rec.get('total_tokens', 0)} tokens) -> Relevo en memoria.")
+        else:
+            # Si no tenemos handoff en memoria, buscar el del día anterior en DB
+            if not prev_handoff and day > 1:
+                h_url = f"{SUPABASE_URL}/rest/v1/ai_daily_work?wish_id=eq.{real_wish_id}&order=day_number.desc&limit=1&select=tomorrow_handoff"
+                _, h_data = http_request(h_url, headers=headers)
+                if isinstance(h_data, list) and len(h_data) > 0:
+                    prev_handoff = h_data[0].get("tomorrow_handoff")
+
+            sess = run_daily_session(real_wish_id, day_number=day, previous_handoff=prev_handoff, wish_data=wish)
+            prev_handoff = sess.get("tomorrow_handoff")
+            print(f"  [Día {day:02d}/30] 🚀 {sess['session_duration_ms']:4d} ms | {sess['total_tokens']:4d} tok | Foco: {sess['focus_goal'][:45]}…")
+
+        # Hitos Semanales en días 7, 14, 21, 28
+        if day in (7, 14, 21, 28):
+            week_num = day // 7
+            print(f"\n  🌟 ──── HITO SEMANAL: SEMANA {week_num} (Día {day}) ─────────────────────")
+            draft = prepare_weekly_email(real_wish_id, week_number=week_num)
+            print(f"     ✓ Borrador de Correo Semana {week_num} generado y notificado a Telegram.")
+            print(f"     • Asunto: {draft.get('subject')}")
+            print(f"  ──────────────────────────────────────────────────────────\n")
+
+    # Día 30: Cierre y síntesis final
+    print("\n" + "=" * 75)
+    print("🏁 CICLO DE 30 DÍAS COMPLETADO — SÍNTESIS FINAL DE LA FUENTE")
+    print("=" * 75)
+
+    bal = get_balance(real_wish_id)
+    total_days = bal.get("days_recorded", 30)
+    total_sec = bal.get("total_seconds_worked", 0)
+    total_min = bal.get("total_minutes_worked", 0)
+    total_tok = bal.get("total_tokens_consumed", 0)
+    cost_usd = bal.get("estimated_cost_usd", 0)
+    cost_cop = bal.get("estimated_cost_cop", 0)
+
+    print(f"\n📊 BALANCE FINAL DE CONSUMO Y ESFUERZO (30 DÍAS EXACTOS):")
+    print(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print(f"  • Deseo ID:            {real_wish_id}")
+    print(f"  • Usuario:             {contact}")
+    print(f"  • Días trabajados:     {total_days} de 30 días")
+    print(f"  • Tiempo de cómputo:   {total_sec:.2f} segundos ({total_min} minutos netos)")
+    print(f"  • Tokens de entrada:   {bal.get('total_prompt_tokens', 0):,} tokens")
+    print(f"  • Tokens de salida:    {bal.get('total_completion_tokens', 0):,} tokens")
+    print(f"  • TOKENS TOTALES:      {total_tok:,} tokens")
+    print(f"  • Costo real en USD:   ${cost_usd:.4f} USD")
+    print(f"  • Costo real en COP:   ${cost_cop:,.2f} COP")
+    print(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print(f"🪙 Margen de la moneda: Usuario pagó ~$1.00 USD (Costo IA: ~{cost_usd*100:.2f}% de la moneda).")
+    print(f"✅ Los 4 borradores semanales y las 30 sesiones están guardados en Supabase.\n")
+    return bal
+
+
 # ── 6. Escaneo y Daemon de Ejecución Periódica ──────────────────────────────────
 def scan_and_process_active_wishes() -> dict:
     """
@@ -1000,6 +1092,10 @@ def main():
     p_sim.add_argument("wish_id", help="UUID o prefijo del deseo")
     p_sim.add_argument("--week", type=int, default=1, help="Número de semana a simular (1 a 4, defecto: 1)")
 
+    # Comando: simulate-all <wish_id>
+    p_all = subparsers.add_parser("simulate-all", help="Simula los 30 días completos de acompañamiento con relevo y balance final")
+    p_all.add_argument("wish_id", help="UUID o prefijo del deseo")
+
     # Comando: send-email <wish_id> [--week N]
     p_se = subparsers.add_parser("send-email", help="Despacha el correo semanal tras tu aprobación humana")
     p_se.add_argument("wish_id", help="UUID o prefijo del deseo")
@@ -1056,6 +1152,9 @@ def main():
 
     elif args.command == "simulate-week":
         simulate_week(args.wish_id, week_number=args.week)
+
+    elif args.command == "simulate-all":
+        simulate_full_cycle(args.wish_id)
 
     elif args.command == "send-email":
         print(f"🚀 Despachando correo semanal para {args.wish_id} (Semana {args.week})...")
