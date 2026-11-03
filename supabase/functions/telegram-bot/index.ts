@@ -525,6 +525,58 @@ async function handleAprobar(shortId: string) {
   }
 }
 
+// ── Despachar Correo Semanal tras Aprobación en Telegram (HITL) ───────────────
+async function handleSendWeekly(shortId: string, weekNumber: number = 1) {
+  const wish = await findWishByShortId(shortId);
+  if (!wish || wish === "ambiguous") {
+    await sendTelegram("❌ No se pudo localizar el deseo para despachar el correo.");
+    return;
+  }
+
+  // Extraer el borrador guardado en internal_notes si existe
+  const notes = (wish.internal_notes as string) || "";
+  let subject = `Semana ${weekNumber} — Tu avance en Fontana y el siguiente paso 🪙`;
+  let bodyText = "";
+
+  if (notes.includes(`[BORRADOR_CORREO_SEMANA_${weekNumber}]`)) {
+    const parts = notes.split(`[BORRADOR_CORREO_SEMANA_${weekNumber}]\n`);
+    if (parts.length > 1) {
+      const draftContent = parts[1].split("\n\n");
+      subject = draftContent[0].replace("Asunto: ", "").trim();
+      bodyText = draftContent.slice(1).join("\n\n").trim();
+    }
+  }
+
+  if (!bodyText) {
+    bodyText = `Hola,\n\nHas completado tu Semana ${weekNumber} de acompañamiento en Fontana para tu deseo: "${wish.wish_text}".\n\nEl sistema de IA ha trabajado en tus metas diarias con éxito. Seguimos avanzando.\n\nFe y trabajo,\nLa Fuente — Fontana`;
+  }
+
+  // Llamar a send-email
+  const sendRes = await fetch(`${SUPA_URL}/functions/v1/send-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPA_KEY}` },
+    body: JSON.stringify({
+      type: "manual_reply",
+      to: wish.contact_email,
+      subject,
+      body: bodyText,
+      wishId: wish.id,
+    }),
+  });
+
+  if (sendRes.ok) {
+    await sendTelegram(
+      `✅ <b>Correo de Semana ${weekNumber} despachado al usuario</b>\n\n` +
+      `👤 <b>Para:</b> ${wish.contact_email}\n` +
+      `📋 <b>Asunto:</b> ${subject}\n` +
+      `📝 Registrado en <code>email_log</code> ✓`
+    );
+  } else {
+    const err = await sendRes.text();
+    await sendTelegram(`❌ Error al enviar correo: ${err}`);
+  }
+}
+
 // ── Comando /trabajo [ID] ─────────────────────────────────────────────────────
 async function handleTrabajo(shortId: string) {
   if (!shortId) {
@@ -1012,6 +1064,18 @@ Deno.serve(async (req) => {
           body: JSON.stringify({ callback_query_id: cb.id, text: "Aprobando plan..." }),
         });
         await handleAprobar(wishId);
+      }
+
+      if (data.startsWith("send_weekly:")) {
+        const parts = data.replace("send_weekly:", "").split(":");
+        const wishId = parts[0];
+        const weekNum = parseInt(parts[1] || "1", 10);
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ callback_query_id: cb.id, text: "Despachando correo semanal..." }),
+        });
+        await handleSendWeekly(wishId, weekNum);
       }
 
       if (data.startsWith("plan:")) {

@@ -163,6 +163,31 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── G) Notificar borrador de correo semanal listo para revisión HITL ───
+    if (body.type === "weekly_email_ready") {
+      const { wishId, email, subject, bodyPreview, weekNumber, totalTokens, totalMinutes } = body;
+
+      const msg =
+        `📝 <b>Borrador Correo Semana ${weekNumber} — Listo para Revisión</b>\n\n` +
+        `👤 <b>Para:</b> ${email}\n` +
+        `📋 <b>Asunto:</b> ${subject}\n` +
+        `⏱ <b>Trabajo acumulado:</b> ${totalMinutes} min (${Number(totalTokens).toLocaleString()} tokens)\n\n` +
+        `📖 <b>Vista previa del contenido:</b>\n` +
+        `<i>${bodyPreview}</i>\n\n` +
+        `¿Deseas autorizar el envío de este correo al usuario?`;
+
+      await sendTelegram(msg, {
+        inline_keyboard: [[
+          { text: "✅ Aprobar y Enviar", callback_data: `send_weekly:${wishId}:${weekNumber}` },
+          { text: "🔍 Ver Detalle", callback_data: `detail:${wishId}` },
+        ]],
+      });
+
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
     // ── D) Callback del botón "Responder" (legacy, redirige al flujo del bot)
     if (body.callback_query) {
       const cb = body.callback_query;

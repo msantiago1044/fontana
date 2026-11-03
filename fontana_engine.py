@@ -588,11 +588,12 @@ def run_demo():
     print("✅ Demostración completada exitosamente sin errores.\n")
 
 
-# ── 5.5 Enviar Correo Semanal y Simulación de Semana ─────────────────────────────
-def send_weekly_email(wish_id: str, week_number: int = 1) -> dict:
+# ── 5.5 Enviar Correo Semanal y Simulación de Semana con HITL ────────────────────
+def prepare_weekly_email(wish_id: str, week_number: int = 1) -> dict:
     """
-    Compila el informe semanal de 7 días y envía el correo de seguimiento al usuario.
-    Registra el envío en email_log y notifica a Telegram.
+    Compila el informe semanal de 7 días y genera el BORRADOR del correo para revisión humana (HITL).
+    Muestra la vista previa y envía alerta con botón de aprobación a Telegram.
+    NO despacha el correo hasta que el operador lo apruebe.
     """
     wish = fetch_wish(wish_id)
     if not wish:
@@ -650,7 +651,59 @@ def send_weekly_email(wish_id: str, week_number: int = 1) -> dict:
         f"La Fuente — Fontana"
     )
 
-    # Enviar vía Edge Function send-email
+    draft = {
+        "wish_id": real_wish_id,
+        "contact_email": contact_email,
+        "week_number": week_number,
+        "subject": subject,
+        "body": body_text,
+        "total_ms": total_ms,
+        "total_tokens": total_tokens,
+        "status": "pending_approval",
+    }
+
+    # Guardar borrador en el deseo para que pueda ser aprobado desde Telegram o CLI
+    update_wish(real_wish_id, {"internal_notes": f"[BORRADOR_CORREO_SEMANA_{week_number}]\nAsunto: {subject}\n\n{body_text}"})
+
+    # Notificar a Telegram con vista previa y botón de aprobación
+    if is_supabase_configured():
+        notif_url = f"{SUPABASE_URL}/functions/v1/notify-telegram"
+        notif_payload = {
+            "type": "weekly_email_ready",
+            "wishId": real_wish_id,
+            "email": contact_email,
+            "subject": subject,
+            "bodyPreview": body_text[:400] + "...",
+            "weekNumber": week_number,
+            "totalTokens": total_tokens,
+            "totalMinutes": total_mins,
+        }
+        http_request(notif_url, method="POST", headers={"Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"}, body=notif_payload)
+
+    return draft
+
+
+def dispatch_weekly_email(wish_id: str, week_number: int = 1, custom_body: str = None, custom_subject: str = None) -> bool:
+    """
+    Despacha efectivamente el correo semanal después de haber sido aprobado por el operador humano.
+    """
+    wish = fetch_wish(wish_id)
+    if not wish:
+        print(f"[ERR] No se encontró el deseo {wish_id}", file=sys.stderr)
+        return False
+
+    real_wish_id = wish["id"]
+    contact_email = wish.get("contact_email", "usuario@fontana.ai")
+
+    # Si no se pasó cuerpo custom, prepararlo
+    if not custom_body or not custom_subject:
+        draft = prepare_weekly_email(real_wish_id, week_number=week_number)
+        subject = custom_subject or draft["subject"]
+        body_text = custom_body or draft["body"]
+    else:
+        subject = custom_subject
+        body_text = custom_body
+
     email_sent = False
     if is_supabase_configured():
         send_url = f"{SUPABASE_URL}/functions/v1/send-email"
@@ -664,8 +717,9 @@ def send_weekly_email(wish_id: str, week_number: int = 1) -> dict:
         st, res = http_request(send_url, method="POST", headers={"Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"}, body=payload)
         email_sent = (st == 200)
 
-    # Respaldo directo en email_log si send-email falló
-    if not email_sent and is_supabase_configured():
+    # Registro en email_log
+    headers = supabase_headers()
+    if is_supabase_configured():
         log_url = f"{SUPABASE_URL}/rest/v1/email_log"
         log_entry = {
             "wish_id": real_wish_id,
@@ -675,8 +729,7 @@ def send_weekly_email(wish_id: str, week_number: int = 1) -> dict:
         }
         http_request(log_url, method="POST", headers=headers, body=log_entry)
 
-    # Notificar a Telegram
-    if is_supabase_configured():
+        # Notificar envío confirmado a Telegram
         notif_url = f"{SUPABASE_URL}/functions/v1/notify-telegram"
         notif_payload = {
             "type": "email_sent",
@@ -687,16 +740,7 @@ def send_weekly_email(wish_id: str, week_number: int = 1) -> dict:
         }
         http_request(notif_url, method="POST", headers={"Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"}, body=notif_payload)
 
-    return {
-        "wish_id": real_wish_id,
-        "contact_email": contact_email,
-        "week_number": week_number,
-        "subject": subject,
-        "body": body_text,
-        "total_ms": total_ms,
-        "total_tokens": total_tokens,
-        "email_sent": email_sent,
-    }
+    return email_sent
 
 
 def simulate_week(wish_id: str, week_number: int = 1) -> dict:
@@ -748,22 +792,25 @@ def simulate_week(wish_id: str, week_number: int = 1) -> dict:
         res = run_daily_session(real_wish_id, day_number=day, previous_handoff=prev_h, wish_data=wish)
         print(f"  • Día {day}/{end_day}: 🚀 Ejecutado en {res['session_duration_ms']} ms ({res['total_tokens']} tokens). Relevo preparado.")
 
-    # Al terminar los 7 días, redactar y enviar el correo semanal
-    print(f"\n✉️ Generando y despachando Correo Semanal de la Semana {week_number}...")
-    email_res = send_weekly_email(real_wish_id, week_number=week_number)
-    print(f"✓ Correo procesado y registrado en email_log.")
-    print(f"  • Asunto: {email_res['subject']}")
-    print(f"  • Destinatario: {email_res['contact_email']}")
-    print(f"\n--- Vista previa del correo semanal ---")
-    print(email_res['body'])
+    # Al terminar los 7 días, preparar el borrador del correo semanal para revisión HITL
+    print(f"\n📝 Generando BORRADOR de Correo Semanal (Semana {week_number}) para revisión humana...")
+    draft = prepare_weekly_email(real_wish_id, week_number=week_number)
+    print(f"✓ Borrador preparado y notificado a Telegram.")
+    print(f"  • Asunto: {draft['subject']}")
+    print(f"  • Destinatario: {draft['contact_email']}")
+    print(f"\n--- Vista previa del borrador propuesto ---")
+    print(draft['body'])
     print("-" * 60)
 
     # Balance de la semana
     print(f"\n📊 Balance de cómputo de la Semana {week_number}:")
-    print(f"  • Tiempo total IA: {email_res['total_ms']:,} ms ({email_res['total_ms']/1000.0:.2f} segundos)")
-    print(f"  • Tokens totales:  {email_res['total_tokens']:,} tokens")
+    print(f"  • Tiempo total IA: {draft['total_ms']:,} ms ({draft['total_ms']/1000.0:.2f} segundos)")
+    print(f"  • Tokens totales:  {draft['total_tokens']:,} tokens")
+    print(f"\n⏸️ ESPERANDO REVISIÓN HUMANA (Human-In-The-Loop):")
+    print(f"  • Pulsa [ ✅ Aprobar y Enviar ] en Telegram, o")
+    print(f"  • Ejecuta en terminal: python fontana_engine.py send-email {real_wish_id[:8]} --week {week_number}")
     print(f"=" * 70 + "\n")
-    return email_res
+    return draft
 
 
 # ── 6. Escaneo y Daemon de Ejecución Periódica ──────────────────────────────────
@@ -949,9 +996,14 @@ def main():
     p_app.add_argument("--notes", type=str, default=None, help="Notas de revisión humana opcionales")
 
     # Comando: simulate-week <wish_id> [--week N]
-    p_sim = subparsers.add_parser("simulate-week", help="Simula los 7 días de una semana y envía el correo semanal de seguimiento")
+    p_sim = subparsers.add_parser("simulate-week", help="Simula los 7 días de una semana y prepara el borrador semanal para revisión")
     p_sim.add_argument("wish_id", help="UUID o prefijo del deseo")
     p_sim.add_argument("--week", type=int, default=1, help="Número de semana a simular (1 a 4, defecto: 1)")
+
+    # Comando: send-email <wish_id> [--week N]
+    p_se = subparsers.add_parser("send-email", help="Despacha el correo semanal tras tu aprobación humana")
+    p_se.add_argument("wish_id", help="UUID o prefijo del deseo")
+    p_se.add_argument("--week", type=int, default=1, help="Número de semana (defecto: 1)")
 
     # Comando: balance <wish_id>
     p_bal = subparsers.add_parser("balance", help="Consulta métricas de tiempo, tokens y costo financiero")
@@ -1004,6 +1056,11 @@ def main():
 
     elif args.command == "simulate-week":
         simulate_week(args.wish_id, week_number=args.week)
+
+    elif args.command == "send-email":
+        print(f"🚀 Despachando correo semanal para {args.wish_id} (Semana {args.week})...")
+        ok = dispatch_weekly_email(args.wish_id, week_number=args.week)
+        print(f"✓ Correo procesado, registrado en email_log y notificado a Telegram.")
 
     elif args.command == "balance":
         bal = get_balance(args.wish_id)
