@@ -29,6 +29,19 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
+# ── Cargar variables desde .env si existe ─────────────────────────────────────────
+env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+if os.path.exists(env_path):
+    try:
+        with open(env_path, "r", encoding="utf-8") as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if _line and not _line.startswith("#") and "=" in _line:
+                    _k, _v = _line.split("=", 1)
+                    os.environ.setdefault(_k.strip(), _v.strip())
+    except Exception:
+        pass
+
 # ── Configuración y Variables de Entorno ─────────────────────────────────────────
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "") or os.environ.get("SUPABASE_KEY", "")
@@ -570,14 +583,145 @@ def run_demo():
     print("✅ Demostración completada exitosamente sin errores.\n")
 
 
-# ── 6. Daemon de Ejecución Periódica ─────────────────────────────────────────────
+# ── 6. Escaneo y Daemon de Ejecución Periódica ──────────────────────────────────
+def scan_and_process_active_wishes() -> dict:
+    """
+    Escanea todos los deseos con status='active' en Supabase:
+      1. Si no tiene plan: genera el Plan Maestro de 30 Días y lo notifica a Telegram con botón de aprobación.
+      2. Si está en 'pending_review': espera aprobación humana (HITL).
+      3. Si está en 'approved':
+         - Determina el día del ciclo actual (1 a 30).
+         - Si ese día no tiene registro en ai_daily_work, ejecuta la sesión diaria con el relevo del día previo.
+    """
+    if not is_supabase_configured():
+        print("[SCAN] Supabase no está configurado (revisa .env).", file=sys.stderr)
+        return {"plans_generated": 0, "daily_sessions_run": 0}
+
+    headers = supabase_headers()
+    url = f"{SUPABASE_URL}/rest/v1/wishes?status=eq.active&select=*"
+    status, wishes = http_request(url, headers=headers)
+    if status != 200 or not isinstance(wishes, list):
+        print(f"[SCAN ERR] Error consultando deseos activos: {wishes}", file=sys.stderr)
+        return {"plans_generated": 0, "daily_sessions_run": 0}
+
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Escaneando {len(wishes)} deseo(s) activo(s) en Supabase...")
+    plans_gen = 0
+    daily_run = 0
+    now_utc = datetime.now(timezone.utc)
+
+    for w in wishes:
+        wish_id = w["id"]
+        contact = w.get("contact_email", "")
+        plan_status = w.get("plan_status")
+        plan_30d = w.get("plan_30d")
+
+        # ── Caso 1: Deseo sin plan generado ───────────────────────────────────────
+        if not plan_30d or not plan_status:
+            print(f"  • 📋 Deseo {wish_id[:8]} ({contact}): Sin plan maestro. Generando...")
+            res = generate_plan(wish_id, wish_data=w)
+            print(f"    ✓ Plan generado en {res['plan_generation_ms']} ms ({res['plan_tokens']} tokens). Notificado a Telegram.")
+            plans_gen += 1
+            continue
+
+        # ── Caso 2: Plan generado esperando revisión humana ──────────────────────
+        if plan_status == "pending_review":
+            print(f"  • ⏳ Deseo {wish_id[:8]} ({contact}): PENDING_REVIEW (esperando aprobación HITL en Telegram / CLI).")
+            continue
+
+        # ── Caso 3: Plan aprobado -> Trabajar sesión diaria del día actual ────────
+        if plan_status == "approved":
+            started_at_str = w.get("cycle_started_at")
+            if started_at_str:
+                try:
+                    started_dt = datetime.fromisoformat(started_at_str.replace("Z", "+00:00"))
+                    days_elapsed = max(1, min(30, (now_utc - started_dt).days + 1))
+                except Exception:
+                    days_elapsed = 1
+            else:
+                days_elapsed = 1
+
+            # Verificar si hoy ya fue procesado
+            check_url = f"{SUPABASE_URL}/rest/v1/ai_daily_work?wish_id=eq.{wish_id}&day_number=eq.{days_elapsed}&select=id"
+            chk_status, chk_data = http_request(check_url, headers=headers)
+            already_done = chk_status == 200 and isinstance(chk_data, list) and len(chk_data) > 0
+
+            if already_done:
+                print(f"  • ✅ Deseo {wish_id[:8]} ({contact}): Sesión Día {days_elapsed}/30 ya completada.")
+            else:
+                print(f"  • 🚀 Deseo {wish_id[:8]} ({contact}): Ejecutando sesión Día {days_elapsed}/30...")
+                # Buscar handoff del último día registrado
+                h_url = f"{SUPABASE_URL}/rest/v1/ai_daily_work?wish_id=eq.{wish_id}&order=day_number.desc&limit=1&select=tomorrow_handoff"
+                _, h_data = http_request(h_url, headers=headers)
+                prev_handoff = None
+                if isinstance(h_data, list) and len(h_data) > 0:
+                    prev_handoff = h_data[0].get("tomorrow_handoff")
+
+                sess_res = run_daily_session(wish_id, day_number=days_elapsed, previous_handoff=prev_handoff, wish_data=w)
+                print(f"    ✓ Día {days_elapsed} completado en {sess_res['session_duration_ms']} ms ({sess_res['total_tokens']} tokens). Relevo listo.")
+                daily_run += 1
+
+    return {"plans_generated": plans_gen, "daily_sessions_run": daily_run}
+
+
+def create_test_wish(email: str = "test@fontana.ai", wish_text: str = None, category: str = "Emprendimiento") -> dict:
+    """Crea un deseo de prueba real en Supabase con status='active' para activar el flujo de inmediato."""
+    if not is_supabase_configured():
+        print("[ERROR] Supabase no está configurado (revisa .env).", file=sys.stderr)
+        return {}
+
+    wish_text = wish_text or "Quiero lanzar mi podcast de innovación y conseguir mis primeros 500 oyentes recurrentes en 30 días."
+    headers = supabase_headers()
+
+    # 1. Buscar perfil
+    prof_url = f"{SUPABASE_URL}/rest/v1/profiles?email=eq.{email}&select=id"
+    st, data = http_request(prof_url, headers=headers)
+    user_id = None
+    if st == 200 and isinstance(data, list) and len(data) > 0:
+        user_id = data[0]["id"]
+    else:
+        # Tomar cualquier perfil existente en la tabla profiles
+        p_all_url = f"{SUPABASE_URL}/rest/v1/profiles?select=id&limit=1"
+        _, p_data = http_request(p_all_url, headers=headers)
+        if isinstance(p_data, list) and len(p_data) > 0:
+            user_id = p_data[0]["id"]
+
+    if not user_id:
+        print("[ERROR] No se encontró ningún perfil en la tabla 'profiles'.", file=sys.stderr)
+        return {}
+
+    # 2. Insertar deseo activo
+    now_iso = datetime.now(timezone.utc).isoformat()
+    new_wish = {
+        "user_id": user_id,
+        "contact_email": email,
+        "category": category,
+        "wish_text": wish_text,
+        "status": "active",
+        "amount_usd": 1.00,
+        "cycle_started_at": now_iso,
+    }
+    w_url = f"{SUPABASE_URL}/rest/v1/wishes"
+    st, res = http_request(w_url, method="POST", headers=headers, body=new_wish)
+    if st in (200, 201) and isinstance(res, list) and len(res) > 0:
+        created = res[0]
+        print(f"\n🎉 ¡Deseo de prueba creado exitosamente en Supabase!")
+        print(f"  • ID: {created['id']}")
+        print(f"  • Contacto: {email}")
+        print(f"  • Deseo: \"{wish_text}\"")
+        print(f"  • Estado: active\n")
+        return created
+    else:
+        print(f"[ERROR] No se pudo crear el deseo: {res}", file=sys.stderr)
+        return {}
+
+
 def daemon_loop(interval: int = 3600):
     """Bucle continuo para revisar deseos activos que requieran plan o sesión diaria."""
-    print(f"[DAEMON] Iniciando Fontana Engine Daemon (intervalo: {interval}s)...")
+    print(f"\n[DAEMON] 🛡️ Fontana Engine Daemon iniciado (intervalo de escaneo: {interval}s).")
+    print("[DAEMON] Presiona Ctrl+C en cualquier momento para detener.\n")
     while True:
         try:
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Escaneando deseos activos...")
-            # En producción, consulta deseos activos sin plan o pendientes de sesión diaria
+            scan_and_process_active_wishes()
         except KeyboardInterrupt:
             print("\n[DAEMON] Detenido por el usuario.")
             break
@@ -596,6 +740,15 @@ def main():
 
     # Comando: demo
     subparsers.add_parser("demo", help="Ejecuta una simulación completa autocontenida de punta a punta")
+
+    # Comando: scan
+    subparsers.add_parser("scan", help="Escanea y procesa deseos activos de Supabase inmediatamente")
+
+    # Comando: test-wish
+    p_test = subparsers.add_parser("test-wish", help="Crea un deseo de prueba real en Supabase para activar el flujo")
+    p_test.add_argument("--email", default="test@fontana.ai", help="Email del usuario de prueba")
+    p_test.add_argument("--text", default=None, help="Texto del deseo")
+    p_test.add_argument("--category", default="Emprendimiento", help="Categoría del deseo")
 
     # Comando: plan <wish_id>
     p_plan = subparsers.add_parser("plan", help="Genera el Plan Maestro de 30 Días para un deseo")
@@ -630,7 +783,18 @@ def main():
         run_demo()
         sys.exit(0)
 
-    if args.command == "plan":
+    if args.command == "scan":
+        print("🔍 Ejecutando escaneo manual de deseos en Supabase...")
+        res = scan_and_process_active_wishes()
+        print(f"✓ Escaneo finalizado: {res['plans_generated']} planes generados, {res['daily_sessions_run']} sesiones corridas.")
+
+    elif args.command == "test-wish":
+        w = create_test_wish(email=args.email, wish_text=args.text, category=args.category)
+        if w and "id" in w:
+            print("🚀 Procesando inmediatamente el nuevo deseo...")
+            scan_and_process_active_wishes()
+
+    elif args.command == "plan":
         print(f"🚀 Generando Plan Maestro de 30 Días para: {args.wish_id}...")
         res = generate_plan(args.wish_id)
         print(f"✓ Plan generado en {res['plan_generation_ms']} ms ({res['plan_tokens']} tokens).")
