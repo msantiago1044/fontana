@@ -1172,10 +1172,14 @@ def scan_and_process_active_wishes(step_per_scan: bool = False, only_test: bool 
             plan_30d = w["plan_30d"]
             plan_status = w["plan_status"]
 
-        # ── Caso 2: Plan generado esperando revisión humana ──────────────────────
+        # ── Caso 2: Plan previo en pending_review -> Auto-aprobar automáticamente ─
         if plan_status == "pending_review":
-            print(f"  • ⏳ Deseo {wish_id[:8]} ({contact}): PENDING_REVIEW (esperando aprobación HITL en Telegram / CLI).")
-            continue
+            now_iso = datetime.now(timezone.utc).isoformat()
+            print(f"  • ✅ Deseo {wish_id[:8]} ({contact}): Auto-aprobando plan previo...")
+            if is_supabase_configured():
+                update_wish(wish_id, {"plan_status": "approved", "plan_approved_at": now_iso})
+            w["plan_status"] = "approved"
+            plan_status = "approved"
 
         # ── Caso 3: Plan aprobado -> Trabajar sesión diaria del día actual ────────
         if plan_status == "approved":
@@ -1254,7 +1258,7 @@ def create_test_wish(email: str = "test@fontana.ai", wish_text: str = None, cate
             "contact_email": email,
             "status": "active",
             "plan_30d": None,
-            "plan_status": "pending_review",
+            "plan_status": None,
             "cycle_started_at": now_iso
         }
         u_url = f"{SUPABASE_URL}/rest/v1/wishes?id=eq.{existing_id}"
