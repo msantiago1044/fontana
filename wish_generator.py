@@ -23,6 +23,8 @@ from fontana_engine import (
     supabase_headers,
 )
 
+DEFAULT_CONTACT_EMAIL = "marcelobarrazasan@gmail.com"
+
 SAMPLE_WISHES = [
     ("Emprendimiento", "Quiero conseguir mis primeros 10 clientes recurrentes para mi servicio de diseño web en 30 días."),
     ("Finanzas", "Quiero organizar mis finanzas personales, eliminar gastos hormiga y ahorrar mis primeros $500 USD este mes."),
@@ -79,24 +81,27 @@ def _create_synthetic_user(email: str, full_name: str) -> str:
     return user_id
 
 
-def create_generated_wish(auto_approve: bool = False) -> dict:
+def create_generated_wish(
+    auto_approve: bool = False,
+    contact_email: str = DEFAULT_CONTACT_EMAIL,
+) -> dict:
     """Create a fresh synthetic user and insert a brand-new active wish in Supabase."""
     if not is_supabase_configured():
         raise RuntimeError("Supabase no está configurado en .env.")
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     suffix = uuid.uuid4().hex[:6]
-    email = f"sim.{stamp}.{suffix}@fontana.test"
+    auth_email = f"sim.{stamp}.{suffix}@fontana.test"
     full_name = f"Tester Fontana {suffix.upper()}"
     category, base_wish = random.choice(SAMPLE_WISHES)
     wish_text = f"{base_wish} [Lote prueba {stamp}-{suffix}]"
 
-    user_id = _create_synthetic_user(email=email, full_name=full_name)
+    user_id = _create_synthetic_user(email=auth_email, full_name=full_name)
     now_iso = datetime.now(timezone.utc).isoformat()
 
     payload = {
         "user_id": user_id,
-        "contact_email": email,
+        "contact_email": contact_email,
         "category": category,
         "wish_text": wish_text,
         "status": "active",
@@ -114,7 +119,7 @@ def create_generated_wish(auto_approve: bool = False) -> dict:
 
     created = res[0]
     now_local = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{now_local}] 🌱 Nuevo deseo generado: {created['id'][:8]} ({email}) [{category}]")
+    print(f"[{now_local}] 🌱 Nuevo deseo generado: {created['id'][:8]} (correo: {contact_email} | perfil: {auth_email}) [{category}]")
     print(f"    \"{_truncate(wish_text, 90)}\"")
     return created
 
@@ -148,9 +153,14 @@ def cleanup_synthetic_wishes() -> int:
     return deleted
 
 
-def generator_loop(interval: int = 600, initial_delay: int = 0, auto_approve: bool = False):
+def generator_loop(
+    interval: int = 600,
+    initial_delay: int = 0,
+    auto_approve: bool = False,
+    contact_email: str = DEFAULT_CONTACT_EMAIL,
+):
     """Run periodic wish generation using monotonic timing to stay synced ahead of the daemon."""
-    print(f"\n[GENERATOR] 🪙 Generador automático iniciado (intervalo: {interval}s, desfase inicial: {initial_delay}s).")
+    print(f"\n[GENERATOR] 🪙 Generador automático iniciado (intervalo: {interval}s, desfase inicial: {initial_delay}s, contacto: {contact_email}).")
     print("[GENERATOR] Presiona Ctrl+C en cualquier momento para detener.\n")
 
     if initial_delay > 0:
@@ -164,7 +174,7 @@ def generator_loop(interval: int = 600, initial_delay: int = 0, auto_approve: bo
     next_run = time.monotonic()
     while True:
         try:
-            create_generated_wish(auto_approve=auto_approve)
+            create_generated_wish(auto_approve=auto_approve, contact_email=contact_email)
         except KeyboardInterrupt:
             print("\n[GENERATOR] Detenido por el usuario.")
             break
@@ -197,11 +207,13 @@ def main():
 
     p_once = sub.add_parser("once", help="Genera un único deseo de prueba inmediatamente")
     p_once.add_argument("--auto-approve", action="store_true", help="Marca el plan como aprobado al crear el deseo")
+    p_once.add_argument("--email", default=DEFAULT_CONTACT_EMAIL, help=f"Correo de contacto del deseo (defecto: {DEFAULT_CONTACT_EMAIL})")
 
     p_run = sub.add_parser("run", help="Genera deseos periódicamente en bucle")
     p_run.add_argument("--interval", type=int, default=600, help="Intervalo en segundos (defecto: 600 = 10 min)")
     p_run.add_argument("--initial-delay", type=int, default=0, help="Espera inicial en segundos (defecto: 0)")
     p_run.add_argument("--auto-approve", action="store_true", help="Marca el plan como aprobado al crear el deseo")
+    p_run.add_argument("--email", default=DEFAULT_CONTACT_EMAIL, help=f"Correo de contacto del deseo (defecto: {DEFAULT_CONTACT_EMAIL})")
 
     sub.add_parser("cleanup", help="Elimina todos los usuarios y deseos sintéticos (@fontana.test)")
 
@@ -211,12 +223,13 @@ def main():
         sys.exit(0)
 
     if args.command == "once":
-        create_generated_wish(auto_approve=args.auto_approve)
+        create_generated_wish(auto_approve=args.auto_approve, contact_email=args.email)
     elif args.command == "run":
         generator_loop(
             interval=args.interval,
             initial_delay=args.initial_delay,
             auto_approve=args.auto_approve,
+            contact_email=args.email,
         )
     elif args.command == "cleanup":
         cleanup_synthetic_wishes()
