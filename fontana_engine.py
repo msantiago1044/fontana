@@ -445,19 +445,29 @@ def run_daily_session(wish_id: str, day_number: int, previous_handoff: str | Non
         "Devuelve estrictamente un objeto JSON válido."
     )
 
-    # Incorporar retroalimentación previa del cliente si existe
+    # Incorporar retroalimentación previa del cliente si existe (calibración obligatoria para los próximos días)
     client_feedback = wish_data.get("client_feedback") or []
     feedback_context = ""
     if isinstance(client_feedback, list) and len(client_feedback) > 0:
-        latest_fb = client_feedback[-1]
-        fb_week = latest_fb.get("week", 1)
-        fb_rating = latest_fb.get("rating", "neutral")
-        fb_comment = latest_fb.get("comment", "")
+        fb_lines = []
+        for fb in client_feedback[-3:]:
+            if isinstance(fb, dict):
+                fb_w = fb.get("week", "?")
+                fb_r = fb.get("rating", "neutral")
+                fb_c = (fb.get("comment") or "").strip()
+                fb_lines.append(f"  - Semana {fb_w} [{fb_r}]: \"{fb_c or 'Sin nota adicional'}\"")
+        latest_fb = client_feedback[-1] if isinstance(client_feedback[-1], dict) else {}
+        latest_rating = latest_fb.get("rating", "neutral")
+        urgency = (
+            "AJUSTE PRIORITARIO DE RUMBO: El usuario expresó inconformidad o dudas. "
+            "Cambia de enfoque, simplifica o corrige lo que pidió en el comentario y refléjalo tanto en user_deliverable como en tomorrow_handoff."
+            if latest_rating in ("negative", "neutral")
+            else "CONTINUIDAD POSITIVA: Mantén el enfoque que funcionó bien e incorpora cualquier matiz de su nota."
+        )
         feedback_context = (
-            f"\nRETROALIMENTACIÓN DIRECTA DEL CLIENTE (Semana {fb_week}):\n"
-            f"- Percepción: {fb_rating}\n"
-            f"- Nota del usuario: \"{fb_comment or 'Sin nota adicional'}\"\n"
-            f"INSTRUCCIÓN: Adapta el recurso de hoy para atender directamente estas observaciones.\n"
+            "\nRETROALIMENTACIÓN DIRECTA DEL CLIENTE (historial reciente):\n"
+            + "\n".join(fb_lines)
+            + f"\nINSTRUCCIÓN OBLIGATORIA: {urgency}\n"
         )
 
     profile_str = f" | Perfil: {identity_name} ({identity_age} años)" if (identity_name or identity_age) else ""
@@ -811,6 +821,16 @@ def prepare_weekly_email(wish_id: str, week_number: int = 1) -> dict:
 
     # 1. Generar cuerpo estratégico con IA (CERO mención a tokens, cómputo ni contenido interno de red)
     subject = f"Fontana | Tu kit digital de la Semana {week_number} y próximos pasos 🪙"
+    client_feedback = wish.get("client_feedback") or []
+    fb_prompt_block = ""
+    if isinstance(client_feedback, list) and len(client_feedback) > 0:
+        latest_fb = client_feedback[-1] if isinstance(client_feedback[-1], dict) else {}
+        fb_prompt_block = (
+            f"Retroalimentación reciente del usuario (Semana {latest_fb.get('week', '?')} - {latest_fb.get('rating', 'neutral')}): "
+            f"\"{latest_fb.get('comment') or 'Sin comentario adicional'}\"\n"
+            f"(Ten en cuenta esta percepción al explicar el balance y los ajustes de la Semana {week_number + 1}.)\n\n"
+        )
+
     prompt = (
         f"Redacta el cuerpo de un correo semanal de acompañamiento de Fontana para un usuario.\n"
         f"Deseo del usuario: \"{wish.get('wish_text', '')}\"\n"
@@ -818,6 +838,7 @@ def prepare_weekly_email(wish_id: str, week_number: int = 1) -> dict:
         f"Semana concluida: Semana {week_number} ([{curr_goal.get('focus', 'Consolidación')}])\n"
         f"Meta de la Semana {week_number}: {curr_goal.get('goal', 'Avance de la fase actual')}\n"
         f"Recursos digitales trabajados esta semana:\n{resources_context}\n\n"
+        f"{fb_prompt_block}"
         f"Meta de la Semana {week_number + 1} entrante: [{next_goal.get('focus', 'Siguiente Fase')}] -> {next_goal.get('goal', 'Continuación del plan')}\n\n"
         f"REGLAS ESTRICTAS DE COMUNICACIÓN:\n"
         f"1. CERO mención a tokens, minutos de análisis, IA, modelo LLM, cómputo ni costos técnicos.\n"
