@@ -1301,6 +1301,20 @@
               <div class="empty-state">No se ha formulado el plan de 30 días aún.</div>
             `}
 
+            ${wish.plan_status !== 'approved' ? `
+              <div style="background: rgba(243, 156, 18, 0.08); border: 1px solid rgba(243, 156, 18, 0.3); border-radius: 8px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                <div>
+                  <div style="font-weight: 700; color: var(--gold); font-size: 13px;">⚠️ Plan Pendiente de Revisión y Aprobación Humana (HITL)</div>
+                  <div style="font-size: 12px; color: var(--ivory-dim); margin-top: 2px;">
+                    Al aprobarlo, el motor autónomo continuará inmediatamente con la ejecución de las 30 sesiones diarias.
+                  </div>
+                </div>
+                <button class="btn-fontana btn-fontana-gold" onclick="approvePlan('${wish.id}', this)">
+                  <span>✅</span> Aprobar Plan Maestro Ahora
+                </button>
+              </div>
+            ` : ''}
+
             <div style="background: var(--stone); border: 1px solid var(--border-soft); border-radius: 8px; padding: 14px 18px; display: flex; gap: 20px; font-size: 12px; color: var(--ivory-dim); flex-wrap: wrap;">
               <span>⏱️ Tiempo de formulación: <strong>${(wish.plan_generation_ms || 0).toLocaleString()} ms</strong></span>
               <span>⚡ Tokens invertidos: <strong>${(wish.plan_tokens || 0).toLocaleString()}</strong></span>
@@ -1389,12 +1403,16 @@
             <div class="email-reading-box" id="active-draft-box">${escapeHtml(draftBody || rawDraft)}</div>
 
             <div class="email-action-row">
-              <button class="btn-fontana" onclick="copyToClipboard(document.getElementById('active-draft-box').innerText, this)">
-                <span>📋</span> Copiar Contenido Completo del Correo
-              </button>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-fontana btn-fontana-gold" onclick="approveAndSendWeeklyEmail('${wish.id}', this)" id="btn-approve-send-draft">
+                  <span>🚀</span> Aprobar y Despachar Correo al Cliente
+                </button>
+                <button class="btn-fontana" onclick="copyToClipboard(document.getElementById('active-draft-box').innerText, this)">
+                  <span>📋</span> Copiar Contenido
+                </button>
+              </div>
               <div style="font-size: 12px; color: var(--gold);">
-                💡 Para aprobar y despachar, usa el botón <strong>[ ✅ Aprobar y Enviar ]</strong> en Telegram o ejecuta:
-                <code style="background: var(--night-2); padding: 3px 6px; border-radius: 4px; font-family: var(--mono); color: var(--ivory);">python fontana_engine.py send-email ${wish.id.slice(0, 8)} --week 1</code>
+                💡 Sincronizado: Al hacer clic aquí o en Telegram, el correo se envía de inmediato a ${escapeHtml(wish.contact_email)}.
               </div>
             </div>
           </div>
@@ -1440,9 +1458,41 @@
       const tabEmailsHtml = `
         <div class="tab-pane" id="tab-emails">
           <h3 class="section-heading">
-            <span>✉️</span> Borrador Semanal para Aprobación
+            <span>✉️</span> Borrador Semanal para Aprobación (HITL)
           </h3>
           ${draftCardHtml}
+
+          <!-- Formulario de Respuesta Manual (Paridad con comando /responder de Telegram) -->
+          <div class="email-card" style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleManualReplyForm()">
+              <div style="font-size: 14px; font-weight: 600; color: var(--gold); display: flex; align-items: center; gap: 8px;">
+                <span>✉️</span> Redactar y Enviar Mensaje Manual al Cliente
+              </div>
+              <span id="reply-toggle-icon" style="font-size: 12px; color: var(--ivory-dim);">▼ Desplegar</span>
+            </div>
+            <div id="manual-reply-form" style="display: none; flex-direction: column; gap: 12px; margin-top: 14px;">
+              <div class="form-group">
+                <label>Asunto del Correo</label>
+                <input type="text" id="manual-reply-subject" class="form-input" placeholder="Ej. Acompañamiento Fontana | Actualización..." value="Fontana | Mensaje de acompañamiento" />
+              </div>
+              <div class="form-group">
+                <label>Cuerpo del Mensaje (Tono mentor ejecutivo — Privacidad: Cero tokens ni costos)</label>
+                <textarea id="manual-reply-body" class="form-input" style="height: 130px; resize: vertical; line-height: 1.5;" placeholder="Escribe el mensaje para ${escapeHtml(wish.contact_email)}..."></textarea>
+              </div>
+              <div style="display: flex; justify-content: flex-end;">
+                <button class="btn-fontana btn-fontana-gold" onclick="sendManualReply('${wish.id}', '${escapeHtml(wish.contact_email)}', this)">
+                  <span>📨</span> Despachar Correo Ahora
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <h3 class="section-heading" style="margin-top: 24px;">
+            <span>📬</span> Historial de Correos Despachados (${emails.length})
+          </h3>
+          ${emailsListHtml}
+        </div>
+      `;
 
           <h3 class="section-heading" style="margin-top: 24px;">
             <span>📬</span> Historial de Correos Despachados (${emails.length})
@@ -1698,6 +1748,230 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+    }
+
+    // ── Acciones de Administración (Paridad total con Telegram Bot) ───────────
+    async function approvePlan(wishId, btn) {
+      if (!confirm("¿Deseas aprobar este Plan Maestro de 30 Días para que el motor autónomo inicie las sesiones?")) return;
+      const origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Aprobando Plan...';
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/wishes?id=eq.${wishId}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': adminToken,
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            plan_status: 'approved',
+            plan_approved_at: new Date().toISOString()
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || 'Error al aprobar el plan en Supabase');
+        }
+
+        // Notificar a Telegram para mantener sincronización bilateral
+        await fetch(`${SUPABASE_URL}/functions/v1/notify-telegram`, {
+          method: 'POST',
+          headers: {
+            'apikey': adminToken,
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'custom_alert',
+            text: `✅ <b>Plan Maestro de 30 días aprobado desde Mission Control</b>\n🆔 <code>${wishId.slice(0, 8)}</code>\nEl motor autónomo continuará con las sesiones diarias.`
+          })
+        }).catch(() => null);
+
+        btn.innerHTML = '<span>✓</span> ¡Plan Aprobado con Éxito!';
+        setTimeout(() => {
+          fetchData();
+          selectWish(wishId);
+        }, 1000);
+      } catch (err) {
+        alert("Error al aprobar plan: " + err.message);
+        btn.disabled = false;
+        btn.innerHTML = origText;
+      }
+    }
+
+    async function approveAndSendWeeklyEmail(wishId, btn) {
+      const wish = allWishes.find(w => w.id === wishId);
+      if (!wish) return;
+
+      let draftSubject = 'Reporte Estratégico Semanal | Fontana';
+      let draftBody = '';
+      if (wish.internal_notes && wish.internal_notes.includes('[BORRADOR_CORREO_')) {
+        const subjMatch = wish.internal_notes.match(/Asunto:\s*([^\n]+)/i);
+        if (subjMatch) {
+          draftSubject = subjMatch[1].trim();
+          draftBody = wish.internal_notes.replace(/\[BORRADOR_CORREO_[^\]]+\]\s*Asunto:\s*[^\n]+\n+/i, '').trim();
+        } else {
+          draftBody = wish.internal_notes.replace(/\[BORRADOR_CORREO_[^\]]+\]\s*/i, '').trim();
+        }
+      }
+
+      if (!draftBody) {
+        alert("No se encontró cuerpo de borrador para enviar.");
+        return;
+      }
+
+      if (!confirm(`¿Confirmas el despacho de este reporte semanal a ${wish.contact_email}?`)) return;
+
+      const origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Despachando a ' + wish.contact_email + '...';
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: {
+            'apikey': adminToken,
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'manual_reply',
+            to: wish.contact_email,
+            subject: draftSubject,
+            body: draftBody,
+            wishId: wish.id
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.text();
+          throw new Error(`Error en send-email: ${err}`);
+        }
+
+        // Limpiar o actualizar internal_notes en Supabase
+        await fetch(`${SUPABASE_URL}/rest/v1/wishes?id=eq.${wishId}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': adminToken,
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            internal_notes: `[DESPACHADO ${new Date().toISOString()}] Asunto: ${draftSubject}`
+          })
+        });
+
+        // Notificar a Telegram
+        await fetch(`${SUPABASE_URL}/functions/v1/notify-telegram`, {
+          method: 'POST',
+          headers: {
+            'apikey': adminToken,
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'email_sent',
+            wishId: wish.id,
+            email: wish.contact_email,
+            subject: draftSubject,
+            emailType: 'Reporte Semanal (Aprobado desde Mission Control)'
+          })
+        }).catch(() => null);
+
+        btn.innerHTML = '<span>✓</span> ¡Correo Despachado con Éxito!';
+        setTimeout(() => {
+          fetchData();
+          selectWish(wishId);
+        }, 1200);
+      } catch (err) {
+        alert("Error al despachar el correo: " + err.message);
+        btn.disabled = false;
+        btn.innerHTML = origText;
+      }
+    }
+
+    function toggleManualReplyForm() {
+      const form = document.getElementById('manual-reply-form');
+      const icon = document.getElementById('reply-toggle-icon');
+      if (form.style.display === 'none' || !form.style.display) {
+        form.style.display = 'flex';
+        if (icon) icon.textContent = '▲ Contraer';
+      } else {
+        form.style.display = 'none';
+        if (icon) icon.textContent = '▼ Desplegar';
+      }
+    }
+
+    async function sendManualReply(wishId, contactEmail, btn) {
+      const subjectInput = document.getElementById('manual-reply-subject');
+      const bodyInput = document.getElementById('manual-reply-body');
+      const subject = subjectInput ? subjectInput.value.trim() : '';
+      const body = bodyInput ? bodyInput.value.trim() : '';
+
+      if (!subject || !body) {
+        alert("Por favor completa el asunto y el mensaje.");
+        return;
+      }
+
+      if (!confirm(`¿Deseas enviar este mensaje a ${contactEmail}?`)) return;
+
+      const origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Enviando correo...';
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: {
+            'apikey': adminToken,
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'manual_reply',
+            to: contactEmail,
+            subject: subject,
+            body: body,
+            wishId: wishId
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.text();
+          throw new Error(`Error en send-email: ${err}`);
+        }
+
+        // Notificar a Telegram
+        await fetch(`${SUPABASE_URL}/functions/v1/notify-telegram`, {
+          method: 'POST',
+          headers: {
+            'apikey': adminToken,
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'email_sent',
+            wishId: wishId,
+            email: contactEmail,
+            subject: subject,
+            emailType: 'Respuesta Manual (Desde Mission Control)'
+          })
+        }).catch(() => null);
+
+        btn.innerHTML = '<span>✓</span> ¡Mensaje Despachado!';
+        if (bodyInput) bodyInput.value = '';
+        setTimeout(() => {
+          selectWish(wishId);
+        }, 1200);
+      } catch (err) {
+        alert("Error al enviar el mensaje: " + err.message);
+        btn.disabled = false;
+        btn.innerHTML = origText;
+      }
     }
 
     // Comprobación de sesión existente
