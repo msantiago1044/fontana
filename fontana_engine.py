@@ -533,10 +533,10 @@ def run_daily_session(wish_id: str, day_number: int, previous_handoff: str | Non
     if is_supabase_configured():
         record_daily_work(record)
 
-    # Automatización de cierre semanal (Días 7, 14, 21 y 28)
+    # Automatización de cierre semanal (Días 7, 14, 21 y 28) — envío automático sin HITL ni Telegram
     if day_number in (7, 14, 21, 28):
-        print(f"\n📢 [SEMANA {week_number}] ¡Día {day_number} completado! Compilando compendio semanal y notificando a Telegram para aprobación humana (HITL)...")
-        prepare_weekly_email(real_wish_id, week_number=week_number)
+        print(f"\n📢 [SEMANA {week_number}] ¡Día {day_number} completado! Compilando y enviando correo semanal automáticamente...")
+        dispatch_weekly_email(real_wish_id, week_number=week_number)
 
     return record
 
@@ -882,26 +882,8 @@ def prepare_weekly_email(wish_id: str, week_number: int = 1) -> dict:
         "body": full_body,
         "total_ms": total_ms,
         "total_tokens": total_tokens,
-        "status": "pending_approval",
+        "status": "approved",
     }
-
-    # Guardar borrador en el deseo para que pueda ser aprobado desde Telegram o CLI
-    update_wish(real_wish_id, {"internal_notes": f"[BORRADOR_CORREO_SEMANA_{week_number}]\nAsunto: {subject}\n\n{full_body}"})
-
-    # Notificar a Telegram con vista previa y botón de aprobación
-    if is_supabase_configured():
-        notif_url = f"{SUPABASE_URL}/functions/v1/notify-telegram"
-        notif_payload = {
-            "type": "weekly_email_ready",
-            "wishId": real_wish_id,
-            "email": contact_email,
-            "subject": subject,
-            "bodyPreview": full_body[:500] + "...",
-            "weekNumber": week_number,
-            "totalTokens": total_tokens,
-            "totalMinutes": total_mins,
-        }
-        http_request(notif_url, method="POST", headers={"Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"}, body=notif_payload)
 
     return draft
 
@@ -940,7 +922,7 @@ def dispatch_weekly_email(wish_id: str, week_number: int = 1, custom_body: str =
         st, res = http_request(send_url, method="POST", headers={"Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"}, body=payload)
         email_sent = (st == 200)
 
-    # Registro en email_log
+    # Registro en email_log y limpieza de borrador pendiente (sin notificar a Telegram)
     headers = supabase_headers()
     if is_supabase_configured():
         log_url = f"{SUPABASE_URL}/rest/v1/email_log"
@@ -951,17 +933,7 @@ def dispatch_weekly_email(wish_id: str, week_number: int = 1, custom_body: str =
             "body_sent": body_text,
         }
         http_request(log_url, method="POST", headers=headers, body=log_entry)
-
-        # Notificar envío confirmado a Telegram
-        notif_url = f"{SUPABASE_URL}/functions/v1/notify-telegram"
-        notif_payload = {
-            "type": "email_sent",
-            "wishId": real_wish_id,
-            "email": contact_email,
-            "subject": subject,
-            "emailType": f"followup (Semana {week_number})",
-        }
-        http_request(notif_url, method="POST", headers={"Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"}, body=notif_payload)
+        update_wish(real_wish_id, {"internal_notes": None})
 
     return email_sent
 
@@ -1015,25 +987,10 @@ def simulate_week(wish_id: str, week_number: int = 1) -> dict:
         res = run_daily_session(real_wish_id, day_number=day, previous_handoff=prev_h, wish_data=wish)
         print(f"  • Día {day}/{end_day}: 🚀 Ejecutado en {res['session_duration_ms']} ms ({res['total_tokens']} tokens). Relevo preparado.")
 
-    # Al terminar los 7 días, preparar el borrador del correo semanal para revisión HITL
-    print(f"\n📝 Generando BORRADOR de Correo Semanal (Semana {week_number}) para revisión humana...")
-    draft = prepare_weekly_email(real_wish_id, week_number=week_number)
-    print(f"✓ Borrador preparado y notificado a Telegram.")
-    print(f"  • Asunto: {draft['subject']}")
-    print(f"  • Destinatario: {draft['contact_email']}")
-    print(f"\n--- Vista previa del borrador propuesto ---")
-    print(draft['body'])
-    print("-" * 60)
-
-    # Balance de la semana
-    print(f"\n📊 Balance de cómputo de la Semana {week_number}:")
-    print(f"  • Tiempo total IA: {draft['total_ms']:,} ms ({draft['total_ms']/1000.0:.2f} segundos)")
-    print(f"  • Tokens totales:  {draft['total_tokens']:,} tokens")
-    print(f"\n⏸️ ESPERANDO REVISIÓN HUMANA (Human-In-The-Loop):")
-    print(f"  • Pulsa [ ✅ Aprobar y Enviar ] en Telegram, o")
-    print(f"  • Ejecuta en terminal: python fontana_engine.py send-email {real_wish_id[:8]} --week {week_number}")
+    # El día 7/14/21/28 ya despachó el correo semanal automáticamente dentro de run_daily_session()
+    print(f"\n✅ Correo semanal (Semana {week_number}) aprobado y despachado automáticamente (sin notificación a Telegram).")
     print(f"=" * 70 + "\n")
-    return draft
+    return {"week_number": week_number, "wish_id": real_wish_id, "status": "approved"}
 
 
 def simulate_full_cycle(wish_id: str) -> dict:
@@ -1089,14 +1046,10 @@ def simulate_full_cycle(wish_id: str) -> dict:
             prev_handoff = sess.get("tomorrow_handoff")
             print(f"  [Día {day:02d}/30] 🚀 {sess['session_duration_ms']:4d} ms | {sess['total_tokens']:4d} tok | Foco: {sess['focus_goal'][:45]}…")
 
-        # Hitos Semanales en días 7, 14, 21, 28
+        # Hitos Semanales en días 7, 14, 21, 28 (despachados automáticamente en run_daily_session)
         if day in (7, 14, 21, 28):
             week_num = day // 7
-            print(f"\n  🌟 ──── HITO SEMANAL: SEMANA {week_num} (Día {day}) ─────────────────────")
-            draft = prepare_weekly_email(real_wish_id, week_number=week_num)
-            print(f"     ✓ Borrador de Correo Semana {week_num} generado y notificado a Telegram.")
-            print(f"     • Asunto: {draft.get('subject')}")
-            print(f"  ──────────────────────────────────────────────────────────\n")
+            print(f"\n  🌟 ──── HITO SEMANAL: SEMANA {week_num} (Día {day}) — Correo aprobado y enviado automáticamente ────\n")
 
     # Día 30: Cierre y síntesis final
     print("\n" + "=" * 75)
