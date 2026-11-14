@@ -152,7 +152,7 @@ def record_daily_work(record: dict) -> bool:
     return True
 
 
-def notify_telegram_plan_ready(wish_id: str, email: str, diagnosis: str, weekly_goals: list, duration_ms: int, tokens: int):
+def notify_telegram_plan_ready(wish_id: str, email: str, diagnosis: str, weekly_goals: list, duration_ms: int, tokens: int, wish_text: str = ""):
     """Notifica al canal o chat de Telegram que el plan está listo para revisión."""
     # Opción A: A través de la Edge Function notify-telegram de Supabase
     if is_supabase_configured():
@@ -160,6 +160,7 @@ def notify_telegram_plan_ready(wish_id: str, email: str, diagnosis: str, weekly_
         payload = {
             "type": "plan_ready_for_review",
             "wishId": wish_id,
+            "wishText": wish_text,
             "email": email,
             "diagnosis": diagnosis,
             "weeklyGoals": weekly_goals,
@@ -176,9 +177,8 @@ def notify_telegram_plan_ready(wish_id: str, email: str, diagnosis: str, weekly_
         goals_text = "\n".join([f"  • <b>Semana {g.get('week', i+1)}:</b> {g.get('goal', '')}" for i, g in enumerate(weekly_goals)])
         text = (
             f"📋 <b>Plan de 30 Días Listo para Revisión</b>\n\n"
-            f"👤 <b>Email:</b> {email}\n"
             f"🆔 <code>{wish_id}</code>\n"
-            f"⏱ <b>Generación:</b> {duration_ms} ms | 🪙 <b>Tokens:</b> {tokens:,}\n\n"
+            f"💭 <b>Deseo:</b>\n<i>\"{wish_text}\"</i>\n\n"
             f"🎯 <b>Diagnóstico:</b>\n{diagnosis}\n\n"
             f"📅 <b>Metas Semanales:</b>\n{goals_text}\n"
         )
@@ -351,6 +351,7 @@ def generate_plan(wish_id: str, wish_data: dict | None = None) -> dict:
         weekly_goals=plan_dict.get("weekly_goals", []),
         duration_ms=duration_ms,
         tokens=total_tokens,
+        wish_text=wish_text,
     )
 
     return result

@@ -17,6 +17,13 @@ const cors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function escapeHtml(str: string): string {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 async function sendTelegram(text: string, replyMarkup?: object) {
   const body: Record<string, unknown> = {
     chat_id: CHAT_ID,
@@ -134,20 +141,30 @@ Deno.serve(async (req) => {
 
     // ── F) Notificar plan de 30 días listo para revisión humana ────────────
     if (body.type === "plan_ready_for_review") {
-      const { wishId, email, diagnosis, weeklyGoals, durationMs, tokens } = body;
+      const { wishId, wishText, diagnosis, weeklyGoals } = body;
+
+      let resolvedWishText = wishText;
+      if (!resolvedWishText && wishId) {
+        const { data: wishRow } = await supabase
+          .from("wishes")
+          .select("wish_text")
+          .eq("id", wishId)
+          .maybeSingle();
+        if (wishRow?.wish_text) {
+          resolvedWishText = wishRow.wish_text;
+        }
+      }
 
       let msg =
         `📋 <b>Plan de 30 Días Listo para Revisión</b>\n\n` +
-        `👤 <b>Correo:</b> ${email || "—"}\n` +
-        `🆔 <code>${wishId}</code>\n` +
-        (durationMs ? `⏱ <b>Generación:</b> ${durationMs} ms\n` : "") +
-        (tokens ? `🪙 <b>Tokens:</b> ${Number(tokens).toLocaleString()}\n` : "") +
-        `\n🎯 <b>Diagnóstico:</b>\n${diagnosis || "Plan estructurado generado por motor de IA."}\n\n`;
+        `🆔 <code>${escapeHtml(wishId)}</code>\n` +
+        `💭 <b>Deseo:</b>\n<i>"${escapeHtml(resolvedWishText || "Sin descripción")}"</i>\n\n` +
+        `🎯 <b>Diagnóstico:</b>\n${escapeHtml(diagnosis || "Plan estructurado generado por motor de IA.")}\n\n`;
 
       if (weeklyGoals && Array.isArray(weeklyGoals)) {
         msg += `📅 <b>Metas Semanales:</b>\n`;
         for (const g of weeklyGoals) {
-          msg += `  • <b>Semana ${g.week || ""}:</b> ${g.goal || g.focus || g.title}\n`;
+          msg += `  • <b>Semana ${g.week || ""}:</b> ${escapeHtml(g.goal || g.focus || g.title || "")}\n`;
         }
       }
 
