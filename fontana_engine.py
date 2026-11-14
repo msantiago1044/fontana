@@ -922,17 +922,9 @@ def dispatch_weekly_email(wish_id: str, week_number: int = 1, custom_body: str =
         st, res = http_request(send_url, method="POST", headers={"Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"}, body=payload)
         email_sent = (st == 200)
 
-    # Registro en email_log y limpieza de borrador pendiente (sin notificar a Telegram)
-    headers = supabase_headers()
-    if is_supabase_configured():
-        log_url = f"{SUPABASE_URL}/rest/v1/email_log"
-        log_entry = {
-            "wish_id": real_wish_id,
-            "type": "followup",
-            "subject": subject,
-            "body_sent": body_text,
-        }
-        http_request(log_url, method="POST", headers=headers, body=log_entry)
+    # send-email (type='manual_reply') ya inserta el registro en email_log al enviar.
+    # Solo limpiamos internal_notes si el envío fue exitoso (sin notificar a Telegram).
+    if is_supabase_configured() and email_sent:
         update_wish(real_wish_id, {"internal_notes": None})
 
     return email_sent
