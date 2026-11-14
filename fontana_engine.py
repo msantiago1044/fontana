@@ -176,7 +176,7 @@ def notify_telegram_plan_ready(wish_id: str, email: str, diagnosis: str, weekly_
         tg_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
         goals_text = "\n".join([f"  • <b>Semana {g.get('week', i+1)}:</b> {g.get('goal', '')}" for i, g in enumerate(weekly_goals)])
         text = (
-            f"📋 <b>Plan de 30 Días Listo para Revisión</b>\n\n"
+            f"✅ <b>Plan de 30 Días Generado y Auto-Aprobado</b>\n\n"
             f"🆔 <code>{wish_id}</code>\n"
             f"💭 <b>Deseo:</b>\n<i>\"{wish_text}\"</i>\n\n"
             f"🎯 <b>Diagnóstico:</b>\n{diagnosis}\n\n"
@@ -185,8 +185,8 @@ def notify_telegram_plan_ready(wish_id: str, email: str, diagnosis: str, weekly_
         reply_markup = {
             "inline_keyboard": [
                 [
-                    {"text": "✅ Aprobar Plan", "callback_data": f"approve_plan:{wish_id}"},
                     {"text": "🔍 Ver Detalle", "callback_data": f"detail:{wish_id}"},
+                    {"text": "🖥️ Editar en Mission Control", "url": "https://fontana.digital/admin"},
                 ]
             ]
         }
@@ -362,23 +362,26 @@ def generate_plan(wish_id: str, wish_data: dict | None = None) -> dict:
             "daily_cadence_notes": "Ejecución continua 100% digital de 30 días guiada por handoff diario."
         }
 
+    now_iso = datetime.now(timezone.utc).isoformat()
     result = {
         "wish_id": wish_id,
         "contact_email": contact_email,
         "plan_30d": plan_dict,
-        "plan_status": "pending_review",
+        "plan_status": "approved",
+        "plan_approved_at": now_iso,
         "plan_generation_ms": duration_ms,
         "prompt_tokens": p_tokens,
         "completion_tokens": c_tokens,
         "plan_tokens": total_tokens,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_iso,
     }
 
     # Persistir en base de datos si está conectada
     if is_supabase_configured():
         update_wish(wish_id, {
             "plan_30d": plan_dict,
-            "plan_status": "pending_review",
+            "plan_status": "approved",
+            "plan_approved_at": now_iso,
             "plan_generation_ms": duration_ms,
             "plan_tokens": total_tokens,
         })
@@ -1126,7 +1129,7 @@ def simulate_full_cycle(wish_id: str) -> dict:
 
 
 # ── 6. Escaneo y Daemon de Ejecución Periódica ──────────────────────────────────
-def scan_and_process_active_wishes() -> dict:
+def scan_and_process_active_wishes(step_per_scan: bool = False, only_test: bool = False) -> dict:
     """
     Escanea todos los deseos con status='active' en Supabase:
       1. Si no tiene plan: genera el Plan Maestro de 30 Días y lo notifica a Telegram con botón de aprobación.
@@ -1134,6 +1137,7 @@ def scan_and_process_active_wishes() -> dict:
       3. Si está en 'approved':
          - Determina el día del ciclo actual (1 a 30).
          - Si ese día no tiene registro en ai_daily_work, ejecuta la sesión diaria con el relevo del día previo.
+         - Si step_per_scan=True (opcionalmente acotado por only_test), avanza 1 día por escaneo hasta el día 30.
     """
     if not is_supabase_configured():
         print("[SCAN] Supabase no está configurado (revisa .env).", file=sys.stderr)
@@ -1159,11 +1163,14 @@ def scan_and_process_active_wishes() -> dict:
 
         # ── Caso 1: Deseo sin plan generado ───────────────────────────────────────
         if not plan_30d or not plan_status:
-            print(f"  • 📋 Deseo {wish_id[:8]} ({contact}): Sin plan maestro. Generando...")
+            print(f"  • 📋 Deseo {wish_id[:8]} ({contact}): Sin plan maestro. Generando y auto-aprobando...")
             res = generate_plan(wish_id, wish_data=w)
-            print(f"    ✓ Plan generado en {res['plan_generation_ms']} ms ({res['plan_tokens']} tokens). Notificado a Telegram.")
+            print(f"    ✓ Plan generado y auto-aprobado en {res['plan_generation_ms']} ms ({res['plan_tokens']} tokens). Notificado a Telegram.")
             plans_gen += 1
-            continue
+            w["plan_30d"] = res["plan_30d"]
+            w["plan_status"] = res.get("plan_status", "approved")
+            plan_30d = w["plan_30d"]
+            plan_status = w["plan_status"]
 
         # ── Caso 2: Plan generado esperando revisión humana ──────────────────────
         if plan_status == "pending_review":
@@ -1192,12 +1199,16 @@ def scan_and_process_active_wishes() -> dict:
                 prev_handoff = h_data[0].get("tomorrow_handoff")
 
             next_day = last_day + 1
+            is_test_wish = str(w.get("donor_alias") or "").startswith("Simulador-")
+            allow_step = step_per_scan and (not only_test or is_test_wish)
+
             if next_day > 30:
                 print(f"  • 🏁 Deseo {wish_id[:8]} ({contact}): Todos los 30 días ya han sido completados.")
-            elif next_day > days_elapsed:
+            elif (not allow_step) and (next_day > days_elapsed):
                 print(f"  • ✅ Deseo {wish_id[:8]} ({contact}): Sesión Día {last_day}/30 al día (esperando siguiente jornada de calendario).")
             else:
-                print(f"  • 🚀 Deseo {wish_id[:8]} ({contact}): Ejecutando sesión Día {next_day}/30...")
+                mode_tag = " [STEP-TEST]" if allow_step else ""
+                print(f"  • 🚀 Deseo {wish_id[:8]} ({contact}): Ejecutando sesión Día {next_day}/30{mode_tag}...")
                 sess_res = run_daily_session(wish_id, day_number=next_day, previous_handoff=prev_handoff, wish_data=w)
                 print(f"    ✓ Día {next_day} completado en {sess_res['session_duration_ms']} ms ({sess_res['total_tokens']} tokens). Relevo listo.")
                 daily_run += 1
@@ -1283,9 +1294,15 @@ def create_test_wish(email: str = "test@fontana.ai", wish_text: str = None, cate
         return {}
 
 
-def daemon_loop(interval: int = 600, initial_delay: int = 0):
+def daemon_loop(
+    interval: int = 600,
+    initial_delay: int = 0,
+    step_per_scan: bool = False,
+    only_test: bool = False,
+):
     """Bucle continuo para revisar deseos activos que requieran plan o sesión diaria."""
-    print(f"\n[DAEMON] 🛡️ Fontana Engine Daemon iniciado (intervalo de escaneo: {interval}s, desfase inicial: {initial_delay}s).")
+    mode_desc = f"step_per_scan={'ON' if step_per_scan else 'OFF'}, only_test={'ON' if only_test else 'OFF'}"
+    print(f"\n[DAEMON] 🛡️ Fontana Engine Daemon iniciado (intervalo de escaneo: {interval}s, desfase inicial: {initial_delay}s, {mode_desc}).")
     print("[DAEMON] Presiona Ctrl+C en cualquier momento para detener.\n")
     if initial_delay > 0:
         print(f"[DAEMON] ⏳ Esperando {initial_delay}s antes del primer escaneo...")
@@ -1298,7 +1315,7 @@ def daemon_loop(interval: int = 600, initial_delay: int = 0):
     next_run = time.monotonic()
     while True:
         try:
-            scan_and_process_active_wishes()
+            scan_and_process_active_wishes(step_per_scan=step_per_scan, only_test=only_test)
         except KeyboardInterrupt:
             print("\n[DAEMON] Detenido por el usuario.")
             break
@@ -1325,7 +1342,9 @@ def main():
     subparsers.add_parser("demo", help="Ejecuta una simulación completa autocontenida de punta a punta")
 
     # Comando: scan
-    subparsers.add_parser("scan", help="Escanea y procesa deseos activos de Supabase inmediatamente")
+    p_scan = subparsers.add_parser("scan", help="Escanea y procesa deseos activos de Supabase inmediatamente")
+    p_scan.add_argument("--step-per-scan", action="store_true", help="Avanza 1 día siguiente en planes aprobados aunque no haya pasado un día calendario")
+    p_scan.add_argument("--only-test", action="store_true", help="Aplica --step-per-scan solo a deseos de prueba (donor_alias 'Simulador-*')")
 
     # Comando: test-wish
     p_test = subparsers.add_parser("test-wish", help="Crea un deseo de prueba real en Supabase para activar el flujo")
@@ -1370,10 +1389,12 @@ def main():
     p_hist = subparsers.add_parser("history", help="Muestra el historial completo día a día (resultados y relevos)")
     p_hist.add_argument("wish_id", help="UUID o prefijo del deseo")
 
-    # Comando: daemon [--interval N] [--initial-delay S]
+    # Comando: daemon [--interval N] [--initial-delay S] [--step-per-scan] [--only-test]
     p_dae = subparsers.add_parser("daemon", help="Ejecuta el servicio de background periódico")
     p_dae.add_argument("--interval", type=int, default=600, help="Intervalo en segundos (defecto: 600)")
     p_dae.add_argument("--initial-delay", type=int, default=0, help="Espera inicial en segundos antes del primer escaneo (defecto: 0)")
+    p_dae.add_argument("--step-per-scan", action="store_true", help="Avanza 1 día siguiente por escaneo en planes aprobados hasta completar 30 días")
+    p_dae.add_argument("--only-test", action="store_true", help="Restringe --step-per-scan solo a deseos de prueba (donor_alias 'Simulador-*')")
 
     args = parser.parse_args()
 
@@ -1387,7 +1408,7 @@ def main():
 
     if args.command == "scan":
         print("🔍 Ejecutando escaneo manual de deseos en Supabase...")
-        res = scan_and_process_active_wishes()
+        res = scan_and_process_active_wishes(step_per_scan=args.step_per_scan, only_test=args.only_test)
         print(f"✓ Escaneo finalizado: {res['plans_generated']} planes generados, {res['daily_sessions_run']} sesiones corridas.")
 
     elif args.command == "test-wish":
@@ -1447,7 +1468,12 @@ def main():
         print_history(args.wish_id)
 
     elif args.command == "daemon":
-        daemon_loop(interval=args.interval, initial_delay=args.initial_delay)
+        daemon_loop(
+            interval=args.interval,
+            initial_delay=args.initial_delay,
+            step_per_scan=args.step_per_scan,
+            only_test=args.only_test,
+        )
 
 
 if __name__ == "__main__":

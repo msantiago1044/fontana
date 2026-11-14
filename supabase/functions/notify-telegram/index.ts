@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
       }
 
       let msg =
-        `📋 <b>Plan de 30 Días Listo para Revisión</b>\n\n` +
+        `✅ <b>Plan de 30 Días Generado y Auto-Aprobado</b>\n\n` +
         `🆔 <code>${escapeHtml(wishId)}</code>\n` +
         `💭 <b>Deseo:</b>\n<i>"${escapeHtml(resolvedWishText || "Sin descripción")}"</i>\n\n` +
         `🎯 <b>Diagnóstico:</b>\n${escapeHtml(diagnosis || "Plan estructurado generado por motor de IA.")}\n\n`;
@@ -170,8 +170,8 @@ Deno.serve(async (req) => {
 
       await sendTelegram(msg, {
         inline_keyboard: [[
-          { text: "✅ Aprobar Plan", callback_data: `approve_plan:${wishId}` },
           { text: "🔍 Ver Detalle", callback_data: `detail:${wishId}` },
+          { text: "🖥️ Editar en Mission Control", url: "https://fontana.digital/admin" },
         ]],
       });
 
@@ -200,6 +200,14 @@ Deno.serve(async (req) => {
         ]],
       });
 
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── H) Alerta personalizada desde Mission Control (/admin) ──────────────
+    if (body.type === "custom_alert" && body.text) {
+      await sendTelegram(String(body.text));
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });

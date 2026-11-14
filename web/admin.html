@@ -1281,21 +1281,60 @@
       const tabPlanHtml = `
         <div class="tab-pane" id="tab-plan">
           <div style="display: flex; flex-direction: column; gap: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
               <h3 class="section-heading" style="margin-bottom: 0;">
                 <span>📋</span> Plan Maestro de Acompañamiento (30 Días)
               </h3>
-              <span class="badge ${wish.plan_status === 'approved' ? 'badge-approved' : 'badge-pending'}">
-                ${wish.plan_status === 'approved' ? 'Plan Aprobado' : 'Pendiente de Aprobación'}
-              </span>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                ${plan ? `
+                  <button type="button" class="btn-fontana" style="padding: 6px 12px; font-size: 12px;" onclick="togglePlanEditor()">
+                    <span>✏️</span> Editar Plan Maestro
+                  </button>
+                ` : ''}
+                <span class="badge ${wish.plan_status === 'approved' ? 'badge-approved' : 'badge-pending'}">
+                  ${wish.plan_status === 'approved' ? 'Plan Aprobado' : 'Pendiente de Aprobación'}
+                </span>
+              </div>
             </div>
 
             ${plan ? `
-              <div class="plan-card">
+              <div class="plan-card" id="plan-readonly-view">
                 <div class="plan-diag">
                   <strong>Diagnóstico Inicial:</strong> ${escapeHtml(plan.diagnosis || 'Sin diagnóstico formulado.')}
                 </div>
                 ${weeklyGoalsHtml}
+              </div>
+
+              <div id="plan-editor-form" style="display: none; background: var(--stone); border: 1px solid var(--border-soft); border-radius: 10px; padding: 18px; flex-direction: column; gap: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="color: var(--gold); font-size: 13px;">✏️ Editor de Plan Maestro (editable incluso tras aprobación)</strong>
+                  <button type="button" class="btn-fontana" style="padding: 4px 10px; font-size: 11px;" onclick="togglePlanEditor()">Cancelar</button>
+                </div>
+
+                <div>
+                  <label for="edit-plan-diagnosis" style="display: block; font-size: 12px; font-weight: 600; color: var(--ivory-dim); margin-bottom: 6px;">Diagnóstico Inicial</label>
+                  <textarea id="edit-plan-diagnosis" rows="3" style="width: 100%; background: var(--bg); color: var(--ivory); border: 1px solid var(--border-soft); border-radius: 6px; padding: 10px; font-size: 13px; font-family: inherit; resize: vertical;">${escapeHtml(plan.diagnosis || '')}</textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
+                  ${[1, 2, 3, 4].map((wNum, idx) => {
+                    const g = (Array.isArray(plan.weekly_goals) && plan.weekly_goals[idx]) ? plan.weekly_goals[idx] : { week: wNum, focus: '', goal: '' };
+                    return `
+                      <div style="background: var(--bg); border: 1px solid var(--border-soft); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="font-size: 12px; font-weight: 700; color: var(--gold);">Semana ${wNum}</div>
+                        <input id="edit-plan-focus-${wNum}" type="text" placeholder="Enfoque de la semana" value="${escapeHtml(g.focus || '')}" style="width: 100%; background: var(--stone); color: var(--ivory); border: 1px solid var(--border-soft); border-radius: 6px; padding: 8px; font-size: 12px; font-family: inherit;" />
+                        <textarea id="edit-plan-goal-${wNum}" rows="3" placeholder="Meta y entregables de la semana" style="width: 100%; background: var(--stone); color: var(--ivory); border: 1px solid var(--border-soft); border-radius: 6px; padding: 8px; font-size: 12px; font-family: inherit; resize: vertical;">${escapeHtml(g.goal || '')}</textarea>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px;">
+                  <button type="button" class="btn-fontana" onclick="togglePlanEditor()">Cancelar</button>
+                  <button type="button" class="btn-fontana btn-fontana-gold" onclick="saveEditedPlan('${wish.id}', this)">
+                    <span>💾</span> Guardar Cambios del Plan
+                  </button>
+                </div>
               </div>
             ` : `
               <div class="empty-state">No se ha formulado el plan de 30 días aún.</div>
@@ -1791,6 +1830,84 @@
         }, 1000);
       } catch (err) {
         alert("Error al aprobar plan: " + err.message);
+        btn.disabled = false;
+        btn.innerHTML = origText;
+      }
+    }
+
+    function togglePlanEditor() {
+      const form = document.getElementById('plan-editor-form');
+      const readonlyView = document.getElementById('plan-readonly-view');
+      if (!form) return;
+      const isHidden = form.style.display === 'none' || form.style.display === '';
+      form.style.display = isHidden ? 'flex' : 'none';
+      if (readonlyView) {
+        readonlyView.style.display = isHidden ? 'none' : 'block';
+      }
+    }
+
+    async function saveEditedPlan(wishId, btn) {
+      const wish = allWishes.find(w => w.id === wishId);
+      if (!wish) return;
+
+      const diagnosis = (document.getElementById('edit-plan-diagnosis')?.value || '').trim();
+      const weekly_goals = [1, 2, 3, 4].map((wNum) => {
+        const focus = (document.getElementById(`edit-plan-focus-${wNum}`)?.value || '').trim();
+        const goal = (document.getElementById(`edit-plan-goal-${wNum}`)?.value || '').trim();
+        return { week: wNum, focus, goal };
+      });
+
+      const updatedPlan = {
+        ...(wish.plan_30d || {}),
+        diagnosis,
+        weekly_goals
+      };
+
+      const origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Guardando cambios...';
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/wishes?id=eq.${wishId}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': adminToken,
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            plan_30d: updatedPlan,
+            plan_status: 'approved',
+            plan_approved_at: wish.plan_approved_at || new Date().toISOString()
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || 'Error al guardar el plan en Supabase');
+        }
+
+        await fetch(`${SUPABASE_URL}/functions/v1/notify-telegram`, {
+          method: 'POST',
+          headers: {
+            'apikey': adminToken,
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'custom_alert',
+            text: `✏️ <b>Plan Maestro actualizado desde Mission Control</b>\n🆔 <code>${wishId.slice(0, 8)}</code>\nEl motor usará el plan actualizado en las siguientes sesiones.`
+          })
+        }).catch(() => null);
+
+        btn.innerHTML = '<span>✓</span> ¡Plan Actualizado!';
+        setTimeout(async () => {
+          await fetchData();
+          selectWish(wishId);
+        }, 800);
+      } catch (err) {
+        alert("Error al guardar cambios del plan: " + err.message);
         btn.disabled = false;
         btn.innerHTML = origText;
       }
