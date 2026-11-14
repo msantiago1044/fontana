@@ -548,6 +548,11 @@ def run_daily_session(wish_id: str, day_number: int, previous_handoff: str | Non
         print(f"\n📢 [SEMANA {week_number}] ¡Día {day_number} completado! Compilando y enviando correo semanal automáticamente...")
         dispatch_weekly_email(real_wish_id, week_number=week_number)
 
+    # Automatización de cierre inolvidable (Día 30)
+    if day_number == 30:
+        print(f"\n🏁 [DÍA 30] ¡Ciclo completado! Generando y enviando Compendio Maestro Final...")
+        dispatch_closing_dossier(real_wish_id)
+
     return record
 
 
@@ -951,6 +956,202 @@ def dispatch_weekly_email(wish_id: str, week_number: int = 1, custom_body: str =
     return email_sent
 
 
+def dispatch_closing_dossier(wish_id: str) -> bool:
+    """
+    Entrega inolvidable del Día 30: compila los 30 días de trabajo en un Compendio Maestro
+    (síntesis del viaje, caja de herramientas definitiva y hoja de ruta para los próximos 30 días),
+    envía el correo vía send-email y marca el deseo como 'completed'.
+    """
+    wish = fetch_wish(wish_id)
+    if not wish:
+        return False
+
+    real_wish_id = wish["id"]
+    closing_notes = wish.get("closing_notes") or ""
+    if "[CLOSING_30_SENT]" in closing_notes:
+        return True
+
+    contact_email = wish.get("contact_email", "usuario@fontana.ai")
+    identity_name = wish.get("identity_name") or wish.get("donor_alias") or ""
+    wish_text = wish.get("wish_text", "")
+    category = wish.get("category", "General")
+    plan = wish.get("plan_30d") or {}
+    base_web = os.environ.get("FONTANA_WEB_URL", "https://fontanadigital.dpdns.org")
+
+    daily_highlights = []
+    if is_supabase_configured():
+        h_url = f"{SUPABASE_URL}/rest/v1/ai_daily_work?wish_id=eq.{real_wish_id}&order=day_number.asc&select=day_number,focus_goal,daily_result"
+        st, rows = http_request(h_url, headers=supabase_headers())
+        if st == 200 and isinstance(rows, list):
+            for r in rows:
+                d_num = r.get("day_number")
+                fg = r.get("focus_goal") or ""
+                res_txt = (r.get("daily_result") or "").split("🌐 [RESULTADO INTERNO FONTANA")[0].strip()
+                daily_highlights.append(f"Día {d_num}: {fg} -> {res_txt[:220]}")
+
+    context_30d = "\n".join(daily_highlights[-15:]) if daily_highlights else "30 sesiones completadas de equipamiento digital."
+    salutation = f"Hola {identity_name}," if identity_name else "Hola,"
+
+    prompt = (
+        f"Redacta el correo de CIERRE DEL DÍA 30 de Fontana — debe sentirse como un regalo inolvidable y un compendio maestro.\n"
+        f"Saludo inicial: {salutation}\n"
+        f"Deseo trabajado durante 30 días: \"{wish_text}\" (Categoría: {category})\n"
+        f"Diagnóstico inicial: {plan.get('diagnosis', '')}\n"
+        f"Resumen de entregas recientes del ciclo:\n{context_30d}\n\n"
+        f"ESTRUCTURA OBLIGATORIA:\n"
+        f"1. Celebración sobria y emotiva: 30 días continuos de intención y trabajo digital dedicados a su deseo.\n"
+        f"2. TU CAJA DE HERRAMIENTAS DEFINITIVA: recopila en bullets claros las mejores apps, plantillas, guiones, métodos y hasta 2 búsquedas seguras de YouTube (formato https://www.youtube.com/results?search_query=tema+en+palabras — NUNCA watch?v=) del mes.\n"
+        f"3. HOJA DE RUTA PARA LOS PRÓXIMOS 30 DÍAS POR TU CUENTA: 3 hábitos/acciones concretas semanales para no perder el impulso.\n"
+        f"4. Cierre inspirador de La Fuente: recuerda que dentro de unos días volveremos a saludarlo para ver cómo sigue su avance, y si nace un nuevo propósito puede volver cuando quiera a {base_web}.\n\n"
+        f"REGLAS ESTRICTAS: CERO mención a tokens, ms, IA, LLM o costos. Tono elegante, humano y memorable."
+    )
+
+    llm_body, _, _, _ = call_llm(prompt, system_prompt="SYSTEM: Eres Fontana Strategic Mentor. Redactas el Compendio Maestro inolvidable del Día 30.")
+    subject = "Fontana | Tu Compendio Maestro de 30 Días y Hoja de Ruta ✨"
+    if llm_body and len(llm_body.strip()) > 200:
+        lines = llm_body.strip().split("\n")
+        if lines[0].lower().startswith("asunto:"):
+            subject = lines[0].split(":", 1)[1].strip() or subject
+            body_text = "\n".join(lines[1:]).strip()
+        else:
+            body_text = llm_body.strip()
+    else:
+        body_text = (
+            f"{salutation}\n\n"
+            f"Hoy se cumplen 30 días desde que confiaste tu deseo a La Fuente:\n"
+            f"\"{wish_text}\"\n\n"
+            f"Has recorrido un mes completo construyendo claridad, estructura y herramientas digitales a la medida. "
+            f"Conserva las guías, plantillas y recursos recibidos estas 4 semanas como tu Caja de Herramientas base.\n\n"
+            f"🚀 Tus próximos 30 días:\n"
+            f"1. Elige una sola acción semanal de alto impacto y protégela en tu calendario.\n"
+            f"2. Mide un indicador simple cada viernes para ver tu progreso real.\n"
+            f"3. Reutiliza los guiones y prompts trabajados sin empezar desde cero.\n\n"
+            f"Volveremos a escribirte más adelante para saber cómo evoluciona este logro. Y cuando nazca un nuevo deseo, "
+            f"La Fuente te espera en {base_web}.\n\n"
+            f"Fe y trabajo,\nLa Fuente — Fontana"
+        )
+
+    email_sent = False
+    if is_supabase_configured():
+        send_url = f"{SUPABASE_URL}/functions/v1/send-email"
+        st, _ = http_request(
+            send_url,
+            method="POST",
+            headers={"Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"},
+            body={"type": "manual_reply", "to": contact_email, "subject": subject, "body": body_text, "wishId": real_wish_id},
+        )
+        email_sent = (st == 200)
+        if email_sent:
+            now_iso = datetime.now(timezone.utc).isoformat()
+            new_notes = (closing_notes + "\n[CLOSING_30_SENT]").strip()
+            update_wish(real_wish_id, {
+                "status": "completed",
+                "final_email_sent_manual": True,
+                "final_email_sent_at": now_iso,
+                "closing_notes": new_notes,
+                "internal_notes": None,
+            })
+
+    return email_sent
+
+
+def dispatch_post_cycle_followup(wish: dict, milestone_day: int) -> bool:
+    """
+    Seguimiento automático post-ciclo en los días 40 y 60:
+    - Día 40: Reencuentro, calibración y 1 micro-recurso digital extra de destrabe.
+    - Día 60: Balance a 60 días + 3 ideas personalizadas de 'Siguiente Deseo' e invitación a comenzar de nuevo.
+    """
+    real_wish_id = wish.get("id")
+    if not real_wish_id:
+        return False
+
+    marker = f"[FOLLOWUP_{milestone_day}_SENT]"
+    closing_notes = wish.get("closing_notes") or ""
+    if marker in closing_notes:
+        return True
+
+    contact_email = wish.get("contact_email", "usuario@fontana.ai")
+    identity_name = wish.get("identity_name") or wish.get("donor_alias") or ""
+    wish_text = wish.get("wish_text", "")
+    category = wish.get("category", "General")
+    base_web = os.environ.get("FONTANA_WEB_URL", "https://fontanadigital.dpdns.org")
+    salutation = f"Hola {identity_name}," if identity_name else "Hola,"
+
+    if milestone_day == 40:
+        prompt = (
+            f"Redacta un correo de SEGUIMIENTO AL DÍA 40 (10 días después de cerrar el ciclo de 30 días).\n"
+            f"Saludo: {salutation}\n"
+            f"Deseo original: \"{wish_text}\" (Categoría: {category})\n"
+            f"OBJETIVO:\n"
+            f"1. Preguntar con calidez cómo le ha ido aplicando las herramientas del ciclo en estos primeros 10 días por su cuenta.\n"
+            f"2. Entregar 1 RECURSO DIGITAL EXTRA DE DESTRABE (una táctica rápida, plantilla breve o búsqueda segura de YouTube https://www.youtube.com/results?search_query=...) pensado para superar el estancamiento típico tras terminar un plan.\n"
+            f"3. Sembrar suavemente la reflexión: si ya siente que este objetivo tomó vuelo, ¿cuál sería el siguiente escalón?\n"
+            f"REGLAS: CERO tokens, ms, IA o costos. Breve, cálido y práctico."
+        )
+        default_subject = "Fontana | ¿Cómo va tu avance? (Seguimiento Día 40) 🌱"
+        default_body = (
+            f"{salutation}\n\n"
+            f"Han pasado 10 días desde que cerramos juntos el ciclo de 30 días para tu deseo:\n"
+            f"\"{wish_text}\"\n\n"
+            f"Queríamos pasar a saludarte y saber cómo te ha ido aplicando tus herramientas esta semana.\n\n"
+            f"💡 Micro-impulso extra para hoy:\n"
+            f"Si sientes que algún paso se frenó, elige la tarea más pequeña de 15 minutos de tu hoja de ruta y ejecútala hoy mismo sin buscar perfección.\n\n"
+            f"Seguimos celebrando tu constancia.\n\nFe y trabajo,\nLa Fuente — Fontana"
+        )
+    else:
+        prompt = (
+            f"Redacta un correo de SEGUIMIENTO E INSPIRACIÓN AL DÍA 60 (un mes después de cerrar el ciclo).\n"
+            f"Saludo: {salutation}\n"
+            f"Deseo original que trabajó hace 60 días: \"{wish_text}\" (Categoría: {category})\n"
+            f"OBJETIVO:\n"
+            f"1. Recordar con orgullo que hace 60 días sembró ese deseo en La Fuente y celebrar cuánto puede cambiar en dos meses.\n"
+            f"2. Proponerle 3 IDEAS CONCRETAS DE 'SIGUIENTE DESEO' que sean la evolución natural de su meta anterior (ej. escalar, consolidar, monetizar, expandir).\n"
+            f"3. Invitarlo con inspiración a sembrar un nuevo deseo de 30 días en {base_web} cuando esté listo para su siguiente capítulo.\n"
+            f"REGLAS: CERO tokens, ms, IA o costos. Tono inspirador, elegante y cercano."
+        )
+        default_subject = "Fontana | 60 días después: ¿listo para tu próximo deseo? ✨"
+        default_body = (
+            f"{salutation}\n\n"
+            f"Hoy se cumplen 60 días desde que confiaste a La Fuente tu intención:\n"
+            f"\"{wish_text}\"\n\n"
+            f"Cada meta cumplida abre espacio para una intención más grande. Si ya estás listo para el siguiente nivel, "
+            f"aquí tienes tres direcciones naturales para continuar creciendo:\n"
+            f"1. Profundizar y automatizar lo que ya iniciaste.\n"
+            f"2. Escalar tus resultados hacia una nueva meta medible de 30 días.\n"
+            f"3. Iniciar un proyecto paralelo que complemente tu propósito actual.\n\n"
+            f"Cuando sientas el llamado, puedes sembrar tu nuevo deseo en {base_web}.\n\n"
+            f"Fe y trabajo,\nLa Fuente — Fontana"
+        )
+
+    llm_body, _, _, _ = call_llm(prompt, system_prompt="SYSTEM: Eres Fontana Strategic Mentor. Redactas seguimientos cálidos e inspiradores post-ciclo.")
+    subject = default_subject
+    if llm_body and len(llm_body.strip()) > 150:
+        lines = llm_body.strip().split("\n")
+        if lines[0].lower().startswith("asunto:"):
+            subject = lines[0].split(":", 1)[1].strip() or default_subject
+            body_text = "\n".join(lines[1:]).strip()
+        else:
+            body_text = llm_body.strip()
+    else:
+        body_text = default_body
+
+    email_sent = False
+    if is_supabase_configured():
+        send_url = f"{SUPABASE_URL}/functions/v1/send-email"
+        st, _ = http_request(
+            send_url,
+            method="POST",
+            headers={"Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"},
+            body={"type": "manual_reply", "to": contact_email, "subject": subject, "body": body_text, "wishId": real_wish_id},
+        )
+        email_sent = (st == 200)
+        if email_sent:
+            new_notes = (closing_notes + f"\n{marker}").strip()
+            update_wish(real_wish_id, {"closing_notes": new_notes})
+
+    return email_sent
+
+
 def simulate_week(wish_id: str, week_number: int = 1) -> dict:
     """
     Simula una semana completa (7 días consecutivos) para un deseo:
@@ -1173,7 +1374,12 @@ def scan_and_process_active_wishes(step_per_scan: bool = False, only_test: bool 
             allow_step = step_per_scan and (not only_test or is_test_wish)
 
             if next_day > 30:
-                print(f"  • 🏁 Deseo {wish_id[:8]} ({contact}): Todos los 30 días ya han sido completados.")
+                closing_notes = w.get("closing_notes") or ""
+                if "[CLOSING_30_SENT]" not in closing_notes and not w.get("final_email_sent_manual"):
+                    print(f"  • 🏁 Deseo {wish_id[:8]} ({contact}): 30 días completados. Enviando Compendio Maestro de cierre...")
+                    dispatch_closing_dossier(wish_id)
+                else:
+                    print(f"  • 🏁 Deseo {wish_id[:8]} ({contact}): Todos los 30 días ya han sido completados.")
             elif (not allow_step) and (next_day > days_elapsed):
                 print(f"  • ✅ Deseo {wish_id[:8]} ({contact}): Sesión Día {last_day}/30 al día (esperando siguiente jornada de calendario).")
             else:
@@ -1182,6 +1388,31 @@ def scan_and_process_active_wishes(step_per_scan: bool = False, only_test: bool 
                 sess_res = run_daily_session(wish_id, day_number=next_day, previous_handoff=prev_handoff, wish_data=w)
                 print(f"    ✓ Día {next_day} completado en {sess_res['session_duration_ms']} ms ({sess_res['total_tokens']} tokens). Relevo listo.")
                 daily_run += 1
+
+    # ── Seguimientos automáticos post-ciclo (Día 40 y Día 60) sobre deseos completados ──
+    comp_url = f"{SUPABASE_URL}/rest/v1/wishes?status=eq.completed&select=*"
+    st_c, completed_wishes = http_request(comp_url, headers=headers)
+    if st_c == 200 and isinstance(completed_wishes, list):
+        for cw in completed_wishes:
+            started_str = cw.get("cycle_started_at")
+            if not started_str:
+                continue
+            try:
+                started_dt = datetime.fromisoformat(started_str.replace("Z", "+00:00"))
+                days_since_start = (now_utc - started_dt).days + 1
+            except Exception:
+                continue
+            c_notes = cw.get("closing_notes") or ""
+            cw_id = cw.get("id", "")
+            cw_contact = cw.get("contact_email", "")
+            if days_since_start >= 40 and "[FOLLOWUP_40_SENT]" not in c_notes:
+                print(f"  • 🌱 Deseo {cw_id[:8]} ({cw_contact}): Día {days_since_start} -> Enviando seguimiento Día 40...")
+                if dispatch_post_cycle_followup(cw, 40):
+                    c_notes += "\n[FOLLOWUP_40_SENT]"
+                    cw["closing_notes"] = c_notes
+            if days_since_start >= 60 and "[FOLLOWUP_60_SENT]" not in c_notes:
+                print(f"  • ✨ Deseo {cw_id[:8]} ({cw_contact}): Día {days_since_start} -> Enviando inspiración Día 60...")
+                dispatch_post_cycle_followup(cw, 60)
 
     return {"plans_generated": plans_gen, "daily_sessions_run": daily_run}
 
