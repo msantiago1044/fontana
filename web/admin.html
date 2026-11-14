@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mission Control — Fontana</title>
+  <meta name="description" content="Portal de supervisión administrativa y auditoría de ejecución de Fontana." />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/favicon.svg">
+
+  <!-- Script de detección de tema Fontana -->
+  <script>
+    (function () {
+      var t = localStorage.getItem('fontana_theme') || 'light';
+      var l = localStorage.getItem('fontana_lang') || 'es';
+      document.documentElement.setAttribute('data-theme', t);
+      document.documentElement.setAttribute('lang', l);
+    })();
+  </script>
+
+  <!-- Hojas de estilo oficiales de Fontana -->
+  <link rel="stylesheet" href="/css/theme-variables.css">
+  <link rel="stylesheet" href="/css/fontana.css">
+
+  <!-- Google Fonts oficiales -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+
+  <style>
+    :root {
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --sans: 'Inter', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    body {
+      background-color: var(--night);
+      color: var(--ivory);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header de Administración */
+    .admin-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--night-2);
+      border-bottom: 1px solid var(--border-soft);
+      padding: 14px 4vw;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.35s ease, border-color 0.35s ease;
+    }
+
+    .admin-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+      color: var(--ivory);
+    }
+
+    .admin-logo {
+      font-family: var(--serif);
+      font-size: 26px;
+      font-weight: 500;
+      color: var(--gold);
+      letter-spacing: 0.04em;
+    }
+
+    .admin-tag {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      background: rgba(184, 133, 58, 0.08);
+    }
+
+    .admin-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Selector de temas de Fontana */
+    .theme-dots {
+      display: flex;
+      gap: 8px;
+      background: var(--stone);
+      padding: 4px 8px;
+      border-radius: 20px;
+      border: 1px solid var(--border-soft);
+    }
+
+    .theme-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    .theme-dot:hover {
+      transform: scale(1.15);
+    }
+
+    .theme-dot.active {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 1px var(--gold);
+    }
+
+    .btn-fontana {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 7px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border-soft);
+      background: var(--night-2);
+      color: var(--ivory);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-fontana:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .btn-fontana-gold {
+      background: var(--gold);
+      color: #fff;
+      border-color: var(--gold);
+      font-weight: 600;
+    }
+
+    html[data-theme="light"] .btn-fontana-gold {
+      color: #fff;
+      background: var(--gold-bright);
+    }
+
+    .btn-fontana-gold:hover {
+      background: var(--gold-bright);
+      color: #fff;
+    }
+
+    /* Vista 1: Pantalla de Login Seguro */
+    .login-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .login-card {
+      background: var(--night-2);
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      max-width: 440px;
+      width: 100%;
+      padding: 40px 32px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .login-header {
+      text-align: center;
+    }
+
+    .login-title {
+      font-family: var(--serif);
+      font-size: 32px;
+      font-weight: 400;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+
+    .login-subtitle {
+      font-size: 13px;
+      color: var(--ivory-dim);
+      line-height: 1.5;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ivory-dim);
+      font-weight: 600;
+    }
+
+    .form-input {
+      background: var(--stone);
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: var(--ivory);
+      font-family: var(--sans);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .form-input:focus {
+      border-color: var(--gold);
+    }
+
+    .login-alert {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      background: rgba(231, 76, 60, 0.1);
+      border: 1px solid rgba(231, 76, 60, 0.3);
+      color: #e74c3c;
+      display: none;
+    }
+
+    /* Vista 2: Dashboard Mission Control */
+    .dashboard-view {
+      display: none;
+      flex: 1;
+      padding: 28px 4vw;
+      max-width: 1500px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Métricas Globales */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .metric-box {
+      background: var(--night-2);
+      border: 1px solid var(--border-soft);
+      border-radius: 10px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ivory-dim);
+      font-weight: 600;
+    }
+
+    .metric-num {
+      font-family: var(--serif);
+      font-size: 32px;
+      font-weight: 600;
+      color: var(--ivory);
+    }
+
+    .metric-sub {
+      font-size: 12px;
+      color: var(--ivory-faint);
+    }
+
+    /* Layout Principal de 2 Columnas */
+    .control-grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .control-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Sidebar de Deseos */
+    .wishes-sidebar {
+      background: var(--night-2);
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: calc(100vh - 200px);
+      position: sticky;
+      top: 90px;
+    }
+
+    .search-box {
+      width: 100%;
+      background: var(--stone);
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      padding: 9px 12px;
+      font-size: 13px;
+      color: var(--ivory);
+      outline: none;
+    }
+
+    .search-box:focus {
+      border-color: var(--gold);
+    }
+
+    .wishes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .wish-card {
+      background: var(--stone);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .wish-card:hover {
+      border-color: var(--gold);
+      transform: translateY(-1px);
+    }
+
+    .wish-card.active {
+      border-color: var(--gold);
+      background: var(--night-2);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .wish-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .wish-card-id {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gold);
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-approved {
+      background: rgba(46, 204, 113, 0.15);
+      color: #27ae60;
+      border: 1px solid rgba(46, 204, 113, 0.3);
+    }
+
+    .badge-pending {
+      background: rgba(243, 156, 18, 0.15);
+      color: #d35400;
+      border: 1px solid rgba(243, 156, 18, 0.3);
+    }
+
+    .wish-card-user {
+      font-size: 12px;
+      color: var(--ivory-dim);
+    }
+
+    .wish-card-snippet {
+      font-size: 13px;
+      color: var(--ivory);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Inspector Central */
+    .inspector-panel {
+      background: var(--night-2);
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      min-height: 600px;
+    }
+
+    .inspector-header {
+      border-bottom: 1px solid var(--border-soft);
+      padding-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .inspector-wish-text {
+      font-family: var(--serif);
+      font-size: 26px;
+      line-height: 1.3;
+      color: var(--ivory);
+      font-weight: 400;
+    }
+
+    .inspector-meta-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      background: var(--stone);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+
+    .meta-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .meta-cell-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ivory-dim);
+    }
+
+    .meta-cell-val {
+      font-size: 13px;
+      font-family: var(--mono);
+      font-weight: 500;
+      color: var(--ivory);
+    }
+
+    .section-heading {
+      font-family: var(--serif);
+      font-size: 22px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    /* Plan Maestro */
+    .plan-card {
+      background: var(--stone);
+      border: 1px solid var(--border-soft);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .plan-diag {
+      font-style: italic;
+      color: var(--gold-bright);
+      background: rgba(184, 133, 58, 0.08);
+      border-left: 3px solid var(--gold);
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+      font-size: 14px;
+    }
+
+    .weeks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .week-item {
+      background: var(--night-2);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .week-item-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gold);
+    }
+
+    .week-item-focus {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ivory);
+    }
+
+    .week-item-goal {
+      font-size: 12px;
+      color: var(--ivory-dim);
+      line-height: 1.4;
+    }
+
+    /* Sesiones Diarias */
+    .timeline-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .day-row {
+      background: var(--stone);
+      border: 1px solid var(--border-soft);
+      border-radius: 10px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: border-color 0.2s ease;
+    }
+
+    .day-row:hover {
+      border-color: var(--gold);
+    }
+
+    .day-row-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-soft);
+      padding-bottom: 10px;
+    }
+
+    .day-pill {
+      background: var(--gold);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .day-focus-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ivory);
+      margin-left: 10px;
+    }
+
+    .day-telemetry {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ivory-dim);
+      display: flex;
+      gap: 14px;
+    }
+
+    .day-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .day-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .day-pane {
+      background: var(--night-2);
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .day-pane-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .day-pane-body {
+      font-size: 13px;
+      color: var(--ivory);
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 50px 20px;
+      color: var(--ivory-dim);
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="grain"></div>
+
+  <!-- Header Superior -->
+  <header class="admin-header">
+    <a href="/" class="admin-brand">
+      <span class="admin-logo">Fontana</span>
+      <span class="admin-tag">Mission Control</span>
+    </a>
+
+    <div class="admin-controls">
+      <!-- Selector de tema oficial Fontana (Blanco, Azul, Negro) -->
+      <div class="theme-dots" title="Cambiar tema">
+        <div class="theme-dot" style="background: #fbfaf7;" onclick="setTheme('light')" id="dot-light"></div>
+        <div class="theme-dot" style="background: #235f88;" onclick="setTheme('blue')" id="dot-blue"></div>
+        <div class="theme-dot" style="background: #0c1016;" onclick="setTheme('dark')" id="dot-dark"></div>
+      </div>
+
+      <div id="session-controls" style="display: none; align-items: center; gap: 10px;">
+        <button class="btn-fontana" onclick="fetchData()">
+          <span>🔄</span> Actualizar
+        </button>
+        <button class="btn-fontana" onclick="signOutAdmin()">
+          <span>🚪</span> Salir
+        </button>
+      </div>
+
+      <a href="/" class="btn-fontana" target="_blank">
+        <span>🌐</span> Ver Web
+      </a>
+    </div>
+  </header>
+
+  <!-- Vista 1: Ingreso Seguro de Administrador -->
+  <div class="login-container" id="view-login">
+    <div class="login-card">
+      <div class="login-header">
+        <h1 class="login-title">Acceso de Administrador</h1>
+        <p class="login-subtitle">Ingresa tus credenciales para auditar los deseos, sesiones diarias de IA y métricas financieras.</p>
+      </div>
+
+      <div class="login-alert" id="login-alert"></div>
+
+      <form onsubmit="handleAdminLogin(event)">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label>Email de Administrador</label>
+          <input type="email" id="admin-email" class="form-input" value="marcelobarrazasan@gmail.com" required />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label>Llave Maestra de Administrador (Token / Service Role)</label>
+          <input type="password" id="admin-token" class="form-input" placeholder="Ingresa tu llave de Supabase..." required />
+        </div>
+
+        <button type="submit" class="btn-fontana btn-fontana-gold" style="width: 100%; justify-content: center; padding: 12px;" id="btn-login-submit">
+          Ingresar a Mission Control
+        </button>
+      </form>
+
+      <div style="font-size: 11px; text-align: center; color: var(--ivory-faint); margin-top: 10px;">
+        🔒 Conexión cifrada directa a Supabase Fontana • Acceso restringido
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista 2: Dashboard Mission Control -->
+  <div class="dashboard-view" id="view-dashboard">
+    <!-- Métricas Globales -->
+    <div class="metrics-grid">
+      <div class="metric-box">
+        <span class="metric-label">Deseos Totales</span>
+        <span class="metric-num" id="m-total-wishes">—</span>
+        <span class="metric-sub" id="m-active-wishes">— activos</span>
+      </div>
+      <div class="metric-box">
+        <span class="metric-label">Pendientes HITL</span>
+        <span class="metric-num" id="m-pending-hitl" style="color: var(--gold);">—</span>
+        <span class="metric-sub">Requieren revisión humana</span>
+      </div>
+      <div class="metric-box">
+        <span class="metric-label">Días Ejecutados</span>
+        <span class="metric-num" id="m-days-run">—</span>
+        <span class="metric-sub">Sesiones autónomas registradas</span>
+      </div>
+      <div class="metric-box">
+        <span class="metric-label">Cómputo Total Invertido</span>
+        <span class="metric-num" id="m-tokens-cost" style="font-size: 24px;">—</span>
+        <span class="metric-sub" id="m-tokens-count">— tokens</span>
+      </div>
+    </div>
+
+    <!-- Layout Grid -->
+    <div class="control-grid">
+      <!-- Sidebar de Deseos -->
+      <aside class="wishes-sidebar">
+        <input type="text" id="filter-input" class="search-box" placeholder="Buscar por email o ID..." oninput="filterWishes()" />
+        <div class="wishes-list" id="wishes-list">
+          <div class="empty-state">Cargando deseos...</div>
+        </div>
+      </aside>
+
+      <!-- Inspector de Deseo -->
+      <main class="inspector-panel" id="inspector-panel">
+        <div class="empty-state">
+          Selecciona un deseo de la izquierda para inspeccionar su Plan Maestro, historial día por día y balances de cómputo.
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://cbvqwdrbwogsmcglsvzg.supabase.co';
+    const COST_PER_PROMPT = 0.15 / 1_000_000;
+    const COST_PER_COMPLETION = 0.60 / 1_000_000;
+    const USD_TO_COP = 4150.0;
+
+    let adminToken = sessionStorage.getItem('fontana_admin_token') || localStorage.getItem('fontana_admin_token') || '';
+    let allWishes = [];
+    let selectedWishId = null;
+
+    // Manejo de Temas Fontana (light, blue, dark)
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('fontana_theme', theme);
+      updateThemeDots(theme);
+    }
+
+    function updateThemeDots(theme) {
+      document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
+      const activeDot = document.getElementById('dot-' + theme);
+      if (activeDot) activeDot.classList.add('active');
+    }
+
+    // Inicializar tema al cargar
+    const initialTheme = localStorage.getItem('fontana_theme') || 'light';
+    setTheme(initialTheme);
+
+    // Consulta HTTP nativa y segura a Supabase REST
+    async function apiRequest(endpoint) {
+      if (!adminToken) throw new Error("No hay token de administrador.");
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+        headers: {
+          'apikey': adminToken,
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `Error HTTP ${res.status}`);
+      }
+      return await res.json();
+    }
+
+    // Login Seguro de Administrador
+    async function handleAdminLogin(e) {
+      e.preventDefault();
+      const tokenInput = document.getElementById('admin-token').value.trim();
+      const alertBox = document.getElementById('login-alert');
+      const submitBtn = document.getElementById('btn-login-submit');
+
+      alertBox.style.display = 'none';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Verificando credenciales...';
+
+      try {
+        // Prueba de autorización real con Supabase
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/wishes?select=id&limit=1`, {
+          headers: {
+            'apikey': tokenInput,
+            'Authorization': `Bearer ${tokenInput}`
+          }
+        });
+
+        if (!res.ok) {
+          throw new Error("Credenciales inválidas o sin permisos de administrador.");
+        }
+
+        // Credenciales aprobadas
+        adminToken = tokenInput;
+        sessionStorage.setItem('fontana_admin_token', adminToken);
+        localStorage.setItem('fontana_admin_token', adminToken);
+
+        showDashboard();
+      } catch (err) {
+        alertBox.textContent = err.message || "Error al autenticar. Verifica tu llave.";
+        alertBox.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Ingresar a Mission Control';
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('view-login').style.display = 'none';
+      document.getElementById('view-dashboard').style.display = 'block';
+      document.getElementById('session-controls').style.display = 'flex';
+      fetchData();
+    }
+
+    function signOutAdmin() {
+      sessionStorage.removeItem('fontana_admin_token');
+      localStorage.removeItem('fontana_admin_token');
+      adminToken = '';
+      document.getElementById('view-dashboard').style.display = 'none';
+      document.getElementById('session-controls').style.display = 'none';
+      document.getElementById('view-login').style.display = 'flex';
+    }
+
+    // Cargar Datos
+    async function fetchData() {
+      const listContainer = document.getElementById('wishes-list');
+      listContainer.innerHTML = '<div class="empty-state">Cargando deseos...</div>';
+
+      try {
+        const wishes = await apiRequest('wishes?select=*&order=created_at.desc');
+        const dailyWork = await apiRequest('ai_daily_work?select=session_duration_ms,prompt_tokens,completion_tokens,total_tokens');
+
+        allWishes = wishes || [];
+        updateGlobalMetrics(allWishes, dailyWork || []);
+        renderWishesList(allWishes);
+
+        if (allWishes.length > 0) {
+          const target = selectedWishId
+            ? allWishes.find(w => w.id === selectedWishId) || allWishes[0]
+            : allWishes[0];
+          selectWish(target.id);
+        }
+      } catch (err) {
+        listContainer.innerHTML = `<div class="empty-state" style="color: #e74c3c;">${err.message}</div>`;
+      }
+    }
+
+    function updateGlobalMetrics(wishes, dailyWork) {
+      const active = wishes.filter(w => w.status === 'active').length;
+      const pendingHitl = wishes.filter(w => w.plan_status === 'pending_review').length;
+
+      let promptTok = 0;
+      let compTok = 0;
+      let totalTok = 0;
+      dailyWork.forEach(d => {
+        promptTok += d.prompt_tokens || 0;
+        compTok += d.completion_tokens || 0;
+        totalTok += d.total_tokens || 0;
+      });
+
+      const costUsd = (promptTok * COST_PER_PROMPT) + (compTok * COST_PER_COMPLETION);
+      const costCop = costUsd * USD_TO_COP;
+
+      document.getElementById('m-total-wishes').textContent = wishes.length;
+      document.getElementById('m-active-wishes').textContent = `${active} activos actualmente`;
+      document.getElementById('m-pending-hitl').textContent = pendingHitl;
+      document.getElementById('m-days-run').textContent = dailyWork.length;
+      document.getElementById('m-tokens-cost').textContent = `$${costUsd.toFixed(4)} USD`;
+      document.getElementById('m-tokens-count').textContent = `${totalTok.toLocaleString()} tokens ($${costCop.toLocaleString('es-CO', { maximumFractionDigits: 0 })} COP)`;
+    }
+
+    function renderWishesList(wishes) {
+      const container = document.getElementById('wishes-list');
+      if (!wishes || wishes.length === 0) {
+        container.innerHTML = '<div class="empty-state">No hay deseos registrados.</div>';
+        return;
+      }
+
+      container.innerHTML = wishes.map(w => {
+        const isSel = w.id === selectedWishId ? 'active' : '';
+        const shortId = w.id.substring(0, 8);
+        const planBadge = w.plan_status === 'approved'
+          ? '<span class="badge badge-approved">Plan Aprobado</span>'
+          : '<span class="badge badge-pending">Revisión HITL</span>';
+
+        return `
+          <div class="wish-card ${isSel}" onclick="selectWish('${w.id}')">
+            <div class="wish-card-head">
+              <span class="wish-card-id">#${shortId}</span>
+              ${planBadge}
+            </div>
+            <div class="wish-card-user">${escapeHtml(w.contact_email || 'Sin email')}</div>
+            <div class="wish-card-snippet">"${escapeHtml(w.wish_text || 'Sin texto')}"</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterWishes() {
+      const q = document.getElementById('filter-input').value.toLowerCase().trim();
+      const filtered = allWishes.filter(w =>
+        w.id.toLowerCase().includes(q) ||
+        (w.contact_email && w.contact_email.toLowerCase().includes(q)) ||
+        (w.wish_text && w.wish_text.toLowerCase().includes(q))
+      );
+      renderWishesList(filtered);
+    }
+
+    async function selectWish(wishId) {
+      selectedWishId = wishId;
+      renderWishesList(allWishes);
+
+      const inspector = document.getElementById('inspector-panel');
+      inspector.innerHTML = '<div class="empty-state">Cargando sesiones y relevos...</div>';
+
+      const wish = allWishes.find(w => w.id === wishId);
+      if (!wish) return;
+
+      try {
+        const days = await apiRequest(`ai_daily_work?wish_id=eq.${wishId}&select=*&order=day_number.asc`);
+        renderInspector(wish, days || []);
+      } catch (err) {
+        inspector.innerHTML = `<div class="empty-state" style="color: #e74c3c;">${err.message}</div>`;
+      }
+    }
+
+    function renderInspector(wish, days) {
+      const inspector = document.getElementById('inspector-panel');
+      const plan = wish.plan_30d;
+
+      let promptTok = wish.plan_tokens || 0;
+      let compTok = 0;
+      let totalTok = wish.plan_tokens || 0;
+      let totalMs = wish.plan_generation_ms || 0;
+
+      days.forEach(d => {
+        promptTok += d.prompt_tokens || 0;
+        compTok += d.completion_tokens || 0;
+        totalTok += d.total_tokens || 0;
+        totalMs += d.session_duration_ms || 0;
+      });
+
+      const costUsd = (promptTok * COST_PER_PROMPT) + (compTok * COST_PER_COMPLETION);
+      const costCop = costUsd * USD_TO_COP;
+
+      let weeklyGoalsHtml = '';
+      if (plan && plan.weekly_goals && Array.isArray(plan.weekly_goals)) {
+        weeklyGoalsHtml = `
+          <div class="weeks-grid">
+            ${plan.weekly_goals.map(g => `
+              <div class="week-item">
+                <div class="week-item-title">Semana ${g.week}</div>
+                <div class="week-item-focus">${escapeHtml(g.focus || '')}</div>
+                <div class="week-item-goal">${escapeHtml(g.goal || '')}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      let daysHtml = '';
+      if (days.length === 0) {
+        daysHtml = '<div class="empty-state" style="padding: 24px;">No hay sesiones diarias ejecutadas aún para este deseo.</div>';
+      } else {
+        daysHtml = `
+          <div class="timeline-list">
+            ${days.map(d => `
+              <div class="day-row">
+                <div class="day-row-head">
+                  <div>
+                    <span class="day-pill">Día ${d.day_number} de 30</span>
+                    <span class="day-focus-label">${escapeHtml(d.focus_goal || 'Sin foco')}</span>
+                  </div>
+                  <div class="day-telemetry">
+                    <span>⏱️ ${(d.session_duration_ms || 0).toLocaleString()} ms</span>
+                    <span>⚡ ${(d.total_tokens || 0).toLocaleString()} tokens</span>
+                    <span>📅 ${new Date(d.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                </div>
+                <div class="day-grid">
+                  <div class="day-pane">
+                    <div class="day-pane-title">📦 Resultado Tangible Generado</div>
+                    <div class="day-pane-body">${escapeHtml(d.daily_result || '—')}</div>
+                  </div>
+                  <div class="day-pane">
+                    <div class="day-pane-title">🔄 Relevo para Mañana (Handoff)</div>
+                    <div class="day-pane-body">${escapeHtml(d.tomorrow_handoff || '—')}</div>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      let feedbackHtml = '';
+      if (wish.client_feedback && Array.isArray(wish.client_feedback) && wish.client_feedback.length > 0) {
+        feedbackHtml = `
+          <div>
+            <div class="section-heading">
+              <span>💬</span> Retroalimentación Recibida del Cliente
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              ${wish.client_feedback.map(fb => {
+                const rEmoji = fb.rating === 'positive' ? '🟢 Excelente avance' : (fb.rating === 'neutral' ? '🟡 En progreso, con dudas' : '🔴 Ajustar rumbo');
+                return `
+                  <div style="background: var(--stone); border: 1px solid var(--border-soft); border-radius: 8px; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-weight: 600; font-size: 13px; color: var(--gold);">Semana ${fb.week}</span>
+                      <span style="font-size: 12px; font-weight: 600;">${rEmoji}</span>
+                    </div>
+                    <div style="font-size: 13px; color: var(--ivory); font-style: italic;">
+                      "${escapeHtml(fb.comment || 'Sin comentarios adicionales')}"
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      inspector.innerHTML = `
+        <div class="inspector-header">
+          <div style="font-size: 11px; font-family: var(--mono); color: var(--gold); letter-spacing: 0.05em;">DESEO ID: ${wish.id}</div>
+          <h2 class="inspector-wish-text">"${escapeHtml(wish.wish_text || '')}"</h2>
+
+          <div class="inspector-meta-row">
+            <div class="meta-cell">
+              <span class="meta-cell-label">Cliente</span>
+              <span class="meta-cell-val">${escapeHtml(wish.contact_email || '—')}</span>
+            </div>
+            <div class="meta-cell">
+              <span class="meta-cell-label">Progreso</span>
+              <span class="meta-cell-val">${days.length} / 30 Días</span>
+            </div>
+            <div class="meta-cell">
+              <span class="meta-cell-label">Cómputo Total</span>
+              <span class="meta-cell-val" style="color: var(--gold);">$${costUsd.toFixed(4)} USD ($${costCop.toLocaleString('es-CO', { maximumFractionDigits: 0 })} COP)</span>
+            </div>
+            <div class="meta-cell">
+              <span class="meta-cell-label">Tokens & Tiempo IA</span>
+              <span class="meta-cell-val">${totalTok.toLocaleString()} tokens (${(totalMs / 1000).toFixed(2)}s)</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-heading">
+            <span>📋</span> Plan Maestro de 30 Días
+            <small style="font-size: 12px; font-family: var(--sans); color: var(--ivory-dim); font-weight: normal;">
+              (${wish.plan_generation_ms || 0} ms | ${wish.plan_tokens || 0} tokens)
+            </small>
+          </div>
+          ${plan ? `
+            <div class="plan-card">
+              <div class="plan-diag">
+                <strong>Diagnóstico:</strong> ${escapeHtml(plan.diagnosis || 'Sin diagnóstico')}
+              </div>
+              ${weeklyGoalsHtml}
+            </div>
+          ` : `
+            <div class="empty-state">No se ha formulado el plan de 30 días aún.</div>
+          `}
+        </div>
+
+        ${feedbackHtml}
+
+        <div>
+          <div class="section-heading">
+            <span>⚡</span> Sesiones Diarias Registradas (${days.length}/30 Días)
+          </div>
+          ${daysHtml}
+        </div>
+      `;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Comprobación de sesión existente
+    document.addEventListener('DOMContentLoaded', () => {
+      if (adminToken) {
+        showDashboard();
+      }
+    });
+  </script>
+</body>
+
+</html>

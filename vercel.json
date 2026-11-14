@@ -12,6 +12,14 @@
       "destination": "/como-funciona.html"
     },
     {
+      "source": "/admin",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/feedback",
+      "destination": "/feedback.html"
+    },
+    {
       "source": "/roadmap",
       "destination": "/roadmap.html"
     },

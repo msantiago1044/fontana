@@ -134,11 +134,22 @@ def update_wish(wish_id: str, fields: dict) -> bool:
 def record_daily_work(record: dict) -> bool:
     if not is_supabase_configured():
         return False
+
+    # Asegurar que wish_id sea el UUID completo de 36 caracteres
+    raw_id = str(record.get("wish_id", ""))
+    if len(raw_id) != 36:
+        w = fetch_wish(raw_id)
+        if w and "id" in w:
+            record["wish_id"] = w["id"]
+
     url = f"{SUPABASE_URL}/rest/v1/ai_daily_work"
     headers = supabase_headers()
     headers["Prefer"] = "resolution=merge-duplicates"
-    status, _ = http_request(url, method="POST", headers=headers, body=record)
-    return status in (200, 201, 204)
+    status, res = http_request(url, method="POST", headers=headers, body=record)
+    if status not in (200, 201, 204):
+        print(f"[WARN] No se pudo guardar sesión en Supabase (status {status}): {res}", file=sys.stderr)
+        return False
+    return True
 
 
 def notify_telegram_plan_ready(wish_id: str, email: str, diagnosis: str, weekly_goals: list, duration_ms: int, tokens: int):
@@ -377,11 +388,27 @@ def run_daily_session(wish_id: str, day_number: int, previous_handoff: str | Non
         "para que el agente del día siguiente continúe sin perder contexto ni repetir acciones."
     )
 
+    # Incorporar retroalimentación previa del cliente si existe
+    client_feedback = wish_data.get("client_feedback") or []
+    feedback_context = ""
+    if isinstance(client_feedback, list) and len(client_feedback) > 0:
+        latest_fb = client_feedback[-1]
+        fb_week = latest_fb.get("week", 1)
+        fb_rating = latest_fb.get("rating", "neutral")
+        fb_comment = latest_fb.get("comment", "")
+        feedback_context = (
+            f"\nRETROALIMENTACIÓN DIRECTA DEL CLIENTE (Semana {fb_week}):\n"
+            f"- Percepción: {fb_rating}\n"
+            f"- Nota del usuario: \"{fb_comment or 'Sin nota adicional'}\"\n"
+            f"INSTRUCCIÓN: Adapta las acciones y foco del día para atender directamente estas observaciones del usuario.\n"
+        )
+
     prompt = (
         f"DÍA ACTUAL: Día {day_number} de 30 (Semana {week_number}/4)\n"
         f"DESEO PRINCIPAL: {wish_text} [Categoría: {category}]\n"
         f"META DE LA SEMANA: {current_week_goal or 'Avance sostenido y verificación de hitos'}\n"
-        f"HANDOFF DEL DÍA ANTERIOR: {previous_handoff or 'Inicio de ciclo: primera jornada de estructuración y arranque'}\n\n"
+        f"HANDOFF DEL DÍA ANTERIOR: {previous_handoff or 'Inicio de ciclo: primera jornada de estructuración y arranque'}\n"
+        f"{feedback_context}\n"
         f"Genera:\n"
         f"1. focus_goal: Objetivo específico de esta sesión diaria.\n"
         f"2. daily_result: Resultado tangible obtenido o avance analítico completado hoy.\n"
@@ -403,8 +430,14 @@ def run_daily_session(wish_id: str, day_number: int, previous_handoff: str | Non
         f"Próxima sesión debe enfocar validación externa y retroalimentación directa."
     )
 
+    real_wish_id = wish_data.get("id", wish_id)
+    if len(str(real_wish_id)) != 36:
+        w_found = fetch_wish(str(real_wish_id))
+        if w_found and "id" in w_found:
+            real_wish_id = w_found["id"]
+
     record = {
-        "wish_id": wish_id,
+        "wish_id": real_wish_id,
         "day_number": day_number,
         "focus_goal": focus_goal,
         "daily_result": daily_result,
@@ -421,6 +454,11 @@ def run_daily_session(wish_id: str, day_number: int, previous_handoff: str | Non
     # Guardar en base de datos si está conectada
     if is_supabase_configured():
         record_daily_work(record)
+
+    # Automatización de cierre semanal (Días 7, 14, 21 y 28)
+    if day_number in (7, 14, 21, 28):
+        print(f"\n📢 [SEMANA {week_number}] ¡Día {day_number} completado! Compilando compendio semanal y notificando a Telegram para aprobación humana (HITL)...")
+        prepare_weekly_email(real_wish_id, week_number=week_number)
 
     return record
 
@@ -494,6 +532,55 @@ def get_balance(wish_id: str) -> dict:
         "estimated_cost_usd": round(1250 * COST_PER_PROMPT_TOKEN + 420 * COST_PER_COMPLETION_TOKEN, 4),
         "estimated_cost_cop": round((1250 * COST_PER_PROMPT_TOKEN + 420 * COST_PER_COMPLETION_TOKEN) * USD_TO_COP, 2),
     }
+
+
+def print_history(wish_id: str):
+    """Muestra el historial cronológico detallado de sesiones diarias para un deseo."""
+    wish = fetch_wish(wish_id)
+    real_id = wish.get("id", wish_id) if wish else wish_id
+    email = wish.get("contact_email") if wish else "N/A"
+    wish_txt = wish.get("wish_text") if wish else "N/A"
+
+    print("\n" + "=" * 70)
+    print(f"📖 HISTORIAL DÍA A DÍA DE SESIONES IA — FONTANA")
+    print(f"   Deseo: {real_id} ({email})")
+    print(f"   \"{wish_txt}\"")
+    print("=" * 70)
+
+    if not is_supabase_configured():
+        print("[ERROR] Supabase no está configurado.", file=sys.stderr)
+        return
+
+    headers = supabase_headers()
+    url = f"{SUPABASE_URL}/rest/v1/ai_daily_work?wish_id=eq.{real_id}&select=*&order=day_number.asc"
+    status, data = http_request(url, headers=headers)
+    if status != 200 or not isinstance(data, list) or len(data) == 0:
+        print(f"⚠️ Aún no hay sesiones diarias registradas para el deseo {real_id[:8]}...")
+        print("=" * 70 + "\n")
+        return
+
+    for d in data:
+        day_num = d.get("day_number")
+        ms = d.get("session_duration_ms", 0)
+        tokens = d.get("total_tokens", 0)
+        focus = d.get("focus_goal", "—")
+        result = d.get("daily_result", "—")
+        handoff = d.get("tomorrow_handoff", "—")
+        created = d.get("created_at", "")[:19].replace("T", " ")
+
+        print(f"\n┌─ [DÍA {day_num:02d}/30] ({created} UTC) │ ⏱️ {ms} ms │ ⚡ {tokens:,} tokens")
+        print(f"│ 🎯 FOCO: {focus}")
+        print(f"│ 📦 RESULTADO TANGIBLE:")
+        for line in result.split("\n"):
+            print(f"│    {line}")
+        print(f"│ 🔄 RELEVO PARA MAÑANA (HANDOFF):")
+        for line in handoff.split("\n"):
+            print(f"│    {line}")
+        print(f"└───────────────────────────────────────────────────────────────────")
+
+    print(f"\n✓ Total de sesiones registradas: {len(data)} / 30 días.")
+    print("=" * 70 + "\n")
+
 
 
 # ── 5. Modo Demostración Autónoma (Self-Contained) ───────────────────────────────
@@ -634,6 +721,21 @@ def prepare_weekly_email(wish_id: str, week_number: int = 1) -> dict:
 
     insights_formatted = "\n".join(insights_list) if insights_list else "  • Sesiones consecutivas de análisis y avance completadas."
 
+    base_web = os.environ.get("FONTANA_WEB_URL", "http://localhost:8080")
+    feedback_section = (
+        f"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"¿CÓMO PERCIBES EL AVANCE DE ESTA SEMANA?\n"
+        f"Tu opinión calibra directamente el rumbo de las siguientes sesiones.\n"
+        f"Haz clic en una opción para registrarla en 1 clic:\n\n"
+        f"🟢 Excelente, vamos por buen camino:\n"
+        f"{base_web}/feedback.html?wish={real_wish_id}&week={week_number}&rating=positive\n\n"
+        f"🟡 En progreso, con dudas o ajustes necesarios:\n"
+        f"{base_web}/feedback.html?wish={real_wish_id}&week={week_number}&rating=neutral\n\n"
+        f"🔴 Desalineado con lo que necesito / Cambiar rumbo:\n"
+        f"{base_web}/feedback.html?wish={real_wish_id}&week={week_number}&rating=negative\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    )
+
     subject = f"Semana {week_number} — Tu avance en Fontana y el siguiente paso 🪙"
     body_text = (
         f"Hola,\n\n"
@@ -645,7 +747,8 @@ def prepare_weekly_email(wish_id: str, week_number: int = 1) -> dict:
         f"({total_tokens:,} tokens de cómputo) distribuidos en 7 sesiones diarias continuas:\n\n"
         f"{insights_formatted}\n\n"
         f"🚀 Lo que viene para la Semana {week_number + 1}: [{next_goal.get('focus', 'Siguiente Fase')}]\n"
-        f"{next_goal.get('goal', 'Continuaremos ejecutando sobre las bases sentadas en esta semana.')}\n\n"
+        f"{next_goal.get('goal', 'Continuaremos ejecutando sobre las bases sentadas en esta semana.')}\n"
+        f"{feedback_section}\n"
         f"El trabajo diario sigue en marcha. La fuente sigue trabajando por tu intención.\n\n"
         f"Fe y trabajo,\n"
         f"La Fuente — Fontana"
@@ -962,24 +1065,24 @@ def scan_and_process_active_wishes() -> dict:
             else:
                 days_elapsed = 1
 
-            # Verificar si hoy ya fue procesado
-            check_url = f"{SUPABASE_URL}/rest/v1/ai_daily_work?wish_id=eq.{wish_id}&day_number=eq.{days_elapsed}&select=id"
-            chk_status, chk_data = http_request(check_url, headers=headers)
-            already_done = chk_status == 200 and isinstance(chk_data, list) and len(chk_data) > 0
+            # Buscar el último día registrado en ai_daily_work para continuar de forma secuencial
+            h_url = f"{SUPABASE_URL}/rest/v1/ai_daily_work?wish_id=eq.{wish_id}&order=day_number.desc&limit=1&select=day_number,tomorrow_handoff"
+            _, h_data = http_request(h_url, headers=headers)
+            last_day = 0
+            prev_handoff = None
+            if isinstance(h_data, list) and len(h_data) > 0:
+                last_day = h_data[0].get("day_number", 0)
+                prev_handoff = h_data[0].get("tomorrow_handoff")
 
-            if already_done:
-                print(f"  • ✅ Deseo {wish_id[:8]} ({contact}): Sesión Día {days_elapsed}/30 ya completada.")
+            next_day = last_day + 1
+            if next_day > 30:
+                print(f"  • 🏁 Deseo {wish_id[:8]} ({contact}): Todos los 30 días ya han sido completados.")
+            elif next_day > days_elapsed:
+                print(f"  • ✅ Deseo {wish_id[:8]} ({contact}): Sesión Día {last_day}/30 al día (esperando siguiente jornada de calendario).")
             else:
-                print(f"  • 🚀 Deseo {wish_id[:8]} ({contact}): Ejecutando sesión Día {days_elapsed}/30...")
-                # Buscar handoff del último día registrado
-                h_url = f"{SUPABASE_URL}/rest/v1/ai_daily_work?wish_id=eq.{wish_id}&order=day_number.desc&limit=1&select=tomorrow_handoff"
-                _, h_data = http_request(h_url, headers=headers)
-                prev_handoff = None
-                if isinstance(h_data, list) and len(h_data) > 0:
-                    prev_handoff = h_data[0].get("tomorrow_handoff")
-
-                sess_res = run_daily_session(wish_id, day_number=days_elapsed, previous_handoff=prev_handoff, wish_data=w)
-                print(f"    ✓ Día {days_elapsed} completado en {sess_res['session_duration_ms']} ms ({sess_res['total_tokens']} tokens). Relevo listo.")
+                print(f"  • 🚀 Deseo {wish_id[:8]} ({contact}): Ejecutando sesión Día {next_day}/30...")
+                sess_res = run_daily_session(wish_id, day_number=next_day, previous_handoff=prev_handoff, wish_data=w)
+                print(f"    ✓ Día {next_day} completado en {sess_res['session_duration_ms']} ms ({sess_res['total_tokens']} tokens). Relevo listo.")
                 daily_run += 1
 
     return {"plans_generated": plans_gen, "daily_sessions_run": daily_run}
@@ -1011,8 +1114,34 @@ def create_test_wish(email: str = "test@fontana.ai", wish_text: str = None, cate
         print("[ERROR] No se encontró ningún perfil en la tabla 'profiles'.", file=sys.stderr)
         return {}
 
-    # 2. Insertar deseo activo
+    # 2. Insertar deseo activo (o actualizar el existente si ya tiene uno activo)
     now_iso = datetime.now(timezone.utc).isoformat()
+    existing_url = f"{SUPABASE_URL}/rest/v1/wishes?user_id=eq.{user_id}&status=in.(pending_payment,active)&select=id,wish_text,status"
+    st_e, ex_wishes = http_request(existing_url, headers=headers)
+    if st_e == 200 and isinstance(ex_wishes, list) and len(ex_wishes) > 0:
+        existing_id = ex_wishes[0]["id"]
+        update_payload = {
+            "wish_text": wish_text,
+            "category": category,
+            "contact_email": email,
+            "status": "active",
+            "plan_30d": None,
+            "plan_status": "pending_review",
+            "cycle_started_at": now_iso
+        }
+        u_url = f"{SUPABASE_URL}/rest/v1/wishes?id=eq.{existing_id}"
+        st_u, res_u = http_request(u_url, method="PATCH", headers=headers, body=update_payload)
+        # Limpiar registros previos de ai_daily_work y emails para comenzar de cero
+        http_request(f"{SUPABASE_URL}/rest/v1/ai_daily_work?wish_id=eq.{existing_id}", method="DELETE", headers=headers)
+        http_request(f"{SUPABASE_URL}/rest/v1/email_logs?wish_id=eq.{existing_id}", method="DELETE", headers=headers)
+
+        print(f"\n🔄 Deseo activo existente ({existing_id[:8]}...) actualizado para {email}:")
+        print(f"  • ID: {existing_id}")
+        print(f"  • Contacto: {email}")
+        print(f"  • Deseo: \"{wish_text}\"")
+        print(f"  • Estado: active (reiniciado para revisión HITL)\n")
+        return {"id": existing_id, "wish_text": wish_text, "status": "active"}
+
     new_wish = {
         "user_id": user_id,
         "contact_email": email,
@@ -1105,6 +1234,10 @@ def main():
     p_bal = subparsers.add_parser("balance", help="Consulta métricas de tiempo, tokens y costo financiero")
     p_bal.add_argument("wish_id", help="UUID o prefijo del deseo")
 
+    # Comando: history <wish_id>
+    p_hist = subparsers.add_parser("history", help="Muestra el historial completo día a día (resultados y relevos)")
+    p_hist.add_argument("wish_id", help="UUID o prefijo del deseo")
+
     # Comando: daemon [--interval N]
     p_dae = subparsers.add_parser("daemon", help="Ejecuta el servicio de background periódico")
     p_dae.add_argument("--interval", type=int, default=3600, help="Intervalo en segundos (defecto: 3600)")
@@ -1176,6 +1309,9 @@ def main():
         print(f"  • Costo USD:         ${bal.get('estimated_cost_usd'):.4f} USD")
         print(f"  • Costo COP:         ${bal.get('estimated_cost_cop'):,.2f} COP")
         print("=" * 60 + "\n")
+
+    elif args.command == "history":
+        print_history(args.wish_id)
 
     elif args.command == "daemon":
         daemon_loop(interval=args.interval)
