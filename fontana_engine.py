@@ -209,7 +209,7 @@ def estimate_tokens(text: str) -> int:
 
 
 # ── Motor de Razonamiento IA ─────────────────────────────────────────────────────
-def call_llm(prompt: str, system_prompt: str = "") -> tuple[str, int, int, int]:
+def call_llm(prompt: str, system_prompt: str = "", response_json: bool = False) -> tuple[str, int, int, int]:
     """
     Invoca la API de Gemini si GEMINI_API_KEY está configurada,
     o utiliza el motor semántico de respaldo determinista para ejecución local.
@@ -220,11 +220,14 @@ def call_llm(prompt: str, system_prompt: str = "") -> tuple[str, int, int, int]:
     if GEMINI_API_KEY:
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={GEMINI_API_KEY}"
+            gen_config: dict = {"temperature": 0.4, "maxOutputTokens": 2048}
+            if response_json:
+                gen_config["responseMimeType"] = "application/json"
             body = {
                 "contents": [
                     {"role": "user", "parts": [{"text": f"{system_prompt}\n\n{prompt}"}]}
                 ],
-                "generationConfig": {"temperature": 0.4, "maxOutputTokens": 2048}
+                "generationConfig": gen_config,
             }
             status, resp = http_request(url, method="POST", body=body)
             if status == 200 and isinstance(resp, dict):
@@ -238,27 +241,33 @@ def call_llm(prompt: str, system_prompt: str = "") -> tuple[str, int, int, int]:
         except Exception as e:
             print(f"[WARN] Error llamando a Gemini API: {e}. Usando sintetizador local.", file=sys.stderr)
 
-    # Sintetizador local determinista y enriquecido
+    # Sintetizador local determinista y neutro
     response_text = ""
     if "PLAN_MAESTRO_30D" in system_prompt:
         response_text = (
             "{\n"
-            '  "diagnosis": "El deseo presenta una alta viabilidad pero requiere estructuración secuencial en adquisición de clientes y validación de oferta antes de escalar recursos.",\n'
+            '  "diagnosis": "El deseo requiere una ruta progresiva 100% digital que combine conocimiento práctico, herramientas adecuadas y creación de presencia informativa en la red.",\n'
             '  "weekly_goals": [\n'
-            '    {"week": 1, "focus": "Clarificación y Propuesta de Valor", "goal": "Auditar activos actuales, definir perfil exacto de comprador y construir el prototipo de oferta irresistible."},\n'
-            '    {"week": 2, "focus": "Prospección y Validación de Interés", "goal": "Contactar los primeros 25 prospectos directos y realizar 10 conversaciones de descubrimiento sin fricción."},\n'
-            '    {"week": 3, "focus": "Conversión y Primeros Cierres", "goal": "Cerrar las primeras ventas o confirmaciones iniciales asegurando testimonios y retroalimentación activa."},\n'
-            '    {"week": 4, "focus": "Consolidación y Hábito Continuo", "goal": "Sistematizar el canal de atracción y sentar las bases operativas para sostener el crecimiento a largo plazo."}\n'
+            '    {"week": 1, "focus": "Claridad y Herramientas Base", "goal": "Entregar guía de enfoque inicial, definir herramientas digitales clave y generar las primeras piezas informativas base para la red."},\n'
+            '    {"week": 2, "focus": "Conocimiento Curado y Activos Prácticos", "goal": "Proveer tutoriales puntuales, plantillas aplicables y ampliar la huella de contenido útil en torno al objetivo."},\n'
+            '    {"week": 3, "focus": "Profundización y Optimización Digital", "goal": "Entregar guías avanzadas, prompts y marcos de decisión junto con contenido especializado para posicionar el tema en la red."},\n'
+            '    {"week": 4, "focus": "Sistematización y Continuidad", "goal": "Consolidar el playbook digital reutilizable para el usuario y completar el paquete de información estratégica en la red."}\n'
             "  ],\n"
-            '  "key_milestones": ["Oferta validada día 7", "Primeras 3 conversaciones día 14", "Primera venta confirmada día 21", "Sistema replicable día 28"],\n'
-            '  "daily_cadence_notes": "Cada día se avanza un paso concreto con feedback medible y handoff estructurado para la siguiente jornada."\n'
+            '  "key_milestones": ["Kit de arranque digital día 7", "Activos y recursos clave día 14", "Sistema de ejecución optimizado día 21", "Playbook y huella digital completa día 28"],\n'
+            '  "daily_cadence_notes": "Cada jornada entrega un recurso digital útil para el usuario y produce una pieza de información interna lista para publicar en la red."\n'
             "}"
         )
+    elif "FONTANA_DAILY_AGENT" in system_prompt:
+        response_text = json.dumps({
+            "focus_goal": "Estructuración de recurso digital práctico y pieza de contenido para la red.",
+            "user_deliverable": "Guía práctica de implementación digital, criterios clave de avance y recomendación de herramienta aplicable a la fase actual.",
+            "network_content": "Borrador de artículo informativo optimizado para buscadores sobre el tema central del deseo, orientado a atraer visibilidad y autoridad.",
+            "tomorrow_handoff": "Continuar con la siguiente pieza práctica de la semana y profundizar en herramientas o conocimiento complementario."
+        }, ensure_ascii=False)
     else:
-        # Sesión diaria
         response_text = (
-            "Día de trabajo enfocado completado con éxito. Se estructuró el entregable correspondiente a la fase activa "
-            "verificando coherencia con los hitos de la semana y dejando tareas concretas de validación."
+            "Sesión completada con éxito. Se consolidó el recurso digital correspondiente a la fase activa "
+            "manteniendo coherencia con las metas de la semana."
         )
 
     completion_tokens = estimate_tokens(response_text)
@@ -280,24 +289,55 @@ def generate_plan(wish_id: str, wish_data: dict | None = None) -> dict:
     wish_text = wish_data.get("wish_text", "Deseo no especificado")
     category = wish_data.get("category", "General")
     contact_email = wish_data.get("contact_email", "usuario@fontana.wish")
+    identity_name = wish_data.get("identity_name") or wish_data.get("donor_alias") or ""
+    identity_age = wish_data.get("identity_age") or ""
     identity_context = wish_data.get("identity_context", "")
 
     system_prompt = (
-        "SYSTEM: Eres Fontana Architect AI, especializado en transformar deseos humanos "
-        "en planes estratégicos de 30 días accionables y medibles con Human-In-The-Loop. "
-        "Rol clave: PLAN_MAESTRO_30D. Devuelve estrictamente un objeto JSON."
+        "SYSTEM: Eres Fontana Architect AI, el arquitecto estratégico de un sistema 100% digital "
+        "llamado Fontana. Rol clave: PLAN_MAESTRO_30D.\n"
+        "NATURALEZA DE FONTANA (REGLA ESTRICTA):\n"
+        "- Fontana opera EXCLUSIVAMENTE en el entorno digital. NO realiza acciones físicas ni presenciales, "
+        "NO opera cuentas privadas del usuario y NO promete resultados externos que dependan de terceros "
+        "(por ejemplo, NO prometas 'cerrar 3 ventas' ni 'conseguir X clientes' como acción de Fontana).\n"
+        "- Fontana impulsa el deseo de la persona durante 30 días mediante DOS vías complementarias:\n"
+        "  1. EQUIPAMIENTO DIGITAL AL USUARIO: darle herramientas/apps digitales recomendadas, conocimiento curado, "
+        "temas exactos de videos tutoriales, guías paso a paso, plantillas, guiones, prompts o sistemas prácticos.\n"
+        "  2. CREACIÓN DE INFORMACIÓN EN LA RED (resultado interno de Fontana): redactar piezas de información útil "
+        "e indexable (artículos SEO, guías públicas, posts de autoridad, respuestas AEO) sobre su proyecto o tema "
+        "para impulsar su visibilidad en internet.\n"
+        "- FLEXIBILIDAD TOTAL: NO uses un molde rígido ni repitas los mismos 4 bloques cada semana. "
+        "Adapta libremente el enfoque de cada una de las 4 semanas a lo que este deseo específico, su categoría "
+        "y su contexto personal realmente necesitan.\n"
+        "Devuelve estrictamente un objeto JSON válido."
     )
+
+    profile_parts = []
+    if identity_name:
+        profile_parts.append(f"Nombre: {identity_name}")
+    if identity_age:
+        profile_parts.append(f"Edad: {identity_age}")
+    profile_line = f"PERFIL: {' | '.join(profile_parts)}\n" if profile_parts else ""
 
     prompt = (
-        f"Analiza el siguiente deseo y genera un Plan Maestro de 30 Días estructurado:\n\n"
+        f"Analiza el siguiente deseo y diseña un Plan Maestro de 30 Días 100% digital y a la medida:\n\n"
         f"DESEO: {wish_text}\n"
         f"CATEGORÍA: {category}\n"
+        f"{profile_line}"
         f"CONTEXTO PERSONAL: {identity_context or 'Sin contexto adicional proporcionado'}\n\n"
-        f"Devuelve un JSON con: diagnosis, weekly_goals (array de 4 objetos con week, focus, goal), "
-        f"key_milestones (array de 4 strings), daily_cadence_notes."
+        f"INSTRUCCIONES PARA LAS 4 SEMANAS:\n"
+        f"- Cada semana en 'weekly_goals' debe describir qué va a construir, curar y entregar Fontana "
+        f"(conocimiento, apps/herramientas digitales, tutoriales clave, plantillas, guías o sistemas + contenido para la red) "
+        f"para equipar al usuario en esa etapa.\n"
+        f"- Evita metas genéricas o presenciales. Sé específico para este deseo y su categoría.\n\n"
+        f"Devuelve estrictamente un JSON con:\n"
+        f"- diagnosis: diagnóstico claro y realista del deseo y su ruta digital.\n"
+        f"- weekly_goals: array de 4 objetos con {{week (1..4), focus (título corto), goal (qué entrega y construye Fontana esa semana)}}.\n"
+        f"- key_milestones: array de 4 strings con los hitos de equipamiento y presencia digital de cada semana.\n"
+        f"- daily_cadence_notes: breve nota de cómo se encadenará el trabajo diario."
     )
 
-    raw_response, p_tokens, c_tokens, total_tokens = call_llm(prompt, system_prompt=system_prompt)
+    raw_response, p_tokens, c_tokens, total_tokens = call_llm(prompt, system_prompt=system_prompt, response_json=True)
     t_end = time.perf_counter()
     duration_ms = int(round((t_end - t_start) * 1000))
 
@@ -311,15 +351,15 @@ def generate_plan(wish_id: str, wish_data: dict | None = None) -> dict:
         plan_dict = json.loads(clean_json)
     except Exception:
         plan_dict = {
-            "diagnosis": raw_response[:300],
+            "diagnosis": raw_response[:300] if raw_response else "Ruta 100% digital estructurada para equipar al usuario y generar presencia informativa en la red.",
             "weekly_goals": [
-                {"week": 1, "focus": "Clarificación inicial", "goal": "Definir bases y validar premisas principales."},
-                {"week": 2, "focus": "Exploración de mercado", "goal": "Contactar primeros prospectos e investigar soluciones."},
-                {"week": 3, "focus": "Pruebas de tracción", "goal": "Implementar iteraciones y registrar respuestas tempranas."},
-                {"week": 4, "focus": "Cierre y consolidación", "goal": "Estabilizar resultados y dejar plan de continuidad."},
+                {"week": 1, "focus": "Claridad y Herramientas Base", "goal": "Entregar guía inicial de enfoque, recomendar herramientas digitales clave y producir las primeras piezas informativas base."},
+                {"week": 2, "focus": "Conocimiento y Activos Prácticos", "goal": "Curar tutoriales puntuales, plantillas aplicables y ampliar el contenido de valor para posicionar el objetivo."},
+                {"week": 3, "focus": "Profundización y Optimización", "goal": "Entregar marcos de decisión avanzados, prompts y recursos específicos mientras se refuerza la huella digital."},
+                {"week": 4, "focus": "Sistematización y Continuidad", "goal": "Consolidar el playbook digital final para el usuario y el paquete completo de información para la red."},
             ],
-            "key_milestones": ["Semana 1: Plan base", "Semana 2: Prospección", "Semana 3: Primeros resultados", "Semana 4: Cierre"],
-            "daily_cadence_notes": "Ejecución continua de 30 días guiada por handoff diario."
+            "key_milestones": ["Semana 1: Kit inicial y base digital", "Semana 2: Herramientas y activos prácticos", "Semana 3: Optimización y recursos avanzados", "Semana 4: Playbook y presencia consolidada"],
+            "daily_cadence_notes": "Ejecución continua 100% digital de 30 días guiada por handoff diario."
         }
 
     result = {
@@ -371,22 +411,35 @@ def run_daily_session(wish_id: str, day_number: int, previous_handoff: str | Non
 
     wish_text = wish_data.get("wish_text", "Deseo en curso")
     category = wish_data.get("category", "General")
+    identity_name = wish_data.get("identity_name") or wish_data.get("donor_alias") or ""
+    identity_age = wish_data.get("identity_age") or ""
+    identity_context = wish_data.get("identity_context", "")
     plan = wish_data.get("plan_30d") or {}
 
     # Determinar semana actual
     week_number = min(4, max(1, (day_number - 1) // 7 + 1))
     weekly_goals = plan.get("weekly_goals", [])
+    current_week_focus = ""
     current_week_goal = ""
     for g in weekly_goals:
         if g.get("week") == week_number:
+            current_week_focus = g.get("focus") or ""
             current_week_goal = g.get("goal") or g.get("focus") or ""
             break
 
     system_prompt = (
-        "SYSTEM: Eres Fontana Daily Agent. Trabajas de forma dedicada en una jornada diaria "
-        "para acercar al usuario al cumplimiento de su deseo en un ciclo de 30 días. "
-        "Generas un resultado de trabajo concreto y preparas un 'tomorrow_handoff' estricto "
-        "para que el agente del día siguiente continúe sin perder contexto ni repetir acciones."
+        "SYSTEM: Eres Fontana Daily Agent (FONTANA_DAILY_AGENT). Operas 100% de forma digital "
+        "para impulsar el deseo del usuario en un ciclo de 30 días.\n"
+        "REGLAS ESTRICTAS:\n"
+        "1. NUNCA finjas ni simules acciones físicas ni métricas externas (no digas 'hoy contacté 10 clientes' ni 'agendé 3 llamadas').\n"
+        "2. En cada jornada generas DOS resultados concretos:\n"
+        "   - user_deliverable: Un recurso digital real y accionable para el usuario (guía práctica, app recomendada con pasos de uso, "
+        "plantilla/guion listo para copiar, prompt útil o tema de video tutorial con enlace seguro de búsqueda en YouTube "
+        "con formato https://www.youtube.com/results?search_query=palabras+clave — NUNCA inventes URLs directas de watch?v=).\n"
+        "   - network_content: El resultado interno de Fontana para ser publicado en internet más adelante: una pieza real de información "
+        "útil, indexable (artículo SEO, guía pública, post de autoridad o respuesta experta AEO) sobre el tema/proyecto del usuario.\n"
+        "3. Prepara un 'tomorrow_handoff' estricto para que el agente del día siguiente continúe sin repetir.\n"
+        "Devuelve estrictamente un objeto JSON válido."
     )
 
     # Incorporar retroalimentación previa del cliente si existe
@@ -401,34 +454,55 @@ def run_daily_session(wish_id: str, day_number: int, previous_handoff: str | Non
             f"\nRETROALIMENTACIÓN DIRECTA DEL CLIENTE (Semana {fb_week}):\n"
             f"- Percepción: {fb_rating}\n"
             f"- Nota del usuario: \"{fb_comment or 'Sin nota adicional'}\"\n"
-            f"INSTRUCCIÓN: Adapta las acciones y foco del día para atender directamente estas observaciones del usuario.\n"
+            f"INSTRUCCIÓN: Adapta el recurso de hoy para atender directamente estas observaciones.\n"
         )
 
+    profile_str = f" | Perfil: {identity_name} ({identity_age} años)" if (identity_name or identity_age) else ""
     prompt = (
         f"DÍA ACTUAL: Día {day_number} de 30 (Semana {week_number}/4)\n"
-        f"DESEO PRINCIPAL: {wish_text} [Categoría: {category}]\n"
-        f"META DE LA SEMANA: {current_week_goal or 'Avance sostenido y verificación de hitos'}\n"
+        f"DESEO PRINCIPAL: {wish_text} [Categoría: {category}]{profile_str}\n"
+        f"CONTEXTO PERSONAL: {identity_context or 'No especificado'}\n"
+        f"ENFOQUE DE LA SEMANA: {current_week_focus or 'Avance digital'}\n"
+        f"META DE LA SEMANA: {current_week_goal or 'Avance sostenido y equipamiento digital'}\n"
         f"HANDOFF DEL DÍA ANTERIOR: {previous_handoff or 'Inicio de ciclo: primera jornada de estructuración y arranque'}\n"
         f"{feedback_context}\n"
-        f"Genera:\n"
-        f"1. focus_goal: Objetivo específico de esta sesión diaria.\n"
-        f"2. daily_result: Resultado tangible obtenido o avance analítico completado hoy.\n"
-        f"3. tomorrow_handoff: Instrucción de entrega y contexto prioritario para el Día {min(30, day_number + 1)}."
+        f"Devuelve estrictamente un JSON con estas 4 claves:\n"
+        f"- focus_goal: Objetivo específico y concreto de esta sesión diaria (1 línea).\n"
+        f"- user_deliverable: Recurso digital concreto creado hoy para equipar al usuario (herramientas/apps, conocimiento, guías, plantillas o enlaces de búsqueda de YouTube seguros).\n"
+        f"- network_content: Pieza de información lista para publicar en la red de internet más adelante (artículo SEO, post de autoridad o guía pública) para impulsar este deseo.\n"
+        f"- tomorrow_handoff: Instrucción precisa de relevo para el Día {min(30, day_number + 1)}."
     )
 
-    raw_response, p_tokens, c_tokens, total_tokens = call_llm(prompt, system_prompt=system_prompt)
+    raw_response, p_tokens, c_tokens, total_tokens = call_llm(prompt, system_prompt=system_prompt, response_json=True)
     t_end = time.perf_counter()
     duration_ms = int(round((t_end - t_start) * 1000))
 
-    # Formulación estructurada de la jornada
-    focus_goal = f"Día {day_number}: Avanzar hito de Semana {week_number} enfocado en {category}."
-    daily_result = (
-        f"Sesión #{day_number} ejecutada con éxito. Se analizaron variables clave del deseo, "
-        f"construyendo sobre la base previa y superando la meta de enfoque. ({len(raw_response)} caracteres procesados)"
+    # Parsear respuesta JSON real de la sesión
+    parsed_session = {}
+    try:
+        clean_json = raw_response.strip()
+        if clean_json.startswith("```json"):
+            clean_json = clean_json.split("```json", 1)[1].split("```", 1)[0].strip()
+        elif clean_json.startswith("```"):
+            clean_json = clean_json.split("```", 1)[1].split("```", 1)[0].strip()
+        parsed_session = json.loads(clean_json)
+    except Exception:
+        parsed_session = {}
+
+    focus_goal = parsed_session.get("focus_goal") or f"Día {day_number}: Avance digital de Semana {week_number} ({category})."
+    user_deliv = parsed_session.get("user_deliverable") or (
+        f"Recurso práctico de la jornada #{day_number} enfocado en {current_week_goal or category}."
     )
-    tomorrow_handoff = (
-        f"Contexto para Día {min(30, day_number + 1)}: El día {day_number} consolidó las bases de la meta. "
-        f"Próxima sesión debe enfocar validación externa y retroalimentación directa."
+    net_content = parsed_session.get("network_content") or (
+        f"Pieza informativa base del Día {day_number} sobre \"{wish_text[:80]}\" lista para futura publicación en la red."
+    )
+    daily_result = (
+        f"📌 Recurso Digital para el Usuario:\n{user_deliv}\n\n"
+        f"🌐 [RESULTADO INTERNO FONTANA — INFORMACIÓN PARA LA RED]:\n{net_content}"
+    )
+    tomorrow_handoff = parsed_session.get("tomorrow_handoff") or (
+        f"Contexto para Día {min(30, day_number + 1)}: Continuar construyendo sobre lo entregado en el Día {day_number} "
+        f"dentro del enfoque '{current_week_focus or category}'."
     )
 
     real_wish_id = wish_data.get("id", wish_id)
@@ -713,38 +787,49 @@ def prepare_weekly_email(wish_id: str, week_number: int = 1) -> dict:
     total_tokens = sum(r.get("total_tokens", 0) for r in daily_records)
     total_mins = round(total_ms / 60000.0, 2)
 
-    # Compilar los focos de trabajo de los 7 días de la semana
+    # Compilar los focos y recursos digitales para el usuario de los 7 días (excluyendo el contenido interno de red)
     focus_summary = []
+    user_resources_summary = []
     for r in daily_records:
         d_num = r.get("day_number")
         f_txt = r.get("focus_goal", "")
+        res_txt = r.get("daily_result", "") or ""
+        if "🌐 [RESULTADO INTERNO FONTANA" in res_txt:
+            res_txt = res_txt.split("🌐 [RESULTADO INTERNO FONTANA", 1)[0]
+        res_txt = res_txt.replace("📌 Recurso Digital para el Usuario:", "").strip()
         if f_txt:
             focus_summary.append(f"- Día {d_num}: {f_txt}")
-    focus_context = "\n".join(focus_summary) if focus_summary else "Avance sostenido en los hitos de la semana."
+        if res_txt:
+            user_resources_summary.append(f"Día {d_num}: {res_txt[:350]}")
+    focus_context = "\n".join(focus_summary) if focus_summary else "Avance sostenido en los hitos digitales de la semana."
+    resources_context = "\n".join(user_resources_summary) if user_resources_summary else focus_context
 
     base_web = os.environ.get("FONTANA_WEB_URL", "https://fontana.digital")
 
-    # 1. Generar cuerpo estratégico con IA (CERO mención a tokens o cómputo)
-    subject = f"Fontana | Tu avance en la Semana {week_number} y el plan táctico siguiente 🪙"
+    # 1. Generar cuerpo estratégico con IA (CERO mención a tokens, cómputo ni contenido interno de red)
+    subject = f"Fontana | Tu kit digital de la Semana {week_number} y próximos pasos 🪙"
     prompt = (
         f"Redacta el cuerpo de un correo semanal de acompañamiento de Fontana para un usuario.\n"
         f"Deseo del usuario: \"{wish.get('wish_text', '')}\"\n"
         f"Categoría: {wish.get('category', 'General')}\n"
         f"Semana concluida: Semana {week_number} ([{curr_goal.get('focus', 'Consolidación')}])\n"
         f"Meta de la Semana {week_number}: {curr_goal.get('goal', 'Avance de la fase actual')}\n"
+        f"Recursos digitales trabajados esta semana:\n{resources_context}\n\n"
         f"Meta de la Semana {week_number + 1} entrante: [{next_goal.get('focus', 'Siguiente Fase')}] -> {next_goal.get('goal', 'Continuación del plan')}\n\n"
         f"REGLAS ESTRICTAS DE COMUNICACIÓN:\n"
-        f"1. CERO mención a tokens, minutos de análisis, IA, cómputo ni costos técnicos.\n"
-        f"2. Tono: Elegante, ejecutivo, empático y profundamente profesional (estilo Fontana: La Fuente).\n"
-        f"3. Explica con claridad y sustancia QUÉ SE CONSTRUYÓ y analizó durante esta Semana (3-4 hitos estratégicos concretos para su deseo).\n"
-        f"4. Explica QUÉ SE PLANEA EJECUTAR en la siguiente semana (pasos tácticos concretos).\n"
-        f"5. Incluye un consejo o acción práctica accionable para el cliente en este momento.\n"
+        f"1. CERO mención a tokens, minutos de análisis, IA, modelo LLM, cómputo ni costos técnicos.\n"
+        f"2. Tono: Elegante, ejecutivo, empático y práctico (estilo La Fuente — Fontana).\n"
+        f"3. Fontana es 100% digital: entrega al cliente herramientas/apps concretas recomendadas, conocimiento práctico, "
+        f"guías o plantillas y temas de video tutoriales (si incluyes enlaces de video usa únicamente búsquedas seguras "
+        f"de YouTube como https://www.youtube.com/results?search_query=tema+en+palabras — NUNCA inventes URLs watch?v=).\n"
+        f"4. Resume con sustancia QUÉ SE PREPARÓ esta semana para su deseo y QUÉ RECIBIRÁ en la Semana {week_number + 1}.\n"
+        f"5. Cierra con una recomendación práctica y clara que pueda aplicar digitalmente esta semana.\n"
     )
 
-    llm_body, p_tok, c_tok, tot_tok = call_llm(prompt, system_prompt="SYSTEM: Eres Fontana Strategic Mentor. Escribes reportes ejecutivos semanales de alto valor para clientes de Fontana.")
+    llm_body, p_tok, c_tok, tot_tok = call_llm(prompt, system_prompt="SYSTEM: Eres Fontana Strategic Mentor. Escribes reportes semanales prácticos y de alto valor para clientes de Fontana.")
 
-    # Si el LLM devolvió un texto estructurado, lo usamos; si no, fallback sobrio
-    if llm_body and len(llm_body) > 200 and "Día de trabajo enfocado" not in llm_body:
+    # Si el LLM devolvió un texto estructurado, lo usamos; si no, fallback sobrio y neutro
+    if llm_body and len(llm_body) > 200 and "Sesión completada con éxito" not in llm_body:
         # Extraer posible asunto del LLM
         lines = llm_body.strip().split("\n")
         if lines[0].lower().startswith("asunto:"):
@@ -755,17 +840,16 @@ def prepare_weekly_email(wish_id: str, week_number: int = 1) -> dict:
     else:
         body_content = (
             f"Hola,\n\n"
-            f"Es un gusto saludarte al cierre de esta primera semana de trabajo conjunto para tu deseo:\n"
+            f"Es un gusto saludarte al cierre de la Semana {week_number} de acompañamiento para tu deseo:\n"
             f"\"{wish.get('wish_text', '')}\"\n\n"
-            f"🎯 Balance de la Semana {week_number}: [{curr_goal.get('focus', 'Clarificación y Propuesta de Valor')}]\n"
-            f"Durante estos 7 días hemos consolidado la arquitectura estratégica inicial:\n"
-            f"• Definición y validación del perfil exacto de comprador y nicho de alto retorno.\n"
-            f"• Estructuración del prototipo de oferta irresistible orientada a resultados medibles.\n"
-            f"• Selección y mapeo de los primeros 25 prospectos objetivos para contacto directo.\n\n"
-            f"🚀 Lo que ejecutaremos en la Semana {week_number + 1}: [{next_goal.get('focus', 'Prospección y Validación de Interés')}]\n"
-            f"{next_goal.get('goal', 'Iniciaremos el contacto con los primeros prospectos y realizaremos las conversaciones de descubrimiento.')}\n\n"
-            f"💡 Consejo de Fontana para esta etapa:\n"
-            f"El valor de una propuesta no está en la complejidad técnica, sino en la claridad con que resuelve un dolor urgente. En tus primeras conversaciones, enfócate en escuchar el 80% del tiempo y entender a fondo sus necesidades antes de proponer soluciones."
+            f"🎯 Balance de la Semana {week_number}: [{curr_goal.get('focus', 'Claridad y Herramientas')}]\n"
+            f"{curr_goal.get('goal', 'Consolidamos los recursos digitales y conocimientos clave de esta etapa.')}\n\n"
+            f"📦 Lo trabajado durante estos 7 días:\n"
+            f"{focus_context}\n\n"
+            f"🚀 Lo que prepararemos en la Semana {week_number + 1}: [{next_goal.get('focus', 'Siguiente Etapa')}]\n"
+            f"{next_goal.get('goal', 'Continuaremos equipándote con nuevas herramientas, guías y recursos digitales a la medida.')}\n\n"
+            f"💡 Recomendación de Fontana para esta semana:\n"
+            f"Elige una sola herramienta o guía de las trabajadas esta semana y dedícale 20 minutos concretos de aplicación práctica antes de pasar al siguiente paso."
         )
 
     feedback_section = (

@@ -68,3 +68,11 @@ Cuando una solicitud involucre cambios complejos en múltiples capas:
 - **Subagente Frontend:** Encargado de `web/admin.html`, vistas, estilos CSS Fontana (temas Light, Blue, Dark), JavaScript y componentes interactivos.
 - **Subagente Backend & Engine:** Encargado de `fontana_engine.py`, base de datos Supabase, tablas (`wishes`, `ai_daily_work`, `email_log`) y Edge Functions (`telegram-bot`, `send-email`, `notify-telegram`).
 - **Subagente Verificador:** Encargado de validar la paridad de acciones, pruebas de extremo a extremo y verificar que no se rompan las reglas de privacidad.
+
+---
+
+## 6. Naturaleza 100% Digital y Doble Capa del Motor
+
+- **100% Digital y Flexible:** Fontana nunca promete acciones físicas ni simula métricas externas. Los planes de 30 días se diseñan a la medida de cada deseo y categoría (sin moldes rígidos por semana).
+- **Capa 1 — Equipamiento al Usuario (Correos Semanales):** Fontana entrega conocimiento curado, herramientas/apps digitales recomendadas, enlaces seguros de búsqueda de tutoriales en YouTube (`https://www.youtube.com/results?search_query=...`, nunca inventar URLs directas), guías, plantillas, guiones y prompts.
+- **Capa 2 — Resultado Interno para la Red:** En cada sesión diaria (`ai_daily_work.daily_result`), bajo el bloque `🌐 [RESULTADO INTERNO FONTANA — INFORMACIÓN PARA LA RED]:`, el motor redacta y almacena una pieza de información útil e indexable sobre el tema del deseo para futura publicación automática en internet. Este bloque interno no se envía en el correo al cliente.
