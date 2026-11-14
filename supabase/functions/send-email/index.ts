@@ -204,12 +204,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 4. Respuesta manual desde Telegram
+    // 4. Respuesta manual / seguimiento semanal
     if (type === "manual_reply") {
       const { to, subject, body: emailBody, wishId } = body;
-      const htmlBody = emailBody
+      const formatParagraph = (raw: string) => {
+        // 1. Convertir enlaces Markdown [texto](url) a <a href="url">texto</a>
+        let out = raw.replace(
+          /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+          (_m, label, url) => `<a href="${url}" style="color: #b8860b; text-decoration: underline;">${label}</a>`
+        );
+        // 2. Convertir URLs sueltas (que no estén ya dentro de href="...") a enlaces clicables
+        out = out.replace(
+          /(?<!href="|">)(https?:\/\/[^\s<)]+)/g,
+          (url) => `<a href="${url}" style="color: #b8860b; text-decoration: underline;">${url}</a>`
+        );
+        // 3. Negritas Markdown **texto**
+        out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+        return `<p>${out.replace(/\n/g, "<br>")}</p>`;
+      };
+      const htmlBody = String(emailBody || "")
         .split("\n\n")
-        .map((p: string) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
+        .map(formatParagraph)
         .join("");
       await sendEmail(to, subject, emailBase(htmlBody));
       await supabase.from("email_log").insert({

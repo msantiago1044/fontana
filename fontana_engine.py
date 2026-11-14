@@ -824,7 +824,7 @@ def prepare_weekly_email(wish_id: str, week_number: int = 1) -> dict:
         f"2. Tono: Elegante, ejecutivo, empático y práctico (estilo La Fuente — Fontana).\n"
         f"3. Fontana es 100% digital: entrega al cliente herramientas/apps concretas recomendadas, conocimiento práctico, "
         f"guías o plantillas y temas de video tutoriales (si incluyes enlaces de video usa únicamente búsquedas seguras "
-        f"de YouTube como https://www.youtube.com/results?search_query=tema+en+palabras — NUNCA inventes URLs watch?v=).\n"
+        f"de YouTube como [Ver tutoriales de tema](https://www.youtube.com/results?search_query=tema+en+palabras) — NUNCA inventes URLs watch?v= ni repitas la URL entre corchetes).\n"
         f"4. Resume con sustancia QUÉ SE PREPARÓ esta semana para su deseo y QUÉ RECIBIRÁ en la Semana {week_number + 1}.\n"
         f"5. Cierra con una recomendación práctica y clara que pueda aplicar digitalmente esta semana.\n"
     )
