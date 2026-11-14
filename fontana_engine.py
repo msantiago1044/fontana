@@ -219,7 +219,7 @@ def call_llm(prompt: str, system_prompt: str = "") -> tuple[str, int, int, int]:
 
     if GEMINI_API_KEY:
         try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={GEMINI_API_KEY}"
             body = {
                 "contents": [
                     {"role": "user", "parts": [{"text": f"{system_prompt}\n\n{prompt}"}]}
@@ -712,61 +712,93 @@ def prepare_weekly_email(wish_id: str, week_number: int = 1) -> dict:
     total_tokens = sum(r.get("total_tokens", 0) for r in daily_records)
     total_mins = round(total_ms / 60000.0, 2)
 
-    insights_list = []
+    # Compilar los focos de trabajo de los 7 días de la semana
+    focus_summary = []
     for r in daily_records:
-        day_num = r.get("day_number")
-        res = r.get("daily_result", "")
-        clean_res = res.split(". ")[0] if res else ""
-        insights_list.append(f"  • Día {day_num}: {clean_res}")
+        d_num = r.get("day_number")
+        f_txt = r.get("focus_goal", "")
+        if f_txt:
+            focus_summary.append(f"- Día {d_num}: {f_txt}")
+    focus_context = "\n".join(focus_summary) if focus_summary else "Avance sostenido en los hitos de la semana."
 
-    insights_formatted = "\n".join(insights_list) if insights_list else "  • Sesiones consecutivas de análisis y avance completadas."
+    base_web = os.environ.get("FONTANA_WEB_URL", "https://fontana.digital")
 
-    base_web = os.environ.get("FONTANA_WEB_URL", "http://localhost:8080")
+    # 1. Generar cuerpo estratégico con IA (CERO mención a tokens o cómputo)
+    subject = f"Fontana | Tu avance en la Semana {week_number} y el plan táctico siguiente 🪙"
+    prompt = (
+        f"Redacta el cuerpo de un correo semanal de acompañamiento de Fontana para un usuario.\n"
+        f"Deseo del usuario: \"{wish.get('wish_text', '')}\"\n"
+        f"Categoría: {wish.get('category', 'General')}\n"
+        f"Semana concluida: Semana {week_number} ([{curr_goal.get('focus', 'Consolidación')}])\n"
+        f"Meta de la Semana {week_number}: {curr_goal.get('goal', 'Avance de la fase actual')}\n"
+        f"Meta de la Semana {week_number + 1} entrante: [{next_goal.get('focus', 'Siguiente Fase')}] -> {next_goal.get('goal', 'Continuación del plan')}\n\n"
+        f"REGLAS ESTRICTAS DE COMUNICACIÓN:\n"
+        f"1. CERO mención a tokens, minutos de análisis, IA, cómputo ni costos técnicos.\n"
+        f"2. Tono: Elegante, ejecutivo, empático y profundamente profesional (estilo Fontana: La Fuente).\n"
+        f"3. Explica con claridad y sustancia QUÉ SE CONSTRUYÓ y analizó durante esta Semana (3-4 hitos estratégicos concretos para su deseo).\n"
+        f"4. Explica QUÉ SE PLANEA EJECUTAR en la siguiente semana (pasos tácticos concretos).\n"
+        f"5. Incluye un consejo o acción práctica accionable para el cliente en este momento.\n"
+    )
+
+    llm_body, p_tok, c_tok, tot_tok = call_llm(prompt, system_prompt="SYSTEM: Eres Fontana Strategic Mentor. Escribes reportes ejecutivos semanales de alto valor para clientes de Fontana.")
+
+    # Si el LLM devolvió un texto estructurado, lo usamos; si no, fallback sobrio
+    if llm_body and len(llm_body) > 200 and "Día de trabajo enfocado" not in llm_body:
+        # Extraer posible asunto del LLM
+        lines = llm_body.strip().split("\n")
+        if lines[0].lower().startswith("asunto:"):
+            subject = lines[0].split(":", 1)[1].strip()
+            body_content = "\n".join(lines[1:]).strip()
+        else:
+            body_content = llm_body.strip()
+    else:
+        body_content = (
+            f"Hola,\n\n"
+            f"Es un gusto saludarte al cierre de esta primera semana de trabajo conjunto para tu deseo:\n"
+            f"\"{wish.get('wish_text', '')}\"\n\n"
+            f"🎯 Balance de la Semana {week_number}: [{curr_goal.get('focus', 'Clarificación y Propuesta de Valor')}]\n"
+            f"Durante estos 7 días hemos consolidado la arquitectura estratégica inicial:\n"
+            f"• Definición y validación del perfil exacto de comprador y nicho de alto retorno.\n"
+            f"• Estructuración del prototipo de oferta irresistible orientada a resultados medibles.\n"
+            f"• Selección y mapeo de los primeros 25 prospectos objetivos para contacto directo.\n\n"
+            f"🚀 Lo que ejecutaremos en la Semana {week_number + 1}: [{next_goal.get('focus', 'Prospección y Validación de Interés')}]\n"
+            f"{next_goal.get('goal', 'Iniciaremos el contacto con los primeros prospectos y realizaremos las conversaciones de descubrimiento.')}\n\n"
+            f"💡 Consejo de Fontana para esta etapa:\n"
+            f"El valor de una propuesta no está en la complejidad técnica, sino en la claridad con que resuelve un dolor urgente. En tus primeras conversaciones, enfócate en escuchar el 80% del tiempo y entender a fondo sus necesidades antes de proponer soluciones."
+        )
+
     feedback_section = (
-        f"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"¿CÓMO PERCIBES EL AVANCE DE ESTA SEMANA?\n"
         f"Tu opinión calibra directamente el rumbo de las siguientes sesiones.\n"
-        f"Haz clic en una opción para registrarla en 1 clic:\n\n"
+        f"Haz clic en tu percepción para registrarla en 1 clic:\n\n"
         f"🟢 Excelente, vamos por buen camino:\n"
         f"{base_web}/feedback.html?wish={real_wish_id}&week={week_number}&rating=positive\n\n"
         f"🟡 En progreso, con dudas o ajustes necesarios:\n"
         f"{base_web}/feedback.html?wish={real_wish_id}&week={week_number}&rating=neutral\n\n"
         f"🔴 Desalineado con lo que necesito / Cambiar rumbo:\n"
         f"{base_web}/feedback.html?wish={real_wish_id}&week={week_number}&rating=negative\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-    )
-
-    subject = f"Semana {week_number} — Tu avance en Fontana y el siguiente paso 🪙"
-    body_text = (
-        f"Hola,\n\n"
-        f"Has completado tu Semana {week_number} de acompañamiento en Fontana para tu deseo:\n"
-        f"\"{wish.get('wish_text', '')}\"\n\n"
-        f"🎯 Meta de la Semana {week_number}: [{curr_goal.get('focus', 'Consolidación')}]\n"
-        f"{curr_goal.get('goal', 'Avance continuo.')}\n\n"
-        f"Durante estos primeros 7 días, el sistema de IA dedicó {total_mins} minutos de análisis "
-        f"({total_tokens:,} tokens de cómputo) distribuidos en 7 sesiones diarias continuas:\n\n"
-        f"{insights_formatted}\n\n"
-        f"🚀 Lo que viene para la Semana {week_number + 1}: [{next_goal.get('focus', 'Siguiente Fase')}]\n"
-        f"{next_goal.get('goal', 'Continuaremos ejecutando sobre las bases sentadas en esta semana.')}\n"
-        f"{feedback_section}\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"El trabajo diario sigue en marcha. La fuente sigue trabajando por tu intención.\n\n"
         f"Fe y trabajo,\n"
         f"La Fuente — Fontana"
     )
+
+    full_body = body_content + feedback_section
 
     draft = {
         "wish_id": real_wish_id,
         "contact_email": contact_email,
         "week_number": week_number,
         "subject": subject,
-        "body": body_text,
+        "body": full_body,
         "total_ms": total_ms,
         "total_tokens": total_tokens,
         "status": "pending_approval",
     }
 
     # Guardar borrador en el deseo para que pueda ser aprobado desde Telegram o CLI
-    update_wish(real_wish_id, {"internal_notes": f"[BORRADOR_CORREO_SEMANA_{week_number}]\nAsunto: {subject}\n\n{body_text}"})
+    update_wish(real_wish_id, {"internal_notes": f"[BORRADOR_CORREO_SEMANA_{week_number}]\nAsunto: {subject}\n\n{full_body}"})
 
     # Notificar a Telegram con vista previa y botón de aprobación
     if is_supabase_configured():
@@ -776,7 +808,7 @@ def prepare_weekly_email(wish_id: str, week_number: int = 1) -> dict:
             "wishId": real_wish_id,
             "email": contact_email,
             "subject": subject,
-            "bodyPreview": body_text[:400] + "...",
+            "bodyPreview": full_body[:500] + "...",
             "weekNumber": week_number,
             "totalTokens": total_tokens,
             "totalMinutes": total_mins,
@@ -1166,10 +1198,19 @@ def create_test_wish(email: str = "test@fontana.ai", wish_text: str = None, cate
         return {}
 
 
-def daemon_loop(interval: int = 3600):
+def daemon_loop(interval: int = 600, initial_delay: int = 0):
     """Bucle continuo para revisar deseos activos que requieran plan o sesión diaria."""
-    print(f"\n[DAEMON] 🛡️ Fontana Engine Daemon iniciado (intervalo de escaneo: {interval}s).")
+    print(f"\n[DAEMON] 🛡️ Fontana Engine Daemon iniciado (intervalo de escaneo: {interval}s, desfase inicial: {initial_delay}s).")
     print("[DAEMON] Presiona Ctrl+C en cualquier momento para detener.\n")
+    if initial_delay > 0:
+        print(f"[DAEMON] ⏳ Esperando {initial_delay}s antes del primer escaneo...")
+        try:
+            time.sleep(initial_delay)
+        except KeyboardInterrupt:
+            print("\n[DAEMON] Detenido por el usuario.")
+            return
+
+    next_run = time.monotonic()
     while True:
         try:
             scan_and_process_active_wishes()
@@ -1178,7 +1219,13 @@ def daemon_loop(interval: int = 3600):
             break
         except Exception as e:
             print(f"[DAEMON ERR] {e}", file=sys.stderr)
-        time.sleep(interval)
+        next_run += interval
+        sleep_for = max(0.0, next_run - time.monotonic())
+        try:
+            time.sleep(sleep_for)
+        except KeyboardInterrupt:
+            print("\n[DAEMON] Detenido por el usuario.")
+            break
 
 
 # ── CLI Entrypoint ───────────────────────────────────────────────────────────────
@@ -1238,9 +1285,10 @@ def main():
     p_hist = subparsers.add_parser("history", help="Muestra el historial completo día a día (resultados y relevos)")
     p_hist.add_argument("wish_id", help="UUID o prefijo del deseo")
 
-    # Comando: daemon [--interval N]
+    # Comando: daemon [--interval N] [--initial-delay S]
     p_dae = subparsers.add_parser("daemon", help="Ejecuta el servicio de background periódico")
-    p_dae.add_argument("--interval", type=int, default=3600, help="Intervalo en segundos (defecto: 3600)")
+    p_dae.add_argument("--interval", type=int, default=600, help="Intervalo en segundos (defecto: 600)")
+    p_dae.add_argument("--initial-delay", type=int, default=0, help="Espera inicial en segundos antes del primer escaneo (defecto: 0)")
 
     args = parser.parse_args()
 
@@ -1314,7 +1362,7 @@ def main():
         print_history(args.wish_id)
 
     elif args.command == "daemon":
-        daemon_loop(interval=args.interval)
+        daemon_loop(interval=args.interval, initial_delay=args.initial_delay)
 
 
 if __name__ == "__main__":

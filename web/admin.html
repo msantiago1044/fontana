@@ -479,6 +479,243 @@
       margin-bottom: 14px;
     }
 
+    /* Pestañas (Tabs) del Inspector */
+    .inspector-tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border-soft);
+      padding-bottom: 0;
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--ivory-dim);
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--ivory);
+    }
+
+    .tab-btn.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+      font-weight: 600;
+    }
+
+    .tab-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: var(--night-2);
+      color: var(--ivory-dim);
+      border: 1px solid var(--border-soft);
+      letter-spacing: 0.02em;
+    }
+
+    .tab-badge-gold {
+      background: rgba(184, 133, 58, 0.15);
+      color: var(--gold);
+      border-color: rgba(184, 133, 58, 0.4);
+    }
+
+    .tab-pane {
+      display: none;
+      padding-top: 20px;
+    }
+
+    .tab-pane.active {
+      display: block;
+      animation: tabFadeIn 0.25s ease;
+    }
+
+    @keyframes tabFadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Barra de progreso de días */
+    .progress-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 20px;
+      background: var(--stone);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 14px 18px;
+    }
+
+    .progress-bar-bg {
+      height: 8px;
+      background: var(--night-2);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid var(--border-soft);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    /* Tarjetas y Visor de Correos */
+    .email-card {
+      background: var(--stone);
+      border: 1px solid var(--border-soft);
+      border-radius: 10px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .email-card-draft {
+      border-color: var(--gold);
+      background: rgba(184, 133, 58, 0.05);
+      box-shadow: 0 4px 16px rgba(184, 133, 58, 0.08);
+    }
+
+    .email-header-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      border-bottom: 1px solid var(--border-soft);
+      padding-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .email-subject {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--ivory);
+      line-height: 1.3;
+    }
+
+    .email-reading-box {
+      background: var(--night-2);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 20px 22px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--ivory);
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: var(--sans);
+      max-height: 550px;
+      overflow-y: auto;
+    }
+
+    .email-action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding-top: 6px;
+    }
+
+    /* Grilla de Identidad y Contexto */
+    .identity-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .identity-card {
+      background: var(--stone);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .identity-card-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ivory-dim);
+      font-weight: 600;
+    }
+
+    .identity-card-val {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ivory);
+      word-break: break-all;
+    }
+
+    .context-quote-box {
+      background: var(--stone);
+      border-left: 3px solid var(--gold);
+      border-radius: 0 8px 8px 0;
+      padding: 18px 22px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--ivory);
+      font-style: italic;
+      margin-bottom: 20px;
+    }
+
+    /* Tabla de Telemetría */
+    .telemetry-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: var(--stone);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-soft);
+      margin-top: 14px;
+    }
+
+    .telemetry-table th {
+      background: var(--night-2);
+      padding: 11px 16px;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ivory-dim);
+      border-bottom: 1px solid var(--border-soft);
+      font-weight: 600;
+    }
+
+    .telemetry-table td {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border-soft);
+      color: var(--ivory);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .telemetry-table tr:last-child td {
+      border-bottom: none;
+    }
+
     /* Plan Maestro */
     .plan-card {
       background: var(--stone);
@@ -751,6 +988,7 @@
     let adminToken = sessionStorage.getItem('fontana_admin_token') || localStorage.getItem('fontana_admin_token') || '';
     let allWishes = [];
     let selectedWishId = null;
+    let currentActiveTab = 'tab-plan';
 
     // Manejo de Temas Fontana (light, blue, dark)
     function setTheme(theme) {
@@ -768,6 +1006,39 @@
     // Inicializar tema al cargar
     const initialTheme = localStorage.getItem('fontana_theme') || 'light';
     setTheme(initialTheme);
+
+    // Cambio de Pestañas en el Inspector
+    function switchTab(tabId, btn) {
+      currentActiveTab = tabId;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      if (btn) {
+        btn.classList.add('active');
+      } else {
+        const foundBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+        if (foundBtn) foundBtn.classList.add('active');
+      }
+      const targetPane = document.getElementById(tabId);
+      if (targetPane) targetPane.classList.add('active');
+    }
+
+    // Copiar contenido al portapapeles con feedback visual
+    function copyToClipboard(text, btn) {
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<span>✓</span> ¡Copiado!';
+        btn.style.borderColor = 'var(--gold)';
+        btn.style.color = 'var(--gold)';
+        setTimeout(() => {
+          btn.innerHTML = orig;
+          btn.style.borderColor = '';
+          btn.style.color = '';
+        }, 2200);
+      }).catch(() => {
+        alert("Texto copiado parcialmente. Selecciona y copia manualmente si tu navegador restringe el portapapeles.");
+      });
+    }
 
     // Consulta HTTP nativa y segura a Supabase REST
     async function apiRequest(endpoint) {
@@ -931,20 +1202,25 @@
       renderWishesList(allWishes);
 
       const inspector = document.getElementById('inspector-panel');
-      inspector.innerHTML = '<div class="empty-state">Cargando sesiones y relevos...</div>';
+      inspector.innerHTML = '<div class="empty-state">Cargando sesiones, borradores y registros...</div>';
 
       const wish = allWishes.find(w => w.id === wishId);
       if (!wish) return;
 
       try {
-        const days = await apiRequest(`ai_daily_work?wish_id=eq.${wishId}&select=*&order=day_number.asc`);
-        renderInspector(wish, days || []);
+        const [daysRes, emailsRes] = await Promise.all([
+          apiRequest(`ai_daily_work?wish_id=eq.${wishId}&select=*&order=day_number.asc`).catch(() => []),
+          apiRequest(`email_log?wish_id=eq.${wishId}&select=*&order=sent_at.desc`).catch(() => [])
+        ]);
+        const days = Array.isArray(daysRes) ? daysRes : [];
+        const emails = Array.isArray(emailsRes) ? emailsRes : [];
+        renderInspector(wish, days, emails);
       } catch (err) {
         inspector.innerHTML = `<div class="empty-state" style="color: #e74c3c;">${err.message}</div>`;
       }
     }
 
-    function renderInspector(wish, days) {
+    function renderInspector(wish, days, emails) {
       const inspector = document.getElementById('inspector-panel');
       const plan = wish.plan_30d;
 
@@ -963,6 +1239,30 @@
       const costUsd = (promptTok * COST_PER_PROMPT) + (compTok * COST_PER_COMPLETION);
       const costCop = costUsd * USD_TO_COP;
 
+      // ── Detección y extracción de borrador semanal en internal_notes ───────────
+      let hasActiveDraft = false;
+      let draftSubject = 'Reporte Estratégico Semanal | Fontana';
+      let draftBody = '';
+      let rawDraft = '';
+
+      if (wish.internal_notes && wish.internal_notes.includes('[BORRADOR_CORREO_')) {
+        hasActiveDraft = true;
+        rawDraft = wish.internal_notes.trim();
+        const subjMatch = wish.internal_notes.match(/Asunto:\s*([^\n]+)/i);
+        if (subjMatch) {
+          draftSubject = subjMatch[1].trim();
+          draftBody = wish.internal_notes.replace(/\[BORRADOR_CORREO_[^\]]+\]\s*Asunto:\s*[^\n]+\n+/i, '').trim();
+        } else {
+          draftBody = wish.internal_notes.replace(/\[BORRADOR_CORREO_[^\]]+\]\s*/i, '').trim();
+        }
+      }
+
+      const totalEmailsCount = (hasActiveDraft ? 1 : 0) + (emails ? emails.length : 0);
+      const emailBadgeText = hasActiveDraft ? `${totalEmailsCount} (1 Pendiente)` : `${totalEmailsCount}`;
+      const feedbacks = (wish.client_feedback && Array.isArray(wish.client_feedback)) ? wish.client_feedback : [];
+      const progressPercent = Math.min(100, Math.round((days.length / 30) * 100));
+
+      // ── TAB 1: Plan Maestro ───────────────────────────────────────────────────
       let weeklyGoalsHtml = '';
       if (plan && plan.weekly_goals && Array.isArray(plan.weekly_goals)) {
         weeklyGoalsHtml = `
@@ -978,9 +1278,42 @@
         `;
       }
 
+      const tabPlanHtml = `
+        <div class="tab-pane" id="tab-plan">
+          <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <h3 class="section-heading" style="margin-bottom: 0;">
+                <span>📋</span> Plan Maestro de Acompañamiento (30 Días)
+              </h3>
+              <span class="badge ${wish.plan_status === 'approved' ? 'badge-approved' : 'badge-pending'}">
+                ${wish.plan_status === 'approved' ? 'Plan Aprobado' : 'Pendiente de Aprobación'}
+              </span>
+            </div>
+
+            ${plan ? `
+              <div class="plan-card">
+                <div class="plan-diag">
+                  <strong>Diagnóstico Inicial:</strong> ${escapeHtml(plan.diagnosis || 'Sin diagnóstico formulado.')}
+                </div>
+                ${weeklyGoalsHtml}
+              </div>
+            ` : `
+              <div class="empty-state">No se ha formulado el plan de 30 días aún.</div>
+            `}
+
+            <div style="background: var(--stone); border: 1px solid var(--border-soft); border-radius: 8px; padding: 14px 18px; display: flex; gap: 20px; font-size: 12px; color: var(--ivory-dim); flex-wrap: wrap;">
+              <span>⏱️ Tiempo de formulación: <strong>${(wish.plan_generation_ms || 0).toLocaleString()} ms</strong></span>
+              <span>⚡ Tokens invertidos: <strong>${(wish.plan_tokens || 0).toLocaleString()}</strong></span>
+              <span>📅 Estado del Plan: <strong>${escapeHtml(wish.plan_status || 'Sin definir')}</strong></span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // ── TAB 2: Sesiones Diarias ───────────────────────────────────────────────
       let daysHtml = '';
       if (days.length === 0) {
-        daysHtml = '<div class="empty-state" style="padding: 24px;">No hay sesiones diarias ejecutadas aún para este deseo.</div>';
+        daysHtml = '<div class="empty-state" style="padding: 24px;">No hay sesiones diarias ejecutadas aún para este deseo. Ejecuta el daemon o una sesión manual para comenzar.</div>';
       } else {
         daysHtml = `
           <div class="timeline-list">
@@ -1013,33 +1346,290 @@
         `;
       }
 
-      let feedbackHtml = '';
-      if (wish.client_feedback && Array.isArray(wish.client_feedback) && wish.client_feedback.length > 0) {
-        feedbackHtml = `
-          <div>
-            <div class="section-heading">
-              <span>💬</span> Retroalimentación Recibida del Cliente
+      const tabSessionsHtml = `
+        <div class="tab-pane" id="tab-sessions">
+          <div class="progress-wrap">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600;">
+              <span>Progreso del Ciclo de 30 Días</span>
+              <span style="color: var(--gold);">${days.length} de 30 Días (${progressPercent}%)</span>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-              ${wish.client_feedback.map(fb => {
-                const rEmoji = fb.rating === 'positive' ? '🟢 Excelente avance' : (fb.rating === 'neutral' ? '🟡 En progreso, con dudas' : '🔴 Ajustar rumbo');
-                return `
-                  <div style="background: var(--stone); border: 1px solid var(--border-soft); border-radius: 8px; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span style="font-weight: 600; font-size: 13px; color: var(--gold);">Semana ${fb.week}</span>
-                      <span style="font-size: 12px; font-weight: 600;">${rEmoji}</span>
-                    </div>
-                    <div style="font-size: 13px; color: var(--ivory); font-style: italic;">
-                      "${escapeHtml(fb.comment || 'Sin comentarios adicionales')}"
-                    </div>
-                  </div>
-                `;
-              }).join('')}
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
             </div>
+          </div>
+
+          <h3 class="section-heading">
+            <span>⚡</span> Bitácora de Sesiones Diarias (${days.length}/30 Días)
+          </h3>
+          ${daysHtml}
+        </div>
+      `;
+
+      // ── TAB 3: Correos y Borradores ───────────────────────────────────────────
+      let draftCardHtml = '';
+      if (hasActiveDraft) {
+        draftCardHtml = `
+          <div class="email-card email-card-draft">
+            <div class="email-header-meta">
+              <div>
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); margin-bottom: 4px;">
+                  🟡 Borrador Semanal Listo para Aprobación (HITL)
+                </div>
+                <div class="email-subject">${escapeHtml(draftSubject)}</div>
+              </div>
+              <span class="badge badge-pending" style="font-size: 11px; padding: 4px 10px;">Esperando Aprobación</span>
+            </div>
+
+            <div style="font-size: 12px; color: var(--ivory-dim); display: flex; gap: 16px; flex-wrap: wrap;">
+              <span>👤 <strong>Destinatario:</strong> ${escapeHtml(wish.contact_email)}</span>
+              <span>🔒 <strong>Privacidad:</strong> Cero tokens, cero costos ni infraestructura visible</span>
+              <span>⚡ <strong>Retroalimentación:</strong> 3 enlaces 1-clic integrados</span>
+            </div>
+
+            <div class="email-reading-box" id="active-draft-box">${escapeHtml(draftBody || rawDraft)}</div>
+
+            <div class="email-action-row">
+              <button class="btn-fontana" onclick="copyToClipboard(document.getElementById('active-draft-box').innerText, this)">
+                <span>📋</span> Copiar Contenido Completo del Correo
+              </button>
+              <div style="font-size: 12px; color: var(--gold);">
+                💡 Para aprobar y despachar, usa el botón <strong>[ ✅ Aprobar y Enviar ]</strong> en Telegram o ejecuta:
+                <code style="background: var(--night-2); padding: 3px 6px; border-radius: 4px; font-family: var(--mono); color: var(--ivory);">python fontana_engine.py send-email ${wish.id.slice(0, 8)} --week 1</code>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        draftCardHtml = `
+          <div style="background: var(--stone); border: 1px solid var(--border-soft); border-radius: 8px; padding: 16px 20px; font-size: 13px; color: var(--ivory-dim); margin-bottom: 24px;">
+            ℹ️ No hay borradores pendientes de aprobación en este momento. El motor autónomo genera los borradores de reporte al completar los Días 7, 14, 21 y 28.
           </div>
         `;
       }
 
+      let emailsListHtml = '';
+      if (!emails || emails.length === 0) {
+        emailsListHtml = '<div class="empty-state">No se han registrado envíos de correos aún para este deseo en <code>email_log</code>.</div>';
+      } else {
+        emailsListHtml = `
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            ${emails.map(em => `
+              <div class="email-card">
+                <div class="email-header-meta">
+                  <div>
+                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gold); font-weight: 600; margin-bottom: 4px;">
+                      ${escapeHtml(em.type || 'Correo Enviado')}
+                    </div>
+                    <div class="email-subject">${escapeHtml(em.subject || 'Sin Asunto')}</div>
+                  </div>
+                  <div style="text-align: right;">
+                    <span class="badge badge-approved">Enviado</span>
+                    <div style="font-size: 11px; color: var(--ivory-dim); font-family: var(--mono); margin-top: 4px;">
+                      ${new Date(em.sent_at).toLocaleString('es-CO')}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="email-reading-box" style="max-height: 280px;">${escapeHtml(em.body_sent || '—')}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      const tabEmailsHtml = `
+        <div class="tab-pane" id="tab-emails">
+          <h3 class="section-heading">
+            <span>✉️</span> Borrador Semanal para Aprobación
+          </h3>
+          ${draftCardHtml}
+
+          <h3 class="section-heading" style="margin-top: 24px;">
+            <span>📬</span> Historial de Correos Despachados (${emails.length})
+          </h3>
+          ${emailsListHtml}
+        </div>
+      `;
+
+      // ── TAB 4: Feedback de Clientes ───────────────────────────────────────────
+      let feedbackListHtml = '';
+      if (feedbacks.length === 0) {
+        feedbackListHtml = `
+          <div class="empty-state">
+            Aún no se ha recibido retroalimentación para este deseo.<br>
+            <small style="color: var(--ivory-faint); margin-top: 8px; display: block;">
+              El cliente puede calificar su percepción en 1 clic directamente desde los enlaces incluidos en cada correo semanal.
+            </small>
+          </div>
+        `;
+      } else {
+        feedbackListHtml = `
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            ${feedbacks.map(fb => {
+              const isPos = fb.rating === 'positive';
+              const isNeu = fb.rating === 'neutral';
+              const rLabel = isPos ? '🟢 Excelente avance' : (isNeu ? '🟡 En progreso, con dudas' : '🔴 Ajustar rumbo');
+              const rColor = isPos ? '#2ecc71' : (isNeu ? '#f1c40f' : '#e74c3c');
+              return `
+                <div style="background: var(--stone); border: 1px solid var(--border-soft); border-left: 3px solid ${rColor}; border-radius: 8px; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 700; font-size: 13px; color: var(--gold);">Semana ${fb.week || '—'}</span>
+                    <span style="font-size: 13px; font-weight: 600; color: ${rColor};">${rLabel}</span>
+                  </div>
+                  <div style="font-size: 14px; color: var(--ivory); font-style: italic; line-height: 1.5; padding: 4px 0;">
+                    "${escapeHtml(fb.comment || 'Sin comentarios adicionales')}"
+                  </div>
+                  ${fb.created_at || fb.timestamp ? `
+                    <div style="font-size: 11px; color: var(--ivory-faint); font-family: var(--mono);">
+                      Registrado: ${new Date(fb.created_at || fb.timestamp).toLocaleString('es-CO')}
+                    </div>
+                  ` : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+
+      const tabFeedbackHtml = `
+        <div class="tab-pane" id="tab-feedback">
+          <h3 class="section-heading">
+            <span>💬</span> Retroalimentación Recibida del Cliente (${feedbacks.length})
+          </h3>
+          ${feedbackListHtml}
+        </div>
+      `;
+
+      // ── TAB 5: Identidad y Contexto ───────────────────────────────────────────
+      const tabIdentityHtml = `
+        <div class="tab-pane" id="tab-identity">
+          <h3 class="section-heading">
+            <span>👤</span> Perfil y Calibración del Creador
+          </h3>
+
+          <div class="identity-grid">
+            <div class="identity-card">
+              <span class="identity-card-label">Nombre / Alias</span>
+              <span class="identity-card-val">${escapeHtml(wish.identity_name || wish.donor_alias || 'No especificado')}</span>
+            </div>
+            <div class="identity-card">
+              <span class="identity-card-label">Edad</span>
+              <span class="identity-card-val">${wish.identity_age ? escapeHtml(String(wish.identity_age)) + ' años' : 'No especificada'}</span>
+            </div>
+            <div class="identity-card">
+              <span class="identity-card-label">Correo de Contacto</span>
+              <span class="identity-card-val">${escapeHtml(wish.contact_email || 'Sin correo')}</span>
+            </div>
+            <div class="identity-card">
+              <span class="identity-card-label">Teléfono de Contacto</span>
+              <span class="identity-card-val">${escapeHtml(wish.contact_phone || 'No registrado')}</span>
+            </div>
+            <div class="identity-card">
+              <span class="identity-card-label">Aporte / Inversión</span>
+              <span class="identity-card-val" style="color: var(--gold);">$${wish.amount_usd || 0} USD ($${(wish.amount_cop || ((wish.amount_usd || 0) * USD_TO_COP)).toLocaleString('es-CO')} COP)</span>
+            </div>
+            <div class="identity-card">
+              <span class="identity-card-label">Transacción Wompi</span>
+              <span class="identity-card-val" style="font-family: var(--mono); font-size: 12px;">${escapeHtml(wish.wompi_transaction_id || '—')}</span>
+            </div>
+            <div class="identity-card">
+              <span class="identity-card-label">Inicio de Ciclo</span>
+              <span class="identity-card-val">${wish.cycle_started_at ? new Date(wish.cycle_started_at).toLocaleDateString('es-CO') : '—'}</span>
+            </div>
+            <div class="identity-card">
+              <span class="identity-card-label">Vencimiento (Día 30)</span>
+              <span class="identity-card-val">${wish.cycle_due_at ? new Date(wish.cycle_due_at).toLocaleDateString('es-CO') : '—'}</span>
+            </div>
+          </div>
+
+          <h4 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gold); margin-bottom: 10px;">
+            Contexto Vital y Profesional (Base de Calibración de la IA)
+          </h4>
+          <div class="context-quote-box">
+            ${escapeHtml(wish.identity_context || 'El cliente no especificó contexto vital previo durante el registro.')}
+          </div>
+
+          ${wish.closing_notes ? `
+            <h4 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gold); margin-bottom: 10px;">
+              Notas de Cierre de Ciclo
+            </h4>
+            <div class="context-quote-box" style="border-left-color: #2ecc71;">
+              ${escapeHtml(wish.closing_notes)}
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      // ── TAB 6: Desglose de Cómputo ───────────────────────────────────────────
+      const tabTelemetryHtml = `
+        <div class="tab-pane" id="tab-telemetry">
+          <h3 class="section-heading">
+            <span>📊</span> Métricas Financieras y Consumo de IA
+          </h3>
+
+          <div class="identity-grid">
+            <div class="identity-card">
+              <span class="identity-card-label">Inversión Financiera Total</span>
+              <span class="identity-card-val" style="color: var(--gold); font-size: 18px; font-family: var(--serif);">
+                $${costUsd.toFixed(4)} USD
+              </span>
+              <span style="font-size: 11px; color: var(--ivory-dim); font-family: var(--mono);">
+                ~$${costCop.toLocaleString('es-CO', { maximumFractionDigits: 0 })} COP
+              </span>
+            </div>
+            <div class="identity-card">
+              <span class="identity-card-label">Tokens de Prompt (Entrada)</span>
+              <span class="identity-card-val" style="font-family: var(--mono);">${promptTok.toLocaleString()}</span>
+              <span style="font-size: 11px; color: var(--ivory-dim);">$0.15 / 1M tokens</span>
+            </div>
+            <div class="identity-card">
+              <span class="identity-card-label">Tokens de Completion (Salida)</span>
+              <span class="identity-card-val" style="font-family: var(--mono);">${compTok.toLocaleString()}</span>
+              <span style="font-size: 11px; color: var(--ivory-dim);">$0.60 / 1M tokens</span>
+            </div>
+            <div class="identity-card">
+              <span class="identity-card-label">Tiempo Total de Cómputo IA</span>
+              <span class="identity-card-val" style="font-family: var(--mono);">${(totalMs / 1000).toFixed(2)}s</span>
+              <span style="font-size: 11px; color: var(--ivory-dim);">${totalMs.toLocaleString()} ms acumulados</span>
+            </div>
+          </div>
+
+          <table class="telemetry-table">
+            <thead>
+              <tr>
+                <th>Sesión / Hito</th>
+                <th>Foco Operativo</th>
+                <th>Duración</th>
+                <th>Tokens Totales</th>
+                <th>Costo Estimado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Plan Maestro 30D</strong></td>
+                <td>Arquitectura y Diagnóstico Inicial</td>
+                <td>${(wish.plan_generation_ms || 0).toLocaleString()} ms</td>
+                <td>${(wish.plan_tokens || 0).toLocaleString()}</td>
+                <td>$${(((wish.plan_tokens || 0) * COST_PER_PROMPT)).toFixed(5)} USD</td>
+              </tr>
+              ${days.map(d => {
+                const dayCost = ((d.prompt_tokens || 0) * COST_PER_PROMPT) + ((d.completion_tokens || 0) * COST_PER_COMPLETION);
+                return `
+                  <tr>
+                    <td>Día ${d.day_number} de 30</td>
+                    <td>${escapeHtml((d.focus_goal || 'Sin foco').slice(0, 45))}…</td>
+                    <td>${(d.session_duration_ms || 0).toLocaleString()} ms</td>
+                    <td>${(d.total_tokens || 0).toLocaleString()}</td>
+                    <td>$${dayCost.toFixed(5)} USD</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      // ── Render Principal del Inspector con Pestañas ───────────────────────────
       inspector.innerHTML = `
         <div class="inspector-header">
           <div style="font-size: 11px; font-family: var(--mono); color: var(--gold); letter-spacing: 0.05em;">DESEO ID: ${wish.id}</div>
@@ -1052,7 +1642,7 @@
             </div>
             <div class="meta-cell">
               <span class="meta-cell-label">Progreso</span>
-              <span class="meta-cell-val">${days.length} / 30 Días</span>
+              <span class="meta-cell-val">${days.length} / 30 Días (${progressPercent}%)</span>
             </div>
             <div class="meta-cell">
               <span class="meta-cell-label">Cómputo Total</span>
@@ -1065,34 +1655,39 @@
           </div>
         </div>
 
-        <div>
-          <div class="section-heading">
-            <span>📋</span> Plan Maestro de 30 Días
-            <small style="font-size: 12px; font-family: var(--sans); color: var(--ivory-dim); font-weight: normal;">
-              (${wish.plan_generation_ms || 0} ms | ${wish.plan_tokens || 0} tokens)
-            </small>
-          </div>
-          ${plan ? `
-            <div class="plan-card">
-              <div class="plan-diag">
-                <strong>Diagnóstico:</strong> ${escapeHtml(plan.diagnosis || 'Sin diagnóstico')}
-              </div>
-              ${weeklyGoalsHtml}
-            </div>
-          ` : `
-            <div class="empty-state">No se ha formulado el plan de 30 días aún.</div>
-          `}
+        <!-- Barra de Pestañas Organizadas debajo del Consumo -->
+        <div class="inspector-tabs" id="inspector-tabs">
+          <button class="tab-btn" data-tab="tab-plan" onclick="switchTab('tab-plan', this)">
+            <span>📋</span> Plan Maestro
+          </button>
+          <button class="tab-btn" data-tab="tab-sessions" onclick="switchTab('tab-sessions', this)">
+            <span>⚡</span> Sesiones Diarias <span class="tab-badge">${days.length}/30</span>
+          </button>
+          <button class="tab-btn" data-tab="tab-emails" onclick="switchTab('tab-emails', this)">
+            <span>✉️</span> Correos y Borradores <span class="tab-badge ${hasActiveDraft ? 'tab-badge-gold' : ''}">${emailBadgeText}</span>
+          </button>
+          <button class="tab-btn" data-tab="tab-feedback" onclick="switchTab('tab-feedback', this)">
+            <span>💬</span> Feedback <span class="tab-badge">${feedbacks.length}</span>
+          </button>
+          <button class="tab-btn" data-tab="tab-identity" onclick="switchTab('tab-identity', this)">
+            <span>👤</span> Identidad y Contexto
+          </button>
+          <button class="tab-btn" data-tab="tab-telemetry" onclick="switchTab('tab-telemetry', this)">
+            <span>📊</span> Desglose de Cómputo
+          </button>
         </div>
 
-        ${feedbackHtml}
-
-        <div>
-          <div class="section-heading">
-            <span>⚡</span> Sesiones Diarias Registradas (${days.length}/30 Días)
-          </div>
-          ${daysHtml}
-        </div>
+        <!-- Paneles de Contenido -->
+        ${tabPlanHtml}
+        ${tabSessionsHtml}
+        ${tabEmailsHtml}
+        ${tabFeedbackHtml}
+        ${tabIdentityHtml}
+        ${tabTelemetryHtml}
       `;
+
+      // Activar la pestaña recordada o por defecto Plan Maestro
+      switchTab(currentActiveTab);
     }
 
     function escapeHtml(str) {
@@ -1101,6 +1696,9 @@
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
     }

@@ -18,6 +18,16 @@ const cors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ── Helper: sanitizar entidades HTML para Telegram ───────────────────────────
+function escapeHtml(str: string): string {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 // ── Helper: enviar mensaje a Telegram ──────────────────────────────────────────
 async function sendTelegram(text: string, replyMarkup?: object) {
   const body: Record<string, unknown> = {
@@ -32,8 +42,23 @@ async function sendTelegram(text: string, replyMarkup?: object) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+
   if (!res.ok) {
-    console.error("Error Telegram API:", await res.text());
+    const errText = await res.text();
+    console.error("Error Telegram API (HTML):", errText);
+    // Fallback robusto: reintentar como texto plano limpio de entidades
+    const cleanText = text.replace(/<[^>]+>/g, "").slice(0, 4000);
+    const fallbackBody: Record<string, unknown> = {
+      chat_id: CHAT_ID,
+      text: cleanText,
+    };
+    if (replyMarkup) fallbackBody.reply_markup = replyMarkup;
+
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fallbackBody),
+    });
   }
 }
 
@@ -142,36 +167,45 @@ async function handleDeseo(shortId: string) {
   const totalMs = metrics?.total_duration_ms ?? (wish.plan_generation_ms ?? 0);
 
   let msg = `🔍 <b>Detalle del deseo</b>\n\n`;
-  msg += `🆔 <code>${wish.id}</code>\n`;
-  msg += `📊 Estado: <b>${wish.status}</b>\n`;
-  msg += `📋 Plan 30D: <b>${wish.plan_status || "pendiente"}</b>\n`;
+  msg += `🆔 <code>${escapeHtml(wish.id)}</code>\n`;
+  msg += `📊 Estado: <b>${escapeHtml(wish.status)}</b>\n`;
+  msg += `📋 Plan 30D: <b>${escapeHtml(wish.plan_status || "pendiente")}</b>\n`;
   if (totalTokens > 0) {
     msg += `⚡ Cómputo: <b>${Number(totalTokens).toLocaleString()} tokens</b> (${(Number(totalMs) / 1000).toFixed(1)}s)\n`;
   }
-  msg += `📧 Email: ${wish.contact_email}\n`;
-  msg += `📂 Categoría: ${wish.category}\n`;
+  msg += `📧 Email: ${escapeHtml(wish.contact_email || "—")}\n`;
+  msg += `📂 Categoría: ${escapeHtml(wish.category || "General")}\n`;
   msg += `💵 Monto: $${wish.amount_usd} USD\n`;
-  msg += `🏷 Alias: ${wish.donor_alias || "—"}\n`;
+  msg += `🏷 Alias: ${escapeHtml(wish.donor_alias || "—")}\n`;
   msg += `📅 Inicio: ${fmtDate(wish.cycle_started_at)}\n`;
   msg += `⏱ Días activo: ${daysActive}\n`;
   msg += `✉️ Correos enviados: ${emailCount ?? 0}\n`;
   if (lastEmail) {
-    msg += `📬 Último correo: ${lastEmail.type} — ${fmtDate(lastEmail.sent_at)}\n`;
+    msg += `📬 Último correo: ${escapeHtml(lastEmail.type)} — ${fmtDate(lastEmail.sent_at)}\n`;
   }
-  msg += `\n💬 <b>Deseo completo:</b>\n${wish.wish_text}\n`;
+  msg += `\n💬 <b>Deseo completo:</b>\n${escapeHtml(wish.wish_text || "")}\n`;
 
   if (wish.identity_name || wish.identity_age || wish.identity_context) {
     msg += `\n🧑 <b>Identidad:</b>\n`;
-    msg += `  Nombre: ${wish.identity_name || "—"}\n`;
-    msg += `  Edad: ${wish.identity_age || "—"}\n`;
-    msg += `  Contexto: ${wish.identity_context || "—"}\n`;
+    msg += `  Nombre: ${escapeHtml(wish.identity_name || "—")}\n`;
+    msg += `  Edad: ${escapeHtml(String(wish.identity_age || "—"))}\n`;
+    msg += `  Contexto: ${escapeHtml(wish.identity_context || "—")}\n`;
   }
 
   if (wish.internal_notes) {
-    msg += `\n📝 <b>Notas internas:</b>\n${wish.internal_notes}\n`;
+    if (wish.internal_notes.includes("[BORRADOR_CORREO_")) {
+      const isLong = wish.internal_notes.length > 2600;
+      const cleanNotes = isLong
+        ? wish.internal_notes.slice(0, 2600) + "\n\n<i>… (Continúa en Mission Control. Ver borrador completo en la web)</i>"
+        : wish.internal_notes;
+      msg += `\n📝 <b>Borrador Semanal (HITL):</b>\n${escapeHtml(cleanNotes)}\n`;
+    } else {
+      const cleanNotes = wish.internal_notes.length > 1200 ? wish.internal_notes.slice(0, 1200) + "..." : wish.internal_notes;
+      msg += `\n📝 <b>Notas internas:</b>\n${escapeHtml(cleanNotes)}\n`;
+    }
   }
 
-  const buttons: Array<Array<{ text: string; callback_data: string }>> = [
+  const buttons: Array<Array<{ text: string; callback_data?: string; url?: string }>> = [
     [
       { text: "✉️ Responder", callback_data: `reply:${wish.id}` },
       { text: "📋 Ver Plan", callback_data: `plan:${wish.id}` },
@@ -181,6 +215,12 @@ async function handleDeseo(shortId: string) {
       ...(wish.plan_status === "pending_review"
         ? [{ text: "✅ Aprobar Plan", callback_data: `approve_plan:${wish.id}` }]
         : []),
+      ...(wish.internal_notes && wish.internal_notes.includes("[BORRADOR_CORREO_")
+        ? [{ text: "✅ Aprobar y Enviar", callback_data: `send_weekly:${wish.id}:1` }]
+        : []),
+    ],
+    [
+      { text: "🖥️ Abrir en Mission Control", url: "https://fontana.digital/admin" },
     ],
   ];
 
