@@ -1463,26 +1463,29 @@
         emailsListHtml = '<div class="empty-state">No se han registrado envíos de correos aún para este deseo en <code>email_log</code>.</div>';
       } else {
         emailsListHtml = `
-          <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
             ${emails.map(em => `
-              <div class="email-card">
-                <div class="email-header-meta">
+              <details class="email-card" style="padding: 14px 18px;">
+                <summary class="email-header-meta" style="cursor: pointer; list-style: none; margin-bottom: 0; align-items: center;">
                   <div>
                     <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gold); font-weight: 600; margin-bottom: 4px;">
                       ${escapeHtml(em.type || 'Correo Enviado')}
                     </div>
                     <div class="email-subject">${escapeHtml(em.subject || 'Sin Asunto')}</div>
                   </div>
-                  <div style="text-align: right;">
-                    <span class="badge badge-approved">Enviado</span>
-                    <div style="font-size: 11px; color: var(--ivory-dim); font-family: var(--mono); margin-top: 4px;">
+                  <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span class="badge badge-approved">Enviado</span>
+                      <span style="font-size: 11px; color: var(--ivory-dim);">▼ Ver</span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--ivory-dim); font-family: var(--mono);">
                       ${new Date(em.sent_at).toLocaleString('es-CO')}
                     </div>
                   </div>
-                </div>
+                </summary>
 
-                <div class="email-reading-box" style="max-height: 280px;">${escapeHtml(em.body_sent || '—')}</div>
-              </div>
+                <div class="email-reading-box" style="max-height: 280px; margin-top: 14px;">${escapeHtml(em.body_sent || '—')}</div>
+              </details>
             `).join('')}
           </div>
         `;
