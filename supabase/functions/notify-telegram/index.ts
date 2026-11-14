@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
       await sendTelegram(msg, {
         inline_keyboard: [[
           { text: "🔍 Ver Detalle", callback_data: `detail:${wishId}` },
-          { text: "🖥️ Editar en Mission Control", url: "https://fontana.digital/admin" },
+          { text: "🖥️ Editar en Mission Control", url: "https://fontanadigital.dpdns.org/admin" },
         ]],
       });
 

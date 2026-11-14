@@ -220,7 +220,7 @@ async function handleDeseo(shortId: string) {
         : []),
     ],
     [
-      { text: "🖥️ Abrir en Mission Control", url: "https://fontana.digital/admin" },
+      { text: "🖥️ Abrir en Mission Control", url: "https://fontanadigital.dpdns.org/admin" },
     ],
   ];
 

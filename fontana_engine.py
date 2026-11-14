@@ -186,7 +186,7 @@ def notify_telegram_plan_ready(wish_id: str, email: str, diagnosis: str, weekly_
             "inline_keyboard": [
                 [
                     {"text": "🔍 Ver Detalle", "callback_data": f"detail:{wish_id}"},
-                    {"text": "🖥️ Editar en Mission Control", "url": "https://fontana.digital/admin"},
+                    {"text": "🖥️ Editar en Mission Control", "url": "https://fontanadigital.dpdns.org/admin"},
                 ]
             ]
         }
@@ -807,7 +807,7 @@ def prepare_weekly_email(wish_id: str, week_number: int = 1) -> dict:
     focus_context = "\n".join(focus_summary) if focus_summary else "Avance sostenido en los hitos digitales de la semana."
     resources_context = "\n".join(user_resources_summary) if user_resources_summary else focus_context
 
-    base_web = os.environ.get("FONTANA_WEB_URL", "https://fontana.digital")
+    base_web = os.environ.get("FONTANA_WEB_URL", "https://fontanadigital.dpdns.org")
 
     # 1. Generar cuerpo estratégico con IA (CERO mención a tokens, cómputo ni contenido interno de red)
     subject = f"Fontana | Tu kit digital de la Semana {week_number} y próximos pasos 🪙"
@@ -861,11 +861,11 @@ def prepare_weekly_email(wish_id: str, week_number: int = 1) -> dict:
         f"Tu opinión calibra directamente el rumbo de las siguientes sesiones.\n"
         f"Haz clic en tu percepción para registrarla en 1 clic:\n\n"
         f"🟢 Excelente, vamos por buen camino:\n"
-        f"{base_web}/feedback.html?wish={real_wish_id}&week={week_number}&rating=positive\n\n"
+        f"{base_web}/feedback?wish={real_wish_id}&week={week_number}&rating=positive\n\n"
         f"🟡 En progreso, con dudas o ajustes necesarios:\n"
-        f"{base_web}/feedback.html?wish={real_wish_id}&week={week_number}&rating=neutral\n\n"
+        f"{base_web}/feedback?wish={real_wish_id}&week={week_number}&rating=neutral\n\n"
         f"🔴 Desalineado con lo que necesito / Cambiar rumbo:\n"
-        f"{base_web}/feedback.html?wish={real_wish_id}&week={week_number}&rating=negative\n"
+        f"{base_web}/feedback?wish={real_wish_id}&week={week_number}&rating=negative\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"El trabajo diario sigue en marcha. La fuente sigue trabajando por tu intención.\n\n"
         f"Fe y trabajo,\n"

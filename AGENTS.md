@@ -46,14 +46,13 @@ El panel administrativo web (`web/admin.html` desplegado en `/admin`) y el bot d
 - Cada deseo activo tiene un ciclo de 30 días calendario y sesiones autónomas registradas en la tabla `public.ai_daily_work`.
 - **Handoff Encadenado:** Cada sesión diaria toma como contexto previo el campo `tomorrow_handoff` de la sesión del día anterior (`day_number - 1`).
 - **Pausa HITL Semanal:** Al registrarse el Día 7, 14, 21 o 28, el motor detiene la ejecución automática y formula el borrador ejecutivo del reporte semanal. No continúa al día siguiente hasta que el operador humano aprueba el correo.
-- **Enlaces 1-Clic de Feedback:** Cada reporte semanal lleva 3 enlaces únicos a `https://fontana.digital/feedback.html` con parámetros `?wish=<UUID>&week=<N>&rating=<positive|neutral|negative>`. Al hacer clic, una RPC de Supabase (`submit_client_feedback`) guarda la calificación directamente en el JSONB del deseo.
+- **Enlaces 1-Clic de Feedback:** Cada reporte semanal lleva 3 enlaces únicos a `https://fontanadigital.dpdns.org/feedback` con parámetros `?wish=<UUID>&week=<N>&rating=<positive|neutral|negative>`. Al hacer clic, una RPC de Supabase (`submit_client_feedback`) guarda la calificación directamente en el JSONB del deseo.
 
 ---
 
 ## 4. Dominios y Topología Productiva
 
-- **Dominio Principal (Producción):** `https://fontana.digital` (desplegado vía Vercel conectado a la rama `main`).
-- **Dominio Secundario / Webhook:** `https://fontanadigital.dpdns.org`.
+- **Dominio Principal (Producción):** `https://fontanadigital.dpdns.org` (desplegado vía Vercel conectado a la rama `main`).
 - **Panel Administrativo:** `/admin` (`web/admin.html`).
 - **Receptor de Feedback:** `/feedback` (`web/feedback.html`).
 - **Backend / Database:** Supabase Cloud `cbvqwdrbwogsmcglsvzg` (`sa-east-1`).
